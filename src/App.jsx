@@ -3,7 +3,7 @@ import {
   Upload, Image as ImageIcon, Sparkles, Download, RefreshCcw,
   Type, Zap, BrainCircuit, Info, Check, X,
   Monitor, Layout, Wand2, Settings2, AlertTriangle, Palette, Eye,
-  Cpu, Layers, ShieldCheck, Flame, Sun, Move
+  Cpu, Layers, ShieldCheck, Flame, Sun, Move, Key, EyeOff
 } from 'lucide-react';
 
 const App = () => {
@@ -21,7 +21,17 @@ const App = () => {
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
 
-  const apiKey = "";
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  const handleSaveApiKey = (value) => {
+    setApiKey(value);
+    if (value) {
+      localStorage.setItem('gemini_api_key', value);
+    } else {
+      localStorage.removeItem('gemini_api_key');
+    }
+  };
 
   const typographyOptions = [
     {
@@ -75,6 +85,10 @@ const App = () => {
   };
 
   const generateThumbnail = async () => {
+    if (!apiKey) {
+      setError("Lütfen Gemini API Key'inizi girin.");
+      return;
+    }
     if (!base64Image || !topic) {
       setError("Lütfen bir fotoğraf yükleyin ve video konusunu belirtin.");
       return;
@@ -178,6 +192,39 @@ const App = () => {
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-[#101014] rounded-[3rem] p-8 border border-white/5 shadow-2xl space-y-8">
 
+              {/* API Key */}
+              <section className="space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic flex items-center gap-2">
+                  <Key className="w-3 h-3" /> Gemini API Key
+                </label>
+                <div className="relative">
+                  <input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={(e) => handleSaveApiKey(e.target.value)}
+                    placeholder="AIzaSy... (Google AI Studio'dan alın)"
+                    className="w-full bg-black/40 border border-white/5 rounded-2xl p-5 pr-14 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 font-mono tracking-tight"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300 transition-colors"
+                  >
+                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {apiKey && (
+                  <p className="text-[9px] text-green-500/70 font-bold uppercase tracking-widest italic flex items-center gap-1">
+                    <Check className="w-3 h-3" /> API Key kaydedildi (tarayıcıda saklanır)
+                  </p>
+                )}
+                {!apiKey && (
+                  <p className="text-[9px] text-amber-500/70 font-bold uppercase tracking-widest italic flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Kullanmak için Gemini API Key gerekli
+                  </p>
+                )}
+              </section>
+
               {/* Video Topic */}
               <section className="space-y-4">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic flex items-center gap-2">
@@ -277,7 +324,7 @@ const App = () => {
 
               <button
                 onClick={generateThumbnail}
-                disabled={loading || !image || !topic}
+                disabled={loading || !image || !topic || !apiKey}
                 className="w-full bg-white text-black font-black py-7 rounded-[2.5rem] transition-all shadow-[0_20px_40px_-10px_rgba(255,255,255,0.2)] active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-4 text-xl italic tracking-tighter"
               >
                 {loading ? <RefreshCcw className="w-7 h-7 animate-spin" /> : <Wand2 className="w-7 h-7" />}
