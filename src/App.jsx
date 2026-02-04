@@ -364,24 +364,23 @@ const App = () => {
 
               {resultImage && !loading && (
                 <div className="w-full space-y-10 animate-in zoom-in duration-1000">
-                  <div className="relative group/image rounded-[3.5rem] overflow-hidden shadow-[0_80px_120px_-30px_rgba(59,130,246,0.4)] border border-white/10 aspect-video w-full">
-                    <img src={resultImage} alt="Final Masterpiece" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/80 opacity-0 group-hover/image:opacity-100 transition-all duration-700 flex items-center justify-center backdrop-blur-xl">
-                       <div className="text-center space-y-8">
-                          <h4 className="text-white font-black text-4xl uppercase italic tracking-tighter">{topic}</h4>
-                          <button
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = resultImage;
-                              link.download = `master-thumbnail-${Date.now()}.png`;
-                              link.click();
-                            }}
-                            className="bg-white text-black px-16 py-6 rounded-[3rem] font-black text-2xl hover:scale-105 transition-all shadow-2xl uppercase tracking-tighter italic"
-                          >
-                            TASARIMI İNDİR
-                          </button>
-                       </div>
-                    </div>
+                  <div className="rounded-[3.5rem] overflow-hidden shadow-[0_80px_120px_-30px_rgba(59,130,246,0.4)] border border-white/10 w-full bg-black/40">
+                    <img src={resultImage} alt="Final Masterpiece" className="w-full h-auto object-contain" />
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = resultImage;
+                        link.download = `master-thumbnail-${Date.now()}.png`;
+                        link.click();
+                      }}
+                      className="bg-white text-black px-12 py-5 rounded-[2.5rem] font-black text-lg hover:scale-105 transition-all shadow-2xl uppercase tracking-tighter italic flex items-center gap-3"
+                    >
+                      <Download className="w-5 h-5" />
+                      TASARIMI İNDİR
+                    </button>
                   </div>
 
                   {/* Smart Integration Stats */}
