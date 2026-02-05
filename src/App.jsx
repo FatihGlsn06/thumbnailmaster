@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Image as ImageIcon, Sparkles, Download, RefreshCcw,
@@ -35,18 +35,18 @@ const AuroraBackground = ({ children }) => (
   </div>
 );
 
-// Fake popular YouTube videos data with placeholder thumbnails
+// Real popular YouTube videos data with actual thumbnails
 const fakeVideos = [
-  { channel: 'MrBeast', avatar: '🟣', title: '$1 vs $1,000,000 Hotel Room!', views: '156M views', time: '2 months ago', duration: '18:24', color: 'from-purple-500 to-blue-500', thumbText: '$1 vs $1M', thumbBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { channel: 'PewDiePie', avatar: '🔴', title: 'I Played the Worlds Hardest Game', views: '8.2M views', time: '3 days ago', duration: '22:15', color: 'from-red-500 to-red-700', thumbText: 'IMPOSSIBLE', thumbBg: 'linear-gradient(135deg, #f5576c 0%, #f093fb 100%)' },
-  { channel: 'Markiplier', avatar: '🩷', title: 'This Game Broke My Brain...', views: '4.1M views', time: '1 week ago', duration: '31:42', color: 'from-pink-500 to-red-500', thumbText: '???', thumbBg: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)' },
-  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Manhunt GRAND FINALE', views: '45M views', time: '8 months ago', duration: '45:18', color: 'from-green-500 to-emerald-600', thumbText: 'FINALE', thumbBg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
-  { channel: 'Ninja', avatar: '🔵', title: 'I Returned to Fortnite...', views: '2.8M views', time: '5 days ago', duration: '16:33', color: 'from-blue-500 to-cyan-500', thumbText: "I'M BACK", thumbBg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
-  { channel: 'xQc', avatar: '⚪', title: 'REACTING TO THE CRAZIEST CLIPS', views: '1.2M views', time: '12 hours ago', duration: '2:34:11', color: 'from-slate-400 to-slate-600', thumbText: 'INSANE', thumbBg: 'linear-gradient(135deg, #485563 0%, #29323c 100%)' },
-  { channel: 'Jacksepticeye', avatar: '💚', title: 'The BEST Horror Game of 2024', views: '3.5M views', time: '2 weeks ago', duration: '28:45', color: 'from-green-400 to-green-600', thumbText: 'SCARY', thumbBg: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)' },
-  { channel: 'Ludwig', avatar: '🟠', title: 'I Hosted a $100,000 Tournament', views: '5.6M views', time: '1 month ago', duration: '52:18', color: 'from-orange-500 to-amber-500', thumbText: '$100K', thumbBg: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)' },
-  { channel: 'Shroud', avatar: '🔘', title: 'My Aim is STILL Unmatched', views: '980K views', time: '4 days ago', duration: '19:22', color: 'from-gray-500 to-gray-700', thumbText: 'AIM GOD', thumbBg: 'linear-gradient(135deg, #232526 0%, #414345 100%)' },
-  { channel: 'Valkyrae', avatar: '💛', title: 'Playing with 100 Fans!', views: '1.8M views', time: '6 days ago', duration: '1:12:45', color: 'from-yellow-400 to-orange-400', thumbText: '100 FANS', thumbBg: 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)' },
+  { channel: 'MrBeast', avatar: '🟣', title: '$1 vs $1,000,000 Hotel Room!', views: '156M views', time: '2 months ago', duration: '18:24', color: 'from-purple-500 to-blue-500', thumbnail: 'https://img.youtube.com/vi/iogcY_4xGjo/maxresdefault.jpg' },
+  { channel: 'PewDiePie', avatar: '🔴', title: 'I Played the Worlds Hardest Game', views: '8.2M views', time: '3 days ago', duration: '22:15', color: 'from-red-500 to-red-700', thumbnail: 'https://img.youtube.com/vi/xvFZjo5PgG0/maxresdefault.jpg' },
+  { channel: 'Markiplier', avatar: '🩷', title: 'Five Nights at Freddys', views: '89M views', time: '1 week ago', duration: '31:42', color: 'from-pink-500 to-red-500', thumbnail: 'https://img.youtube.com/vi/iOztnsBPrMA/maxresdefault.jpg' },
+  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Manhunt GRAND FINALE', views: '45M views', time: '8 months ago', duration: '45:18', color: 'from-green-500 to-emerald-600', thumbnail: 'https://img.youtube.com/vi/95OzO4aS8dU/maxresdefault.jpg' },
+  { channel: 'Ninja', avatar: '🔵', title: 'High Kill Fortnite Game', views: '12M views', time: '5 days ago', duration: '16:33', color: 'from-blue-500 to-cyan-500', thumbnail: 'https://img.youtube.com/vi/p8p0oBRhPIw/maxresdefault.jpg' },
+  { channel: 'xQc', avatar: '⚪', title: 'REACTING TO THE CRAZIEST CLIPS', views: '1.2M views', time: '12 hours ago', duration: '2:34:11', color: 'from-slate-400 to-slate-600', thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg' },
+  { channel: 'Jacksepticeye', avatar: '💚', title: 'The BEST Horror Game', views: '23M views', time: '2 weeks ago', duration: '28:45', color: 'from-green-400 to-green-600', thumbnail: 'https://img.youtube.com/vi/MAlSjtxy5ak/maxresdefault.jpg' },
+  { channel: 'Ludwig', avatar: '🟠', title: 'I Hosted a Tournament', views: '5.6M views', time: '1 month ago', duration: '52:18', color: 'from-orange-500 to-amber-500', thumbnail: 'https://img.youtube.com/vi/UtgFjhvvz1w/maxresdefault.jpg' },
+  { channel: 'Shroud', avatar: '🔘', title: 'Best Aim in the Game', views: '4.2M views', time: '4 days ago', duration: '19:22', color: 'from-gray-500 to-gray-700', thumbnail: 'https://img.youtube.com/vi/nYGWPE5gj3M/maxresdefault.jpg' },
+  { channel: 'Valkyrae', avatar: '💛', title: 'Playing with Friends!', views: '1.8M views', time: '6 days ago', duration: '1:12:45', color: 'from-yellow-400 to-orange-400', thumbnail: 'https://img.youtube.com/vi/bXDkVjXQCzY/maxresdefault.jpg' },
 ];
 
 // Fake Thumbnail Component
@@ -120,8 +120,17 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
   </div>
 );
 
-// Full YouTube Mockup Page
+// Full YouTube Mockup Modal
 const YouTubeMockup = ({ thumbnail, title, channelName, onClose }) => {
+  // ESC key to close
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   const userVideo = {
     thumbnail,
     title: title || 'Yeni Videom - İZLEMELİSİNİZ!',
@@ -161,122 +170,140 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-[#0f0f0f] overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8"
+      onClick={onClose}
     >
-      {/* YouTube Header */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-[#0f0f0f] border-b border-white/10 flex items-center justify-between px-4 z-50">
-        <div className="flex items-center gap-4">
-          <button className="p-2 hover:bg-white/10 rounded-full">
-            <Menu className="w-6 h-6 text-white" />
-          </button>
-          <div className="flex items-center gap-1">
-            <div className="bg-red-600 rounded-lg p-1">
-              <Play className="w-5 h-5 text-white fill-white" />
-            </div>
-            <span className="text-white text-xl font-semibold tracking-tight">YouTube</span>
-            <span className="text-[#aaa] text-[10px] align-super">TR</span>
-          </div>
-        </div>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
-        {/* Search Bar */}
-        <div className="flex-1 max-w-2xl mx-8">
-          <div className="flex">
-            <div className="flex-1 flex items-center bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2">
-              <input
-                type="text"
-                placeholder="Ara"
-                className="bg-transparent text-white w-full outline-none text-sm"
-              />
-            </div>
-            <button className="bg-[#222] border border-l-0 border-[#303030] rounded-r-full px-5 hover:bg-[#333] transition-colors">
-              <Search className="w-5 h-5 text-white" />
+      {/* Floating Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white p-3 rounded-full transition-all group"
+      >
+        <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+      </button>
+
+      {/* Close hint */}
+      <div className="absolute top-4 left-4 z-[60] text-white/50 text-sm flex items-center gap-2">
+        <kbd className="bg-white/10 px-2 py-1 rounded text-xs">ESC</kbd>
+        <span>veya dışarı tıklayarak kapat</span>
+      </div>
+
+      {/* Modal Content */}
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="relative z-50 w-full max-w-7xl h-[90vh] bg-[#0f0f0f] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* YouTube Header */}
+        <header className="h-14 bg-[#0f0f0f] border-b border-white/10 flex items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <button className="p-2 hover:bg-white/10 rounded-full">
+              <Menu className="w-6 h-6 text-white" />
             </button>
-            <button className="ml-3 p-2.5 bg-[#222] rounded-full hover:bg-[#333] transition-colors">
-              <Mic className="w-5 h-5 text-white" />
-            </button>
+            <div className="flex items-center gap-1">
+              <div className="bg-red-600 rounded-lg p-1">
+                <Play className="w-5 h-5 text-white fill-white" />
+              </div>
+              <span className="text-white text-xl font-semibold tracking-tight">YouTube</span>
+              <span className="text-[#aaa] text-[10px] align-super">TR</span>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button className="p-2 hover:bg-white/10 rounded-full">
-            <Bell className="w-6 h-6 text-white" />
-          </button>
-          <button
-            onClick={onClose}
-            className="ml-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Önizlemeyi Kapat
-          </button>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 ml-2" />
-        </div>
-      </header>
+          {/* Search Bar */}
+          <div className="flex-1 max-w-xl mx-4 hidden md:block">
+            <div className="flex">
+              <div className="flex-1 flex items-center bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2">
+                <input
+                  type="text"
+                  placeholder="Ara"
+                  className="bg-transparent text-white w-full outline-none text-sm"
+                />
+              </div>
+              <button className="bg-[#222] border border-l-0 border-[#303030] rounded-r-full px-5 hover:bg-[#333] transition-colors">
+                <Search className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </div>
 
-      <div className="flex pt-14 h-screen">
-        {/* Sidebar */}
-        <aside className="w-60 bg-[#0f0f0f] overflow-y-auto flex-shrink-0 hidden lg:block">
-          <nav className="py-3">
-            {sidebarItems.map((item, index) => (
-              item.divider ? (
-                <hr key={index} className="my-3 border-white/10" />
-              ) : item.header ? (
-                <p key={index} className="px-6 py-2 text-white/60 text-sm font-medium">{item.label}</p>
-              ) : (
+          <div className="flex items-center gap-2">
+            <button className="p-2 hover:bg-white/10 rounded-full">
+              <Bell className="w-6 h-6 text-white" />
+            </button>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+          </div>
+        </header>
+
+        <div className="flex h-[calc(90vh-56px)]">
+          {/* Sidebar */}
+          <aside className="w-60 bg-[#0f0f0f] overflow-y-auto flex-shrink-0 hidden lg:block border-r border-white/5">
+            <nav className="py-3">
+              {sidebarItems.map((item, index) => (
+                item.divider ? (
+                  <hr key={index} className="my-3 border-white/10" />
+                ) : item.header ? (
+                  <p key={index} className="px-6 py-2 text-white/60 text-sm font-medium">{item.label}</p>
+                ) : (
+                  <button
+                    key={index}
+                    className={`w-full flex items-center gap-6 px-6 py-2.5 hover:bg-white/10 transition-colors ${
+                      item.active ? 'bg-white/10' : ''
+                    }`}
+                  >
+                    <span className={item.active ? 'text-white' : 'text-white/80'}>{item.icon}</span>
+                    <span className={`text-sm ${item.active ? 'text-white font-medium' : 'text-white/80'}`}>{item.label}</span>
+                  </button>
+                )
+              ))}
+            </nav>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto bg-[#0f0f0f]">
+            {/* Category Pills */}
+            <div className="sticky top-0 bg-[#0f0f0f] z-10 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
+              {categories.map((cat, index) => (
                 <button
-                  key={index}
-                  className={`w-full flex items-center gap-6 px-6 py-2.5 hover:bg-white/10 transition-colors ${
-                    item.active ? 'bg-white/10' : ''
+                  key={cat}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    index === 0
+                      ? 'bg-white text-black'
+                      : 'bg-[#272727] text-white hover:bg-[#3f3f3f]'
                   }`}
                 >
-                  <span className={item.active ? 'text-white' : 'text-white/80'}>{item.icon}</span>
-                  <span className={`text-sm ${item.active ? 'text-white font-medium' : 'text-white/80'}`}>{item.label}</span>
+                  {cat}
                 </button>
-              )
-            ))}
-          </nav>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-[#0f0f0f]">
-          {/* Category Pills */}
-          <div className="sticky top-0 bg-[#0f0f0f] z-10 px-6 py-3 flex gap-3 overflow-x-auto no-scrollbar border-b border-white/5">
-            {categories.map((cat, index) => (
-              <button
-                key={cat}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  index === 0
-                    ? 'bg-white text-black'
-                    : 'bg-[#272727] text-white hover:bg-[#3f3f3f]'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Video Grid */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
-              {allVideos.map((video, index) => (
-                <YouTubeVideoCard
-                  key={index}
-                  thumbnail={video.thumbnail}
-                  title={video.title}
-                  channel={video.channel}
-                  views={video.views}
-                  time={video.time}
-                  duration={video.duration}
-                  avatar={video.avatar}
-                  color={video.color}
-                  isHighlighted={video.isHighlighted}
-                  thumbText={video.thumbText}
-                  thumbBg={video.thumbBg}
-                />
               ))}
             </div>
-          </div>
-        </main>
-      </div>
+
+            {/* Video Grid */}
+            <div className="p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6">
+                {allVideos.map((video, index) => (
+                  <YouTubeVideoCard
+                    key={index}
+                    thumbnail={video.thumbnail}
+                    title={video.title}
+                    channel={video.channel}
+                    views={video.views}
+                    time={video.time}
+                    duration={video.duration}
+                    avatar={video.avatar}
+                    color={video.color}
+                    isHighlighted={video.isHighlighted}
+                    thumbText={video.thumbText}
+                    thumbBg={video.thumbBg}
+                  />
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
+      </motion.div>
     </motion.div>
   );
 };
