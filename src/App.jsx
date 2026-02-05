@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Image as ImageIcon, Sparkles, Download, RefreshCcw,
   Type, BrainCircuit, Check, Monitor, Wand2, AlertTriangle, Palette, Eye,
-  Layers, ShieldCheck, Flame, Move, Key, EyeOff, Zap, Play, Youtube,
-  ChevronDown, Star, ArrowRight, Clock, ThumbsUp, MoreVertical
+  Layers, Flame, Key, EyeOff, Zap, Play, Youtube,
+  ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
+  Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
+  Music, Radio, Trophy, Lightbulb, Shirt, X, User
 } from 'lucide-react';
 
 // Aurora Background Component
@@ -33,88 +35,221 @@ const AuroraBackground = ({ children }) => (
   </div>
 );
 
-// YouTube Preview Mockup Component
-const YouTubePreview = ({ thumbnail, title }) => (
-  <div className="bg-[#0f0f0f] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-    {/* Video Thumbnail */}
-    <div className="relative aspect-video group cursor-pointer">
-      <img src={thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all shadow-2xl">
-          <Play className="w-7 h-7 text-white fill-white ml-1" />
+// Fake popular YouTube videos data
+const fakeVideos = [
+  { channel: 'MrBeast', avatar: '🟣', title: '$1 vs $1,000,000 Hotel Room!', views: '156M views', time: '2 months ago', duration: '18:24', color: 'from-purple-500 to-blue-500' },
+  { channel: 'PewDiePie', avatar: '🔴', title: 'I Played the Worlds Hardest Game', views: '8.2M views', time: '3 days ago', duration: '22:15', color: 'from-red-500 to-red-700' },
+  { channel: 'Markiplier', avatar: '🩷', title: 'This Game Broke My Brain...', views: '4.1M views', time: '1 week ago', duration: '31:42', color: 'from-pink-500 to-red-500' },
+  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Manhunt GRAND FINALE', views: '45M views', time: '8 months ago', duration: '45:18', color: 'from-green-500 to-emerald-600' },
+  { channel: 'Ninja', avatar: '🔵', title: 'I Returned to Fortnite...', views: '2.8M views', time: '5 days ago', duration: '16:33', color: 'from-blue-500 to-cyan-500' },
+  { channel: 'xQc', avatar: '⚪', title: 'REACTING TO THE CRAZIEST CLIPS', views: '1.2M views', time: '12 hours ago', duration: '2:34:11', color: 'from-slate-400 to-slate-600' },
+  { channel: 'Jacksepticeye', avatar: '💚', title: 'The BEST Horror Game of 2024', views: '3.5M views', time: '2 weeks ago', duration: '28:45', color: 'from-green-400 to-green-600' },
+  { channel: 'Ludwig', avatar: '🟠', title: 'I Hosted a $100,000 Tournament', views: '5.6M views', time: '1 month ago', duration: '52:18', color: 'from-orange-500 to-amber-500' },
+  { channel: 'Shroud', avatar: '🔘', title: 'My Aim is STILL Unmatched', views: '980K views', time: '4 days ago', duration: '19:22', color: 'from-gray-500 to-gray-700' },
+  { channel: 'Valkyrae', avatar: '💛', title: 'Playing with 100 Fans!', views: '1.8M views', time: '6 days ago', duration: '1:12:45', color: 'from-yellow-400 to-orange-400' },
+];
+
+// YouTube Video Card Component
+const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted }) => (
+  <div className={`group cursor-pointer ${isHighlighted ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-[#0f0f0f] rounded-xl' : ''}`}>
+    {/* Thumbnail */}
+    <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
+      {thumbnail ? (
+        <img src={thumbnail} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+      ) : (
+        <div className={`w-full h-full bg-gradient-to-br ${color} flex items-center justify-center`}>
+          <Play className="w-12 h-12 text-white/80" />
         </div>
+      )}
+      <div className="absolute bottom-1 right-1 bg-black/90 text-white text-[10px] px-1 py-0.5 rounded font-medium">
+        {duration}
       </div>
-      {/* Duration */}
-      <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded font-medium">
-        12:34
-      </div>
+      {isHighlighted && (
+        <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse">
+          SENİN VİDEON
+        </div>
+      )}
     </div>
 
-    {/* Video Info */}
-    <div className="p-3 flex gap-3">
-      {/* Channel Avatar */}
-      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex-shrink-0" />
-
+    {/* Info */}
+    <div className="flex gap-3">
+      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-sm flex-shrink-0`}>
+        {avatar}
+      </div>
       <div className="flex-1 min-w-0">
-        {/* Title */}
-        <h3 className="text-white text-sm font-medium line-clamp-2 leading-tight mb-1">
-          {title || 'Video Başlığınız Burada Görünecek'}
+        <h3 className="text-white text-sm font-medium line-clamp-2 leading-tight mb-1 group-hover:text-blue-400 transition-colors">
+          {title}
         </h3>
-        {/* Channel Name */}
-        <p className="text-[#aaa] text-xs">Kanal Adınız</p>
-        {/* Views & Time */}
-        <p className="text-[#aaa] text-xs flex items-center gap-1">
-          <span>1.2M views</span>
-          <span>•</span>
-          <span>2 hours ago</span>
+        <p className="text-[#aaa] text-xs hover:text-white transition-colors">{channel}</p>
+        <p className="text-[#aaa] text-xs">
+          {views} • {time}
         </p>
       </div>
-
-      <button className="text-white/60 hover:text-white self-start">
+      <button className="text-white/0 group-hover:text-white/60 transition-all self-start mt-1">
         <MoreVertical className="w-5 h-5" />
       </button>
     </div>
   </div>
 );
 
-// YouTube Search Result Preview
-const YouTubeSearchPreview = ({ thumbnail, title }) => (
-  <div className="bg-[#0f0f0f] rounded-xl overflow-hidden border border-white/10">
-    <div className="flex gap-4 p-2">
-      {/* Thumbnail */}
-      <div className="relative w-[360px] aspect-video rounded-lg overflow-hidden flex-shrink-0 group cursor-pointer">
-        <img src={thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-          <div className="w-12 h-12 bg-red-600/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-            <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+// Full YouTube Mockup Page
+const YouTubeMockup = ({ thumbnail, title, channelName, onClose }) => {
+  const userVideo = {
+    thumbnail,
+    title: title || 'Yeni Videom - İZLEMELİSİNİZ!',
+    channel: channelName || 'Benim Kanalım',
+    views: '1.2M views',
+    time: '2 hours ago',
+    duration: '12:34',
+    avatar: '⭐',
+    color: 'from-blue-500 to-purple-600',
+    isHighlighted: true
+  };
+
+  // Mix user video randomly into fake videos
+  const allVideos = [...fakeVideos];
+  const insertIndex = Math.floor(Math.random() * 3) + 1; // Insert between position 1-3
+  allVideos.splice(insertIndex, 0, userVideo);
+
+  const sidebarItems = [
+    { icon: <Home className="w-5 h-5" />, label: 'Ana Sayfa', active: true },
+    { icon: <Compass className="w-5 h-5" />, label: 'Keşfet' },
+    { icon: <PlaySquare className="w-5 h-5" />, label: 'Shorts' },
+    { icon: <Film className="w-5 h-5" />, label: 'Abonelikler' },
+    { divider: true },
+    { icon: <Clock className="w-5 h-5" />, label: 'Geçmiş' },
+    { icon: <ThumbsUp className="w-5 h-5" />, label: 'Beğenilenler' },
+    { divider: true },
+    { label: 'Keşfet', header: true },
+    { icon: <Gamepad2 className="w-5 h-5" />, label: 'Oyun' },
+    { icon: <Music className="w-5 h-5" />, label: 'Müzik' },
+    { icon: <Trophy className="w-5 h-5" />, label: 'Spor' },
+  ];
+
+  const categories = ['Tümü', 'Oyun', 'Canlı', 'Müzik', 'Strateji oyunları', 'Aksiyon-macera', 'Yeni', 'Son yüklenenler'];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-[#0f0f0f] overflow-hidden"
+    >
+      {/* YouTube Header */}
+      <header className="fixed top-0 left-0 right-0 h-14 bg-[#0f0f0f] border-b border-white/10 flex items-center justify-between px-4 z-50">
+        <div className="flex items-center gap-4">
+          <button className="p-2 hover:bg-white/10 rounded-full">
+            <Menu className="w-6 h-6 text-white" />
+          </button>
+          <div className="flex items-center gap-1">
+            <div className="bg-red-600 rounded-lg p-1">
+              <Play className="w-5 h-5 text-white fill-white" />
+            </div>
+            <span className="text-white text-xl font-semibold tracking-tight">YouTube</span>
+            <span className="text-[#aaa] text-[10px] align-super">TR</span>
           </div>
         </div>
-        <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1 py-0.5 rounded">
-          12:34
-        </div>
-      </div>
 
-      {/* Info */}
-      <div className="flex-1 py-1">
-        <h3 className="text-white text-lg font-medium line-clamp-2 leading-snug mb-2">
-          {title || 'Video Başlığınız Burada Görünecek'}
-        </h3>
-        <p className="text-[#aaa] text-xs mb-2 flex items-center gap-2">
-          <span>1.2M views</span>
-          <span>•</span>
-          <span>2 hours ago</span>
-        </p>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
-          <span className="text-[#aaa] text-xs">Kanal Adınız</span>
+        {/* Search Bar */}
+        <div className="flex-1 max-w-2xl mx-8">
+          <div className="flex">
+            <div className="flex-1 flex items-center bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2">
+              <input
+                type="text"
+                placeholder="Ara"
+                className="bg-transparent text-white w-full outline-none text-sm"
+              />
+            </div>
+            <button className="bg-[#222] border border-l-0 border-[#303030] rounded-r-full px-5 hover:bg-[#333] transition-colors">
+              <Search className="w-5 h-5 text-white" />
+            </button>
+            <button className="ml-3 p-2.5 bg-[#222] rounded-full hover:bg-[#333] transition-colors">
+              <Mic className="w-5 h-5 text-white" />
+            </button>
+          </div>
         </div>
-        <p className="text-[#aaa] text-xs line-clamp-1">
-          Bu video hakkında kısa açıklama buraya gelecek...
-        </p>
+
+        <div className="flex items-center gap-2">
+          <button className="p-2 hover:bg-white/10 rounded-full">
+            <Bell className="w-6 h-6 text-white" />
+          </button>
+          <button
+            onClick={onClose}
+            className="ml-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Önizlemeyi Kapat
+          </button>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 ml-2" />
+        </div>
+      </header>
+
+      <div className="flex pt-14 h-screen">
+        {/* Sidebar */}
+        <aside className="w-60 bg-[#0f0f0f] overflow-y-auto flex-shrink-0 hidden lg:block">
+          <nav className="py-3">
+            {sidebarItems.map((item, index) => (
+              item.divider ? (
+                <hr key={index} className="my-3 border-white/10" />
+              ) : item.header ? (
+                <p key={index} className="px-6 py-2 text-white/60 text-sm font-medium">{item.label}</p>
+              ) : (
+                <button
+                  key={index}
+                  className={`w-full flex items-center gap-6 px-6 py-2.5 hover:bg-white/10 transition-colors ${
+                    item.active ? 'bg-white/10' : ''
+                  }`}
+                >
+                  <span className={item.active ? 'text-white' : 'text-white/80'}>{item.icon}</span>
+                  <span className={`text-sm ${item.active ? 'text-white font-medium' : 'text-white/80'}`}>{item.label}</span>
+                </button>
+              )
+            ))}
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-[#0f0f0f]">
+          {/* Category Pills */}
+          <div className="sticky top-0 bg-[#0f0f0f] z-10 px-6 py-3 flex gap-3 overflow-x-auto no-scrollbar border-b border-white/5">
+            {categories.map((cat, index) => (
+              <button
+                key={cat}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  index === 0
+                    ? 'bg-white text-black'
+                    : 'bg-[#272727] text-white hover:bg-[#3f3f3f]'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Video Grid */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
+              {allVideos.map((video, index) => (
+                <YouTubeVideoCard
+                  key={index}
+                  thumbnail={video.thumbnail}
+                  title={video.title}
+                  channel={video.channel}
+                  views={video.views}
+                  time={video.time}
+                  duration={video.duration}
+                  avatar={video.avatar}
+                  color={video.color}
+                  isHighlighted={video.isHighlighted}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
-    </div>
-  </div>
-);
+    </motion.div>
+  );
+};
 
 const App = () => {
   const [currentSection, setCurrentSection] = useState('landing');
@@ -123,6 +258,7 @@ const App = () => {
   const [topic, setTopic] = useState('');
   const [overlayText, setOverlayText] = useState('');
   const [extraRequest, setExtraRequest] = useState('');
+  const [channelName, setChannelName] = useState('');
   const [typoStyle, setTypoStyle] = useState('hyper_integrated');
   const [loading, setLoading] = useState(false);
   const [resultImage, setResultImage] = useState(null);
@@ -130,7 +266,7 @@ const App = () => {
   const fileInputRef = useRef(null);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [showApiKey, setShowApiKey] = useState(false);
-  const [showYouTubePreview, setShowYouTubePreview] = useState(false);
+  const [showYouTubeMockup, setShowYouTubeMockup] = useState(false);
 
   const handleSaveApiKey = (value) => {
     setApiKey(value);
@@ -453,263 +589,258 @@ const App = () => {
 
   // Main App Section
   return (
-    <div className="min-h-screen bg-[#08080a] text-slate-200 font-sans">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#08080a]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => setCurrentSection('landing')}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-          >
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
-              <Flame className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-lg font-black text-white tracking-tight">THUMBNAIL<span className="text-blue-400">MAX</span></span>
-          </button>
+    <>
+      <AnimatePresence>
+        {showYouTubeMockup && resultImage && (
+          <YouTubeMockup
+            thumbnail={resultImage}
+            title={topic || overlayText}
+            channelName={channelName}
+            onClose={() => setShowYouTubeMockup(false)}
+          />
+        )}
+      </AnimatePresence>
 
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-full flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-xs font-bold text-blue-400">Gemini AI Active</span>
+      <div className="min-h-screen bg-[#08080a] text-slate-200 font-sans">
+        {/* Header */}
+        <header className="sticky top-0 z-50 bg-[#08080a]/80 backdrop-blur-xl border-b border-white/5">
+          <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
+            <button
+              onClick={() => setCurrentSection('landing')}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
+                <Flame className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg font-black text-white tracking-tight">THUMBNAIL<span className="text-blue-400">MAX</span></span>
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-full flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-xs font-bold text-blue-400">Gemini AI Active</span>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="max-w-[1600px] mx-auto p-6">
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        <div className="max-w-[1600px] mx-auto p-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
 
-          {/* Left: Input Panel */}
-          <div className="xl:col-span-4 space-y-6">
-            <div className="bg-[#101014] rounded-3xl p-6 border border-white/5 space-y-6">
+            {/* Left: Input Panel */}
+            <div className="xl:col-span-4 space-y-6">
+              <div className="bg-[#101014] rounded-3xl p-6 border border-white/5 space-y-6">
 
-              {/* API Key */}
-              <section className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <Key className="w-3 h-3" /> Gemini API Key
-                </label>
-                <div className="relative">
-                  <input
-                    type={showApiKey ? 'text' : 'password'}
-                    value={apiKey}
-                    onChange={(e) => handleSaveApiKey(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 pr-12 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300"
-                  >
-                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {apiKey ? (
-                  <p className="text-[9px] text-green-500/70 font-bold uppercase flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Kaydedildi
-                  </p>
-                ) : (
-                  <p className="text-[9px] text-amber-500/70 font-bold uppercase flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> API Key gerekli
-                  </p>
-                )}
-              </section>
-
-              {/* Video Topic */}
-              <section className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <Layers className="w-3 h-3" /> Video Konusu
-                </label>
-                <textarea
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="Örn: Warhammer 3 Skaven"
-                  className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[80px]"
-                />
-              </section>
-
-              {/* Overlay Text */}
-              <section className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <Type className="w-3 h-3" /> Thumbnail Yazısı
-                </label>
-                <input
-                  type="text"
-                  value={overlayText}
-                  onChange={(e) => setOverlayText(e.target.value)}
-                  placeholder="Örn: FARE İSTİLASI"
-                  className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 font-bold"
-                />
-              </section>
-
-              {/* Style Selector */}
-              <section className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <Palette className="w-3 h-3" /> Stil
-                </label>
-                <div className="space-y-2">
-                  {typographyOptions.map((opt) => (
+                {/* API Key */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Key className="w-3 h-3" /> Gemini API Key
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={apiKey}
+                      onChange={(e) => handleSaveApiKey(e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-black/40 border border-white/5 rounded-xl p-4 pr-12 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 font-mono"
+                    />
                     <button
-                      key={opt.id}
-                      onClick={() => setTypoStyle(opt.id)}
-                      className={`w-full text-left p-3 rounded-xl border transition-all ${
-                        typoStyle === opt.id
-                          ? 'bg-blue-600 border-blue-500 text-white'
-                          : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/10'
-                      }`}
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300"
                     >
-                      <p className="text-xs font-bold">{opt.name}</p>
-                      <p className={`text-[10px] mt-0.5 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>{opt.desc}</p>
+                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  ))}
-                </div>
-              </section>
-
-              {/* Image Upload */}
-              <section className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <ImageIcon className="w-3 h-3" /> Referans Fotoğraf
-                </label>
-                <div
-                  onClick={() => fileInputRef.current.click()}
-                  className={`border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all ${
-                    image ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/10 bg-black/40 hover:bg-white/5'
-                  }`}
-                >
-                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
-                  {image ? (
-                    <div className="flex items-center gap-4">
-                      <img src={image} className="w-16 h-16 rounded-lg object-cover" alt="Ref" />
-                      <div>
-                        <p className="text-xs font-bold text-blue-400">Yüklendi</p>
-                        <p className="text-[10px] text-slate-600">Değiştirmek için tıkla</p>
-                      </div>
-                    </div>
+                  </div>
+                  {apiKey ? (
+                    <p className="text-[9px] text-green-500/70 font-bold uppercase flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Kaydedildi
+                    </p>
                   ) : (
-                    <div className="text-center py-4 opacity-40">
-                      <Upload className="w-6 h-6 mx-auto mb-2" />
-                      <p className="text-xs font-bold">Fotoğraf Yükle</p>
-                    </div>
+                    <p className="text-[9px] text-amber-500/70 font-bold uppercase flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> API Key gerekli
+                    </p>
                   )}
-                </div>
-              </section>
+                </section>
 
-              {/* Extra Request */}
-              <section className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <Sparkles className="w-3 h-3" /> Ekstra İstek (Opsiyonel)
-                </label>
-                <textarea
-                  value={extraRequest}
-                  onChange={(e) => setExtraRequest(e.target.value)}
-                  placeholder="Örn: Arka planda yeşil sis olsun..."
-                  className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[60px]"
-                />
-              </section>
+                {/* Channel Name */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <User className="w-3 h-3" /> Kanal Adı (YouTube Önizleme için)
+                  </label>
+                  <input
+                    type="text"
+                    value={channelName}
+                    onChange={(e) => setChannelName(e.target.value)}
+                    placeholder="Örn: Benim Kanalım"
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+                  />
+                </section>
 
-              <button
-                onClick={generateThumbnail}
-                disabled={loading || !image || !topic || !apiKey}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 text-sm"
-              >
-                {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-                {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
-              </button>
+                {/* Video Topic */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Layers className="w-3 h-3" /> Video Konusu
+                  </label>
+                  <textarea
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="Örn: Warhammer 3 Skaven"
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[80px]"
+                  />
+                </section>
 
-              {error && <p className="text-xs text-red-500 font-bold text-center">{error}</p>}
+                {/* Overlay Text */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Type className="w-3 h-3" /> Thumbnail Yazısı
+                  </label>
+                  <input
+                    type="text"
+                    value={overlayText}
+                    onChange={(e) => setOverlayText(e.target.value)}
+                    placeholder="Örn: FARE İSTİLASI"
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 font-bold"
+                  />
+                </section>
+
+                {/* Style Selector */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Palette className="w-3 h-3" /> Stil
+                  </label>
+                  <div className="space-y-2">
+                    {typographyOptions.map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setTypoStyle(opt.id)}
+                        className={`w-full text-left p-3 rounded-xl border transition-all ${
+                          typoStyle === opt.id
+                            ? 'bg-blue-600 border-blue-500 text-white'
+                            : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/10'
+                        }`}
+                      >
+                        <p className="text-xs font-bold">{opt.name}</p>
+                        <p className={`text-[10px] mt-0.5 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Image Upload */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <ImageIcon className="w-3 h-3" /> Referans Fotoğraf
+                  </label>
+                  <div
+                    onClick={() => fileInputRef.current.click()}
+                    className={`border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all ${
+                      image ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/10 bg-black/40 hover:bg-white/5'
+                    }`}
+                  >
+                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
+                    {image ? (
+                      <div className="flex items-center gap-4">
+                        <img src={image} className="w-16 h-16 rounded-lg object-cover" alt="Ref" />
+                        <div>
+                          <p className="text-xs font-bold text-blue-400">Yüklendi</p>
+                          <p className="text-[10px] text-slate-600">Değiştirmek için tıkla</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 opacity-40">
+                        <Upload className="w-6 h-6 mx-auto mb-2" />
+                        <p className="text-xs font-bold">Fotoğraf Yükle</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Extra Request */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3" /> Ekstra İstek (Opsiyonel)
+                  </label>
+                  <textarea
+                    value={extraRequest}
+                    onChange={(e) => setExtraRequest(e.target.value)}
+                    placeholder="Örn: Arka planda yeşil sis olsun..."
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[60px]"
+                  />
+                </section>
+
+                <button
+                  onClick={generateThumbnail}
+                  disabled={loading || !image || !topic || !apiKey}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 text-sm"
+                >
+                  {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+                  {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
+                </button>
+
+                {error && <p className="text-xs text-red-500 font-bold text-center">{error}</p>}
+              </div>
             </div>
-          </div>
 
-          {/* Right: Result & Preview */}
-          <div className="xl:col-span-8 space-y-6">
+            {/* Right: Result & Preview */}
+            <div className="xl:col-span-8 space-y-6">
 
-            {/* Result Image */}
-            <div className="bg-[#101014] rounded-3xl p-6 border border-white/5 min-h-[400px] flex flex-col items-center justify-center">
-              {!resultImage && !loading && (
-                <div className="text-center opacity-20">
-                  <Monitor className="w-24 h-24 mx-auto mb-4" />
-                  <p className="text-lg font-bold">Stüdyo Hazır</p>
-                  <p className="text-sm text-slate-500">Thumbnail oluşturmak için formu doldurun</p>
-                </div>
-              )}
-
-              {loading && (
-                <div className="text-center">
-                  <div className="relative inline-block mb-6">
-                    <div className="w-32 h-32 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
-                    <BrainCircuit className="w-12 h-12 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+              {/* Result Image */}
+              <div className="bg-[#101014] rounded-3xl p-6 border border-white/5 min-h-[400px] flex flex-col items-center justify-center">
+                {!resultImage && !loading && (
+                  <div className="text-center opacity-20">
+                    <Monitor className="w-24 h-24 mx-auto mb-4" />
+                    <p className="text-lg font-bold">Stüdyo Hazır</p>
+                    <p className="text-sm text-slate-500">Thumbnail oluşturmak için formu doldurun</p>
                   </div>
-                  <p className="text-2xl font-black text-white animate-pulse">İşleniyor...</p>
-                  <p className="text-sm text-blue-400 mt-2">AI thumbnail oluşturuyor</p>
-                </div>
-              )}
+                )}
 
-              {resultImage && !loading && (
-                <div className="w-full space-y-6">
-                  <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
-                    <img src={resultImage} alt="Result" className="w-full h-auto" />
+                {loading && (
+                  <div className="text-center">
+                    <div className="relative inline-block mb-6">
+                      <div className="w-32 h-32 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
+                      <BrainCircuit className="w-12 h-12 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                    </div>
+                    <p className="text-2xl font-black text-white animate-pulse">İşleniyor...</p>
+                    <p className="text-sm text-blue-400 mt-2">AI thumbnail oluşturuyor</p>
                   </div>
+                )}
 
-                  <div className="flex flex-wrap gap-3 justify-center">
-                    <button
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = resultImage;
-                        link.download = `thumbnail-${Date.now()}.png`;
-                        link.click();
-                      }}
-                      className="bg-white text-black px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-100 transition-all"
-                    >
-                      <Download className="w-4 h-4" />
-                      İndir
-                    </button>
-                    <button
-                      onClick={() => setShowYouTubePreview(!showYouTubePreview)}
-                      className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
-                        showYouTubePreview
-                          ? 'bg-red-600 text-white'
-                          : 'bg-white/10 text-white hover:bg-white/20'
-                      }`}
-                    >
-                      <Youtube className="w-4 h-4" />
-                      YouTube Önizleme
-                    </button>
+                {resultImage && !loading && (
+                  <div className="w-full space-y-6">
+                    <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                      <img src={resultImage} alt="Result" className="w-full h-auto" />
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = resultImage;
+                          link.download = `thumbnail-${Date.now()}.png`;
+                          link.click();
+                        }}
+                        className="bg-white text-black px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-100 transition-all"
+                      >
+                        <Download className="w-4 h-4" />
+                        İndir
+                      </button>
+                      <button
+                        onClick={() => setShowYouTubeMockup(true)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all"
+                      >
+                        <Youtube className="w-4 h-4" />
+                        YouTube'da Gör
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-
-            {/* YouTube Preview Section */}
-            {resultImage && showYouTubePreview && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                <div className="flex items-center gap-2 text-white/60">
-                  <Youtube className="w-5 h-5 text-red-500" />
-                  <span className="text-sm font-bold">YouTube'da Nasıl Görünecek?</span>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Card Preview */}
-                  <div className="space-y-3">
-                    <p className="text-xs text-white/40 font-bold uppercase">Ana Sayfa / Önerilen</p>
-                    <YouTubePreview thumbnail={resultImage} title={topic || overlayText} />
-                  </div>
-
-                  {/* Search Result Preview */}
-                  <div className="space-y-3">
-                    <p className="text-xs text-white/40 font-bold uppercase">Arama Sonuçları</p>
-                    <YouTubeSearchPreview thumbnail={resultImage} title={topic || overlayText} />
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
