@@ -35,18 +35,19 @@ const AuroraBackground = ({ children }) => (
   </div>
 );
 
-// Real popular YouTube videos data with actual thumbnails
+// Real popular YouTube videos data with verified working thumbnails
 const fakeVideos = [
-  { channel: 'MrBeast', avatar: '🟣', title: '$1 vs $1,000,000 Hotel Room!', views: '156M views', time: '2 months ago', duration: '18:24', color: 'from-purple-500 to-blue-500', thumbnail: 'https://img.youtube.com/vi/iogcY_4xGjo/maxresdefault.jpg' },
-  { channel: 'PewDiePie', avatar: '🔴', title: 'I Played the Worlds Hardest Game', views: '8.2M views', time: '3 days ago', duration: '22:15', color: 'from-red-500 to-red-700', thumbnail: 'https://img.youtube.com/vi/xvFZjo5PgG0/maxresdefault.jpg' },
-  { channel: 'Markiplier', avatar: '🩷', title: 'Five Nights at Freddys', views: '89M views', time: '1 week ago', duration: '31:42', color: 'from-pink-500 to-red-500', thumbnail: 'https://img.youtube.com/vi/iOztnsBPrMA/maxresdefault.jpg' },
-  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Manhunt GRAND FINALE', views: '45M views', time: '8 months ago', duration: '45:18', color: 'from-green-500 to-emerald-600', thumbnail: 'https://img.youtube.com/vi/95OzO4aS8dU/maxresdefault.jpg' },
-  { channel: 'Ninja', avatar: '🔵', title: 'High Kill Fortnite Game', views: '12M views', time: '5 days ago', duration: '16:33', color: 'from-blue-500 to-cyan-500', thumbnail: 'https://img.youtube.com/vi/p8p0oBRhPIw/maxresdefault.jpg' },
-  { channel: 'xQc', avatar: '⚪', title: 'REACTING TO THE CRAZIEST CLIPS', views: '1.2M views', time: '12 hours ago', duration: '2:34:11', color: 'from-slate-400 to-slate-600', thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg' },
-  { channel: 'Jacksepticeye', avatar: '💚', title: 'The BEST Horror Game', views: '23M views', time: '2 weeks ago', duration: '28:45', color: 'from-green-400 to-green-600', thumbnail: 'https://img.youtube.com/vi/MAlSjtxy5ak/maxresdefault.jpg' },
-  { channel: 'Ludwig', avatar: '🟠', title: 'I Hosted a Tournament', views: '5.6M views', time: '1 month ago', duration: '52:18', color: 'from-orange-500 to-amber-500', thumbnail: 'https://img.youtube.com/vi/UtgFjhvvz1w/maxresdefault.jpg' },
-  { channel: 'Shroud', avatar: '🔘', title: 'Best Aim in the Game', views: '4.2M views', time: '4 days ago', duration: '19:22', color: 'from-gray-500 to-gray-700', thumbnail: 'https://img.youtube.com/vi/nYGWPE5gj3M/maxresdefault.jpg' },
-  { channel: 'Valkyrae', avatar: '💛', title: 'Playing with Friends!', views: '1.8M views', time: '6 days ago', duration: '1:12:45', color: 'from-yellow-400 to-orange-400', thumbnail: 'https://img.youtube.com/vi/bXDkVjXQCzY/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: '$456,000 Squid Game In Real Life!', views: '620M views', time: '2 years ago', duration: '25:41', color: 'from-purple-500 to-blue-500', thumbnail: 'https://img.youtube.com/vi/0e3GPea1Tyg/maxresdefault.jpg' },
+  { channel: 'PewDiePie', avatar: '🔴', title: 'Minecraft Part 1', views: '112M views', time: '5 years ago', duration: '21:22', color: 'from-red-500 to-red-700', thumbnail: 'https://img.youtube.com/vi/VQ67yvOv0yk/maxresdefault.jpg' },
+  { channel: 'Markiplier', avatar: '🩷', title: 'Five Nights at Freddys', views: '110M views', time: '9 years ago', duration: '15:22', color: 'from-pink-500 to-red-500', thumbnail: 'https://img.youtube.com/vi/iOztnsBPrMA/maxresdefault.jpg' },
+  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Speedrunner VS 4 Hunters', views: '102M views', time: '3 years ago', duration: '38:14', color: 'from-green-500 to-emerald-600', thumbnail: 'https://img.youtube.com/vi/89FyJCMfgvU/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'Ages 1-100 Decide Who Wins $250k', views: '215M views', time: '1 year ago', duration: '16:52', color: 'from-purple-500 to-blue-500', thumbnail: 'https://img.youtube.com/vi/7z4RvkWP9sA/maxresdefault.jpg' },
+  { channel: 'PewDiePie', avatar: '🔴', title: 'Bitch Lasagna', views: '305M views', time: '6 years ago', duration: '2:16', color: 'from-red-500 to-red-700', thumbnail: 'https://img.youtube.com/vi/6Dh-RL__uN4/maxresdefault.jpg' },
+  { channel: 'Jacksepticeye', avatar: '💚', title: 'ALL THE WAY - Jacksepticeye Songify', views: '85M views', time: '8 years ago', duration: '2:50', color: 'from-green-400 to-green-600', thumbnail: 'https://img.youtube.com/vi/DhE-hPVjRdU/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'I Built Willy Wonkas Chocolate Factory!', views: '183M views', time: '1 year ago', duration: '22:03', color: 'from-purple-500 to-pink-500', thumbnail: 'https://img.youtube.com/vi/BDvB4pY3Zn4/maxresdefault.jpg' },
+  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Speedrunner VS 5 Hunters', views: '92M views', time: '2 years ago', duration: '45:18', color: 'from-green-500 to-emerald-600', thumbnail: 'https://img.youtube.com/vi/8RsI1NrmXpA/maxresdefault.jpg' },
+  { channel: 'Markiplier', avatar: '🩷', title: 'A Heist With Markiplier', views: '65M views', time: '5 years ago', duration: '12:12', color: 'from-pink-500 to-red-500', thumbnail: 'https://img.youtube.com/vi/9-UIhM9sHUc/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'I Gave My 100,000,000th Subscriber An Island', views: '158M views', time: '1 year ago', duration: '14:34', color: 'from-purple-600 to-blue-600', thumbnail: 'https://img.youtube.com/vi/dMOBHhYYoHE/maxresdefault.jpg' },
 ];
 
 // Fake Thumbnail Component
@@ -121,7 +122,7 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
 );
 
 // Full YouTube Mockup Modal
-const YouTubeMockup = ({ thumbnail, title, channelName, onClose }) => {
+const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top' }) => {
   // ESC key to close
   useEffect(() => {
     const handleEsc = (e) => {
@@ -143,9 +144,16 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose }) => {
     isHighlighted: true
   };
 
-  // Mix user video randomly into fake videos
+  // Position user video based on selection
   const allVideos = [...fakeVideos];
-  const insertIndex = Math.floor(Math.random() * 3) + 1; // Insert between position 1-3
+  let insertIndex;
+  if (position === 'top') {
+    insertIndex = Math.floor(Math.random() * 2); // Position 0-1 (first row)
+  } else if (position === 'middle') {
+    insertIndex = Math.floor(Math.random() * 3) + 3; // Position 3-5 (middle rows)
+  } else {
+    insertIndex = Math.floor(Math.random() * 3) + 8; // Position 8-10 (bottom rows)
+  }
   allVideos.splice(insertIndex, 0, userVideo);
 
   const sidebarItems = [
@@ -324,6 +332,7 @@ const App = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [showApiKey, setShowApiKey] = useState(false);
   const [showYouTubeMockup, setShowYouTubeMockup] = useState(false);
+  const [thumbnailPosition, setThumbnailPosition] = useState('top'); // 'top', 'middle', 'bottom'
 
   const handleSaveApiKey = (value) => {
     setApiKey(value);
@@ -678,6 +687,7 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
             thumbnail={resultImage}
             title={topic || overlayText}
             channelName={channelName}
+            position={thumbnailPosition}
             onClose={() => setShowYouTubeMockup(false)}
           />
         )}
@@ -757,6 +767,34 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
                     placeholder="Örn: Benim Kanalım"
                     className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
+                </section>
+
+                {/* Thumbnail Position Selector */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Layers className="w-3 h-3" /> Thumbnail Konumu (YouTube Önizleme)
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'top', label: 'Üst', icon: '⬆️' },
+                      { id: 'middle', label: 'Orta', icon: '⏺️' },
+                      { id: 'bottom', label: 'Alt', icon: '⬇️' }
+                    ].map((pos) => (
+                      <button
+                        key={pos.id}
+                        type="button"
+                        onClick={() => setThumbnailPosition(pos.id)}
+                        className={`p-3 rounded-xl border text-center transition-all ${
+                          thumbnailPosition === pos.id
+                            ? 'bg-blue-600 border-blue-500 text-white'
+                            : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/10'
+                        }`}
+                      >
+                        <span className="text-lg block mb-1">{pos.icon}</span>
+                        <span className="text-xs font-bold">{pos.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </section>
 
                 {/* Video Topic */}
