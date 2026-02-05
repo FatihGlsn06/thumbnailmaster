@@ -40,14 +40,14 @@ const fakeVideos = [
   { channel: 'MrBeast', avatar: '🟣', title: '$456,000 Squid Game In Real Life!', views: '620M views', time: '2 years ago', duration: '25:41', color: 'from-purple-500 to-blue-500', thumbnail: 'https://img.youtube.com/vi/0e3GPea1Tyg/maxresdefault.jpg' },
   { channel: 'MrBeast', avatar: '🟣', title: 'Would You Rather Have $100,000 OR...', views: '208M views', time: '1 year ago', duration: '21:22', color: 'from-purple-500 to-pink-500', thumbnail: 'https://img.youtube.com/vi/erLbbextvlY/maxresdefault.jpg' },
   { channel: 'MrBeast', avatar: '🟣', title: 'Lamborghini vs Shredder', views: '145M views', time: '2 years ago', duration: '12:18', color: 'from-purple-600 to-blue-500', thumbnail: 'https://img.youtube.com/vi/9bqk6ZUsKyA/maxresdefault.jpg' },
-  { channel: 'PewDiePie', avatar: '🔴', title: 'Congratulations', views: '260M views', time: '5 years ago', duration: '5:08', color: 'from-red-500 to-red-700', thumbnail: 'https://img.youtube.com/vi/PHgc8Q6qTLo/maxresdefault.jpg' },
   { channel: 'PewDiePie', avatar: '🔴', title: 'Bitch Lasagna', views: '305M views', time: '6 years ago', duration: '2:16', color: 'from-red-500 to-orange-500', thumbnail: 'https://img.youtube.com/vi/6Dh-RL__uN4/maxresdefault.jpg' },
-  { channel: 'Dude Perfect', avatar: '🔵', title: 'World Record Edition', views: '395M views', time: '4 years ago', duration: '12:35', color: 'from-blue-500 to-cyan-500', thumbnail: 'https://img.youtube.com/vi/feQR_1siBGI/maxresdefault.jpg' },
-  { channel: 'Dude Perfect', avatar: '🔵', title: 'Ping Pong Trick Shots 3', views: '325M views', time: '5 years ago', duration: '8:42', color: 'from-blue-500 to-blue-700', thumbnail: 'https://img.youtube.com/vi/cFIvIjXOHVQ/maxresdefault.jpg' },
-  { channel: 'MrBeast', avatar: '🟣', title: 'Last To Leave Circle Wins $500,000', views: '178M views', time: '3 years ago', duration: '18:09', color: 'from-purple-500 to-blue-600', thumbnail: 'https://img.youtube.com/vi/8YDryzaVNqo/maxresdefault.jpg' },
-  { channel: 'MrBeast', avatar: '🟣', title: 'I Spent 50 Hours In Solitary', views: '118M views', time: '2 years ago', duration: '20:03', color: 'from-purple-600 to-indigo-600', thumbnail: 'https://img.youtube.com/vi/iq3TZ8C0VCs/maxresdefault.jpg' },
-  { channel: 'MrBeast', avatar: '🟣', title: 'I Bought Everything In A Store', views: '142M views', time: '4 years ago', duration: '11:59', color: 'from-purple-500 to-pink-600', thumbnail: 'https://img.youtube.com/vi/k-gXmGGA8aE/maxresdefault.jpg' },
   { channel: 'MrBeast', avatar: '🟣', title: 'I Put 100 Million Orbeez In A Pool', views: '130M views', time: '4 years ago', duration: '8:32', color: 'from-purple-400 to-blue-500', thumbnail: 'https://img.youtube.com/vi/3TflpIllQHY/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'I Survived 24 Hours In Ice', views: '95M views', time: '3 years ago', duration: '15:42', color: 'from-blue-400 to-cyan-500', thumbnail: 'https://img.youtube.com/vi/6lBT7no3gT8/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'Last To Leave $800,000 Island', views: '162M views', time: '3 years ago', duration: '22:15', color: 'from-purple-500 to-blue-600', thumbnail: 'https://img.youtube.com/vi/uchw23X0o50/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'I Gave People $1,000,000 But...', views: '128M views', time: '2 years ago', duration: '18:33', color: 'from-green-500 to-emerald-600', thumbnail: 'https://img.youtube.com/vi/DuQbOQwVaNE/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'Survive 100 Days, Win $500,000', views: '189M views', time: '2 years ago', duration: '24:18', color: 'from-orange-500 to-red-500', thumbnail: 'https://img.youtube.com/vi/gHzuabZUd6c/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: 'I Opened A Free Car Dealership', views: '142M views', time: '2 years ago', duration: '16:08', color: 'from-blue-500 to-indigo-600', thumbnail: 'https://img.youtube.com/vi/F3JFmp1W7kw/maxresdefault.jpg' },
+  { channel: 'MrBeast', avatar: '🟣', title: '$1 vs $500,000 Plane Ticket!', views: '185M views', time: '1 year ago', duration: '20:45', color: 'from-purple-600 to-pink-500', thumbnail: 'https://img.youtube.com/vi/j5nZhf8SjXw/maxresdefault.jpg' },
 ];
 
 // Fake Thumbnail Component
@@ -410,12 +410,15 @@ const App = () => {
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
     try {
-      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL 16:9 aspect ratio thumbnail (1280x720 pixels) for "${topic}".
+      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
 
-CRITICAL FORMAT REQUIREMENT:
-- Output MUST be LANDSCAPE orientation (wider than tall)
-- Aspect ratio MUST be exactly 16:9
-- DO NOT create portrait/vertical images
+⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
+- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
+- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
+- ❌ NEVER create vertical/portrait images
+- ❌ NEVER create square images
+- ✅ ONLY create WIDE horizontal images like a movie poster or YouTube thumbnail
+- If you generate a portrait image, the task has FAILED
 
 REFERENCE PHOTO INTEGRATION:
 The provided photo shows the person who must appear in the thumbnail.
