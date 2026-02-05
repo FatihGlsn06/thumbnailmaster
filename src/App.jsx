@@ -321,6 +321,7 @@ const App = () => {
   const [image, setImage] = useState(null);
   const [base64Image, setBase64Image] = useState(null);
   const [topic, setTopic] = useState('');
+  const [topicDescription, setTopicDescription] = useState('');
   const [overlayText, setOverlayText] = useState('');
   const [extraRequest, setExtraRequest] = useState('');
   const [channelName, setChannelName] = useState('');
@@ -419,6 +420,14 @@ const App = () => {
 - ❌ NEVER create square images
 - ✅ ONLY create WIDE horizontal images like a movie poster or YouTube thumbnail
 - If you generate a portrait image, the task has FAILED
+
+${topicDescription ? `
+TOPIC/CONCEPT CONTEXT (IMPORTANT - USE THIS INFO):
+The user has provided the following description about "${topic}":
+${topicDescription}
+
+Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
+` : ''}
 
 REFERENCE PHOTO INTEGRATION:
 The provided photo shows the person who must appear in the thumbnail.
@@ -818,12 +827,32 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
                     <Layers className="w-3 h-3" /> Video Konusu
                   </label>
-                  <textarea
+                  <input
+                    type="text"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    placeholder="Örn: Warhammer 3 Skaven"
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[80px]"
+                    placeholder="Örn: Menace RPG, Warhammer 3"
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
+                </section>
+
+                {/* Konsept Açıklaması */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <BrainCircuit className="w-3 h-3" /> Konsept Açıklaması
+                  </label>
+                  <textarea
+                    value={topicDescription}
+                    onChange={(e) => setTopicDescription(e.target.value)}
+                    placeholder="AI'ın bilmesi gerekenler: Oyunun/konunun ne hakkında olduğu, görsel stili, atmosferi, karakterler, renkler...
+
+Örn: Menace, karanlık fantezi dünyasında geçen taktiksel RPG. Gotik mimari, canavarlar, şövalyeler. Renkler: koyu mor, kırmızı, ateş efektleri."
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[100px]"
+                  />
+                  <p className="text-[9px] text-amber-500/70 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Yeni/niş konular için mutlaka doldurun - AI bilemeyeceği şeyleri hayal edemez!
+                  </p>
                 </section>
 
                 {/* Overlay Text */}
