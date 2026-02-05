@@ -344,20 +344,39 @@ const App = () => {
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
     try {
-      const prompt = `ACT AS A MASTER CONCEPT ARTIST & THUMBNAIL DESIGNER.
-      CONTEXT: Create a viral YouTube thumbnail for "${topic}".
-      REFERENCE PHOTO: The person in the photo is the key character.
-      OVERLAY TEXT: "${overlayText || topic}".
+      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL 16:9 aspect ratio thumbnail (1280x720 pixels) for "${topic}".
 
-      CORE INSTRUCTIONS:
-      1. CONCEPTUAL STAGING: Build a massive, high-detail world for "${topic}". If appropriate, place the person on a stone platform, a bridge, or an elevated tower to ensure they are PART of the world, not just a cutout.
-      2. EMOTIONAL INTEGRATION: Preserve and enhance the subject's emotional expression.
-      3. COLOR HARMONY & GLOW: Identify the "Power Color". Apply this color to the outer glow and stroke of the text and rim lighting on the subject's silhouette.
-      4. TYPOGRAPHY: ${selectedTypo.prompt}. The text must be bold, 3D, and placed using the rule of thirds for mobile readability.
-      5. COMPOSITION: Use volumetric lighting, particles, and atmosphere that wraps around the person.
-      6. QUALITY: 4K render, cinematic textures, no "AI plastic" look.
+CRITICAL FORMAT REQUIREMENT:
+- Output MUST be LANDSCAPE orientation (wider than tall)
+- Aspect ratio MUST be exactly 16:9
+- DO NOT create portrait/vertical images
 
-      ${extraRequest ? `EXTRA DETAIL: ${extraRequest}` : ''}`;
+REFERENCE PHOTO INTEGRATION:
+The provided photo shows the person who must appear in the thumbnail.
+- SEAMLESSLY BLEND the person into the scene - NOT a simple cutout or paste
+- Match the lighting direction on the person's face to the scene lighting
+- Add subtle rim lighting/glow on the person that matches the scene's color palette
+- The person should look like they BELONG in this world
+- Keep the person's face UNCHANGED and recognizable
+- Position the person on the LEFT or RIGHT third of the frame (rule of thirds)
+
+TEXT OVERLAY: "${overlayText || topic}"
+- Place bold, 3D text with strong contrast
+- Text should have thick black stroke/outline for readability
+- Add glow effect matching the scene's "power color"
+- Position text on the opposite side from the person
+- Avoid bottom-right corner (YouTube timestamp area)
+
+VISUAL STYLE: ${selectedTypo.prompt}
+
+SCENE COMPOSITION:
+- Build an epic, atmospheric world for "${topic}"
+- Use volumetric lighting, particles, fog/mist
+- High contrast, vibrant colors that pop at small sizes
+- Cinematic quality, NOT "AI plastic" look
+- Shot on 35mm film aesthetic with slight grain
+
+${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
       const payload = {
         contents: [{
@@ -368,9 +387,15 @@ const App = () => {
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.5,
+          temperature: 0.6,
           topP: 0.95
-        }
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
       };
 
       const result = await fetchWithRetry(
