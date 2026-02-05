@@ -6,7 +6,7 @@ import {
   Layers, Flame, Key, EyeOff, Zap, Play, Youtube,
   ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
   Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
-  Music, Radio, Trophy, Lightbulb, Shirt, X, User
+  Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3
 } from 'lucide-react';
 
 // Aurora Background Component
@@ -121,8 +121,10 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
   </div>
 );
 
-// Full YouTube Mockup Modal
+// Full YouTube Mockup Modal with Multiple Views
 const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top' }) => {
+  const [viewMode, setViewMode] = useState('desktop'); // 'desktop', 'mobile', 'search'
+
   // ESC key to close
   useEffect(() => {
     const handleEsc = (e) => {
@@ -148,13 +150,77 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
   const allVideos = [...fakeVideos];
   let insertIndex;
   if (position === 'top') {
-    insertIndex = Math.floor(Math.random() * 2); // Position 0-1 (first row)
+    insertIndex = 0;
   } else if (position === 'middle') {
-    insertIndex = Math.floor(Math.random() * 3) + 3; // Position 3-5 (middle rows)
+    insertIndex = Math.min(4, fakeVideos.length);
   } else {
-    insertIndex = Math.floor(Math.random() * 3) + 8; // Position 8-10 (bottom rows)
+    insertIndex = Math.min(8, fakeVideos.length);
   }
   allVideos.splice(insertIndex, 0, userVideo);
+
+  // Mobile Video Card Component
+  const MobileVideoCard = ({ video }) => (
+    <div className={`flex gap-3 p-2 ${video.isHighlighted ? 'bg-red-500/10 border border-red-500/30 rounded-xl' : ''}`}>
+      <div className="relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden">
+        {video.thumbnail ? (
+          <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${video.color} flex items-center justify-center`}>
+            <Play className="w-8 h-8 text-white/80" />
+          </div>
+        )}
+        <div className="absolute bottom-1 right-1 bg-black/90 text-white text-[10px] px-1 py-0.5 rounded">
+          {video.duration}
+        </div>
+        {video.isHighlighted && (
+          <div className="absolute top-1 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-bold">
+            SENİN VİDEON
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-white text-sm font-medium line-clamp-2 mb-1">{video.title}</h3>
+        <p className="text-[#aaa] text-xs">{video.channel}</p>
+        <p className="text-[#aaa] text-xs">{video.views} • {video.time}</p>
+      </div>
+    </div>
+  );
+
+  // Search Result Card Component
+  const SearchResultCard = ({ video }) => (
+    <div className={`flex gap-4 ${video.isHighlighted ? 'bg-red-500/10 border border-red-500/30 rounded-xl p-2' : 'p-2'}`}>
+      <div className="relative w-80 h-44 flex-shrink-0 rounded-xl overflow-hidden">
+        {video.thumbnail ? (
+          <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${video.color} flex items-center justify-center`}>
+            <Play className="w-12 h-12 text-white/80" />
+          </div>
+        )}
+        <div className="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-1.5 py-0.5 rounded">
+          {video.duration}
+        </div>
+        {video.isHighlighted && (
+          <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse">
+            SENİN VİDEON
+          </div>
+        )}
+      </div>
+      <div className="flex-1">
+        <h3 className="text-white text-lg font-medium line-clamp-2 mb-2">{video.title}</h3>
+        <p className="text-[#aaa] text-xs mb-2">{video.views} • {video.time}</p>
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${video.color} flex items-center justify-center text-xs`}>
+            {video.avatar}
+          </div>
+          <p className="text-[#aaa] text-xs">{video.channel}</p>
+        </div>
+        <p className="text-[#aaa] text-xs line-clamp-2">
+          Bu video {video.channel} tarafından yüklendi. İzlemek için tıklayın.
+        </p>
+      </div>
+    </div>
+  );
 
   const sidebarItems = [
     { icon: <Home className="w-5 h-5" />, label: 'Ana Sayfa', active: true },
@@ -192,126 +258,205 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
         <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
       </button>
 
-      {/* Close hint */}
-      <div className="absolute top-4 left-4 z-[60] text-white/50 text-sm flex items-center gap-2">
-        <kbd className="bg-white/10 px-2 py-1 rounded text-xs">ESC</kbd>
-        <span>veya dışarı tıklayarak kapat</span>
+      {/* View Mode Switcher */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-1 bg-white/10 backdrop-blur-md rounded-full p-1">
+        <button
+          onClick={(e) => { e.stopPropagation(); setViewMode('desktop'); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            viewMode === 'desktop' ? 'bg-white text-black' : 'text-white hover:bg-white/10'
+          }`}
+        >
+          <Monitor className="w-4 h-4" />
+          Masaüstü
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setViewMode('mobile'); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            viewMode === 'mobile' ? 'bg-white text-black' : 'text-white hover:bg-white/10'
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          Mobil
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setViewMode('search'); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            viewMode === 'search' ? 'bg-white text-black' : 'text-white hover:bg-white/10'
+          }`}
+        >
+          <Search className="w-4 h-4" />
+          Arama
+        </button>
       </div>
 
-      {/* Modal Content */}
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="relative z-50 w-full max-w-7xl h-[90vh] bg-[#0f0f0f] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* YouTube Header */}
-        <header className="h-14 bg-[#0f0f0f] border-b border-white/10 flex items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-white/10 rounded-full">
-              <Menu className="w-6 h-6 text-white" />
+      {/* Modal Content - Desktop View */}
+      {viewMode === 'desktop' && (
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.9, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="relative z-50 w-full max-w-7xl h-[85vh] mt-12 bg-[#0f0f0f] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* YouTube Header */}
+          <header className="h-14 bg-[#0f0f0f] border-b border-white/10 flex items-center justify-between px-4">
+            <div className="flex items-center gap-4">
+              <button className="p-2 hover:bg-white/10 rounded-full">
+                <Menu className="w-6 h-6 text-white" />
+              </button>
+              <div className="flex items-center gap-1">
+                <div className="bg-red-600 rounded-lg p-1">
+                  <Play className="w-5 h-5 text-white fill-white" />
+                </div>
+                <span className="text-white text-xl font-semibold tracking-tight">YouTube</span>
+              </div>
+            </div>
+            <div className="flex-1 max-w-xl mx-4 hidden md:block">
+              <div className="flex">
+                <div className="flex-1 flex items-center bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2">
+                  <input type="text" placeholder="Ara" className="bg-transparent text-white w-full outline-none text-sm" />
+                </div>
+                <button className="bg-[#222] border border-l-0 border-[#303030] rounded-r-full px-5">
+                  <Search className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Bell className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+            </div>
+          </header>
+
+          <div className="flex h-[calc(85vh-56px)]">
+            {/* Sidebar */}
+            <aside className="w-56 bg-[#0f0f0f] overflow-y-auto flex-shrink-0 hidden lg:block border-r border-white/5">
+              <nav className="py-3">
+                {sidebarItems.map((item, index) => (
+                  item.divider ? <hr key={index} className="my-3 border-white/10" /> :
+                  item.header ? <p key={index} className="px-6 py-2 text-white/60 text-sm font-medium">{item.label}</p> :
+                  <button key={index} className={`w-full flex items-center gap-6 px-6 py-2.5 hover:bg-white/10 ${item.active ? 'bg-white/10' : ''}`}>
+                    <span className={item.active ? 'text-white' : 'text-white/80'}>{item.icon}</span>
+                    <span className={`text-sm ${item.active ? 'text-white font-medium' : 'text-white/80'}`}>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto bg-[#0f0f0f]">
+              <div className="sticky top-0 bg-[#0f0f0f] z-10 px-4 py-3 flex gap-2 overflow-x-auto border-b border-white/5">
+                {categories.map((cat, index) => (
+                  <button key={cat} className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${index === 0 ? 'bg-white text-black' : 'bg-[#272727] text-white'}`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6">
+                  {allVideos.map((video, index) => (
+                    <YouTubeVideoCard key={index} {...video} />
+                  ))}
+                </div>
+              </div>
+            </main>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Mobile View */}
+      {viewMode === 'mobile' && (
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="relative z-50 w-[375px] h-[85vh] mt-12 bg-[#0f0f0f] rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-gray-800"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Phone notch */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10" />
+
+          {/* Mobile Header */}
+          <header className="h-12 bg-[#0f0f0f] border-b border-white/10 flex items-center justify-between px-3 pt-2">
+            <div className="flex items-center gap-1">
+              <div className="bg-red-600 rounded p-0.5">
+                <Play className="w-4 h-4 text-white fill-white" />
+              </div>
+              <span className="text-white text-sm font-semibold">YouTube</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Search className="w-5 h-5 text-white" />
+              <Bell className="w-5 h-5 text-white" />
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+            </div>
+          </header>
+
+          {/* Mobile Content */}
+          <div className="h-[calc(85vh-48px-60px)] overflow-y-auto">
+            <div className="p-2 space-y-4">
+              {allVideos.slice(0, 6).map((video, index) => (
+                <MobileVideoCard key={index} video={video} />
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile Bottom Nav */}
+          <div className="absolute bottom-0 left-0 right-0 h-14 bg-[#0f0f0f] border-t border-white/10 flex items-center justify-around px-4">
+            <button className="flex flex-col items-center text-white">
+              <Home className="w-5 h-5" />
+              <span className="text-[10px]">Ana Sayfa</span>
             </button>
+            <button className="flex flex-col items-center text-white/50">
+              <PlaySquare className="w-5 h-5" />
+              <span className="text-[10px]">Shorts</span>
+            </button>
+            <button className="flex flex-col items-center text-white/50">
+              <Film className="w-5 h-5" />
+              <span className="text-[10px]">Abonelikler</span>
+            </button>
+            <button className="flex flex-col items-center text-white/50">
+              <User className="w-5 h-5" />
+              <span className="text-[10px]">Sen</span>
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Search Results View */}
+      {viewMode === 'search' && (
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="relative z-50 w-full max-w-5xl h-[85vh] mt-12 bg-[#0f0f0f] rounded-2xl overflow-hidden shadow-2xl border border-white/10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Search Header */}
+          <header className="h-14 bg-[#0f0f0f] border-b border-white/10 flex items-center px-4 gap-4">
             <div className="flex items-center gap-1">
               <div className="bg-red-600 rounded-lg p-1">
                 <Play className="w-5 h-5 text-white fill-white" />
               </div>
-              <span className="text-white text-xl font-semibold tracking-tight">YouTube</span>
-              <span className="text-[#aaa] text-[10px] align-super">TR</span>
+              <span className="text-white text-xl font-semibold">YouTube</span>
             </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="flex-1 max-w-xl mx-4 hidden md:block">
-            <div className="flex">
-              <div className="flex-1 flex items-center bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2">
-                <input
-                  type="text"
-                  placeholder="Ara"
-                  className="bg-transparent text-white w-full outline-none text-sm"
-                />
-              </div>
-              <button className="bg-[#222] border border-l-0 border-[#303030] rounded-r-full px-5 hover:bg-[#333] transition-colors">
+            <div className="flex-1 max-w-2xl">
+              <div className="flex items-center bg-[#121212] border border-[#303030] rounded-full px-4 py-2">
+                <input type="text" defaultValue={title || 'Gaming'} className="bg-transparent text-white w-full outline-none text-sm" />
                 <Search className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button className="p-2 hover:bg-white/10 rounded-full">
-              <Bell className="w-6 h-6 text-white" />
-            </button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-          </div>
-        </header>
-
-        <div className="flex h-[calc(90vh-56px)]">
-          {/* Sidebar */}
-          <aside className="w-60 bg-[#0f0f0f] overflow-y-auto flex-shrink-0 hidden lg:block border-r border-white/5">
-            <nav className="py-3">
-              {sidebarItems.map((item, index) => (
-                item.divider ? (
-                  <hr key={index} className="my-3 border-white/10" />
-                ) : item.header ? (
-                  <p key={index} className="px-6 py-2 text-white/60 text-sm font-medium">{item.label}</p>
-                ) : (
-                  <button
-                    key={index}
-                    className={`w-full flex items-center gap-6 px-6 py-2.5 hover:bg-white/10 transition-colors ${
-                      item.active ? 'bg-white/10' : ''
-                    }`}
-                  >
-                    <span className={item.active ? 'text-white' : 'text-white/80'}>{item.icon}</span>
-                    <span className={`text-sm ${item.active ? 'text-white font-medium' : 'text-white/80'}`}>{item.label}</span>
-                  </button>
-                )
-              ))}
-            </nav>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1 overflow-y-auto bg-[#0f0f0f]">
-            {/* Category Pills */}
-            <div className="sticky top-0 bg-[#0f0f0f] z-10 px-4 py-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
-              {categories.map((cat, index) => (
-                <button
-                  key={cat}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    index === 0
-                      ? 'bg-white text-black'
-                      : 'bg-[#272727] text-white hover:bg-[#3f3f3f]'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Video Grid */}
-            <div className="p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6">
-                {allVideos.map((video, index) => (
-                  <YouTubeVideoCard
-                    key={index}
-                    thumbnail={video.thumbnail}
-                    title={video.title}
-                    channel={video.channel}
-                    views={video.views}
-                    time={video.time}
-                    duration={video.duration}
-                    avatar={video.avatar}
-                    color={video.color}
-                    isHighlighted={video.isHighlighted}
-                    thumbText={video.thumbText}
-                    thumbBg={video.thumbBg}
-                  />
-                ))}
               </div>
             </div>
-          </main>
-        </div>
-      </motion.div>
+          </header>
+
+          <div className="p-4 text-white/60 text-sm border-b border-white/5">
+            Yaklaşık {Math.floor(Math.random() * 900000 + 100000).toLocaleString()} sonuç bulundu
+          </div>
+
+          {/* Search Results */}
+          <div className="h-[calc(85vh-100px)] overflow-y-auto p-4 space-y-4">
+            {allVideos.slice(0, 5).map((video, index) => (
+              <SearchResultCard key={index} video={video} />
+            ))}
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };
@@ -450,6 +595,13 @@ IMPORTANT - COSTUME/CLOTHING TRANSFORMATION:
 - Face and facial features must remain unchanged, only transform the body/clothing
 
 - Position the person on the LEFT or RIGHT third of the frame (rule of thirds)
+
+⚠️ CRITICAL - PERSON FRAMING:
+- The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
+- Show the person from at least waist-up, preferably full body or 3/4 body shot
+- Leave adequate space above the head (headroom)
+- The face should be the focal point and clearly recognizable
+- Do NOT place the person too close to any edge where they might get cropped
 
 TEXT OVERLAY: "${overlayText || topic}"
 - Place bold, 3D text with strong contrast
