@@ -35,27 +35,55 @@ const AuroraBackground = ({ children }) => (
   </div>
 );
 
-// Fake popular YouTube videos data
+// Fake popular YouTube videos data with placeholder thumbnails
 const fakeVideos = [
-  { channel: 'MrBeast', avatar: '🟣', title: '$1 vs $1,000,000 Hotel Room!', views: '156M views', time: '2 months ago', duration: '18:24', color: 'from-purple-500 to-blue-500' },
-  { channel: 'PewDiePie', avatar: '🔴', title: 'I Played the Worlds Hardest Game', views: '8.2M views', time: '3 days ago', duration: '22:15', color: 'from-red-500 to-red-700' },
-  { channel: 'Markiplier', avatar: '🩷', title: 'This Game Broke My Brain...', views: '4.1M views', time: '1 week ago', duration: '31:42', color: 'from-pink-500 to-red-500' },
-  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Manhunt GRAND FINALE', views: '45M views', time: '8 months ago', duration: '45:18', color: 'from-green-500 to-emerald-600' },
-  { channel: 'Ninja', avatar: '🔵', title: 'I Returned to Fortnite...', views: '2.8M views', time: '5 days ago', duration: '16:33', color: 'from-blue-500 to-cyan-500' },
-  { channel: 'xQc', avatar: '⚪', title: 'REACTING TO THE CRAZIEST CLIPS', views: '1.2M views', time: '12 hours ago', duration: '2:34:11', color: 'from-slate-400 to-slate-600' },
-  { channel: 'Jacksepticeye', avatar: '💚', title: 'The BEST Horror Game of 2024', views: '3.5M views', time: '2 weeks ago', duration: '28:45', color: 'from-green-400 to-green-600' },
-  { channel: 'Ludwig', avatar: '🟠', title: 'I Hosted a $100,000 Tournament', views: '5.6M views', time: '1 month ago', duration: '52:18', color: 'from-orange-500 to-amber-500' },
-  { channel: 'Shroud', avatar: '🔘', title: 'My Aim is STILL Unmatched', views: '980K views', time: '4 days ago', duration: '19:22', color: 'from-gray-500 to-gray-700' },
-  { channel: 'Valkyrae', avatar: '💛', title: 'Playing with 100 Fans!', views: '1.8M views', time: '6 days ago', duration: '1:12:45', color: 'from-yellow-400 to-orange-400' },
+  { channel: 'MrBeast', avatar: '🟣', title: '$1 vs $1,000,000 Hotel Room!', views: '156M views', time: '2 months ago', duration: '18:24', color: 'from-purple-500 to-blue-500', thumbText: '$1 vs $1M', thumbBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+  { channel: 'PewDiePie', avatar: '🔴', title: 'I Played the Worlds Hardest Game', views: '8.2M views', time: '3 days ago', duration: '22:15', color: 'from-red-500 to-red-700', thumbText: 'IMPOSSIBLE', thumbBg: 'linear-gradient(135deg, #f5576c 0%, #f093fb 100%)' },
+  { channel: 'Markiplier', avatar: '🩷', title: 'This Game Broke My Brain...', views: '4.1M views', time: '1 week ago', duration: '31:42', color: 'from-pink-500 to-red-500', thumbText: '???', thumbBg: 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)' },
+  { channel: 'Dream', avatar: '🟢', title: 'Minecraft Manhunt GRAND FINALE', views: '45M views', time: '8 months ago', duration: '45:18', color: 'from-green-500 to-emerald-600', thumbText: 'FINALE', thumbBg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
+  { channel: 'Ninja', avatar: '🔵', title: 'I Returned to Fortnite...', views: '2.8M views', time: '5 days ago', duration: '16:33', color: 'from-blue-500 to-cyan-500', thumbText: "I'M BACK", thumbBg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+  { channel: 'xQc', avatar: '⚪', title: 'REACTING TO THE CRAZIEST CLIPS', views: '1.2M views', time: '12 hours ago', duration: '2:34:11', color: 'from-slate-400 to-slate-600', thumbText: 'INSANE', thumbBg: 'linear-gradient(135deg, #485563 0%, #29323c 100%)' },
+  { channel: 'Jacksepticeye', avatar: '💚', title: 'The BEST Horror Game of 2024', views: '3.5M views', time: '2 weeks ago', duration: '28:45', color: 'from-green-400 to-green-600', thumbText: 'SCARY', thumbBg: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)' },
+  { channel: 'Ludwig', avatar: '🟠', title: 'I Hosted a $100,000 Tournament', views: '5.6M views', time: '1 month ago', duration: '52:18', color: 'from-orange-500 to-amber-500', thumbText: '$100K', thumbBg: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)' },
+  { channel: 'Shroud', avatar: '🔘', title: 'My Aim is STILL Unmatched', views: '980K views', time: '4 days ago', duration: '19:22', color: 'from-gray-500 to-gray-700', thumbText: 'AIM GOD', thumbBg: 'linear-gradient(135deg, #232526 0%, #414345 100%)' },
+  { channel: 'Valkyrae', avatar: '💛', title: 'Playing with 100 Fans!', views: '1.8M views', time: '6 days ago', duration: '1:12:45', color: 'from-yellow-400 to-orange-400', thumbText: '100 FANS', thumbBg: 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)' },
 ];
 
+// Fake Thumbnail Component
+const FakeThumbnail = ({ text, bg, color }) => (
+  <div
+    className="w-full h-full flex items-center justify-center relative overflow-hidden"
+    style={{ background: bg }}
+  >
+    {/* Decorative elements */}
+    <div className="absolute inset-0 opacity-30">
+      <div className="absolute top-2 left-2 w-16 h-16 rounded-full bg-white/20 blur-xl" />
+      <div className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-black/20 blur-2xl" />
+    </div>
+    {/* Fake face circle */}
+    <div className={`absolute left-4 top-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-gradient-to-br ${color} border-4 border-white/30 shadow-2xl flex items-center justify-center`}>
+      <div className="w-8 h-8 rounded-full bg-white/40" />
+    </div>
+    {/* Text overlay */}
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-right">
+      <p className="text-white font-black text-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-tight" style={{ WebkitTextStroke: '1px black' }}>
+        {text}
+      </p>
+    </div>
+    {/* Bottom gradient */}
+    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/50 to-transparent" />
+  </div>
+);
+
 // YouTube Video Card Component
-const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted }) => (
+const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted, thumbText, thumbBg }) => (
   <div className={`group cursor-pointer ${isHighlighted ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-[#0f0f0f] rounded-xl' : ''}`}>
     {/* Thumbnail */}
     <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
       {thumbnail ? (
         <img src={thumbnail} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+      ) : thumbText && thumbBg ? (
+        <FakeThumbnail text={thumbText} bg={thumbBg} color={color} />
       ) : (
         <div className={`w-full h-full bg-gradient-to-br ${color} flex items-center justify-center`}>
           <Play className="w-12 h-12 text-white/80" />
@@ -241,6 +269,8 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose }) => {
                   avatar={video.avatar}
                   color={video.color}
                   isHighlighted={video.isHighlighted}
+                  thumbText={video.thumbText}
+                  thumbBg={video.thumbBg}
                 />
               ))}
             </div>
