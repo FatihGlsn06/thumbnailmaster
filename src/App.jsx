@@ -424,6 +424,19 @@ The provided photo shows the person who must appear in the thumbnail.
 - Add subtle rim lighting/glow on the person that matches the scene's color palette
 - The person should look like they BELONG in this world
 - Keep the person's face UNCHANGED and recognizable
+
+IMPORTANT - COSTUME/CLOTHING TRANSFORMATION:
+- TRANSFORM the person's clothing to match the scene's theme and universe
+- Do NOT keep their original casual clothes (jeans, t-shirt, etc.) in fantasy/sci-fi scenes
+- Examples of costume adaptation:
+  * Fantasy theme → Medieval armor, robes, cloaks, warrior gear
+  * Sci-fi/Space → Futuristic suit, space armor, tech gear
+  * Horror → Torn/dirty clothes, blood stains, survival gear
+  * Gaming → Character-appropriate outfit matching the game's aesthetic
+  * Historical → Period-accurate clothing
+- The costume should feel natural and integrated with the scene
+- Face and facial features must remain unchanged, only transform the body/clothing
+
 - Position the person on the LEFT or RIGHT third of the frame (rule of thirds)
 
 TEXT OVERLAY: "${overlayText || topic}"
