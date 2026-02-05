@@ -94,7 +94,7 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
         {duration}
       </div>
       {isHighlighted && (
-        <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse">
+        <div className="absolute bottom-8 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
           SENİN VİDEON
         </div>
       )}
@@ -173,7 +173,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           {video.duration}
         </div>
         {video.isHighlighted && (
-          <div className="absolute top-1 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-bold">
+          <div className="absolute bottom-6 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-bold shadow-lg">
             SENİN VİDEON
           </div>
         )}
@@ -201,7 +201,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           {video.duration}
         </div>
         {video.isHighlighted && (
-          <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse">
+          <div className="absolute bottom-8 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
             SENİN VİDEON
           </div>
         )}
