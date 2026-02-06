@@ -119,6 +119,12 @@ const calculateCTRScore = (settings) => {
     boosts.push({ text: 'İnsan yüzü içeriyor', value: '+12' });
   }
 
+  // Optimization bonus - when "Make it more clickable" was used
+  if (settings.isOptimized) {
+    score += 15;
+    boosts.push({ text: 'AI optimizasyonu uygulandı', value: '+15' });
+  }
+
   // Clamp score
   score = Math.max(0, Math.min(100, score));
 
@@ -687,7 +693,9 @@ const App = () => {
   const [thumbnailPosition, setThumbnailPosition] = useState('top'); // 'top', 'middle', 'bottom'
   const [selectedArchetype, setSelectedArchetype] = useState('');
   const [ctrScore, setCtrScore] = useState(null);
+  const [previousCtrScore, setPreviousCtrScore] = useState(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isOptimized, setIsOptimized] = useState(false);
   const [previousImage, setPreviousImage] = useState(null);
 
   // Calculate CTR score whenever settings change
@@ -697,11 +705,12 @@ const App = () => {
       topicDescription,
       overlayText,
       typoStyle,
-      hasPhoto: !!base64Image
+      hasPhoto: !!base64Image,
+      isOptimized
     };
     const score = calculateCTRScore(settings);
     setCtrScore(score);
-  }, [selectedArchetype, topicDescription, overlayText, typoStyle, base64Image]);
+  }, [selectedArchetype, topicDescription, overlayText, typoStyle, base64Image, isOptimized]);
 
   const handleSaveApiKey = (value) => {
     setApiKey(value);
@@ -775,6 +784,10 @@ const App = () => {
 
     setLoading(true);
     setError(null);
+    // Reset optimization state for fresh generation
+    setIsOptimized(false);
+    setPreviousImage(null);
+    setPreviousCtrScore(null);
 
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
@@ -898,6 +911,7 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
     setIsOptimizing(true);
     setPreviousImage(resultImage);
+    setPreviousCtrScore(ctrScore); // Save current score for comparison
 
     // Auto-select best archetype if none selected
     let optimizedArchetype = selectedArchetype;
@@ -1014,11 +1028,14 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
 
       if (generatedBase64) {
         setResultImage(`data:image/png;base64,${generatedBase64}`);
+        setIsOptimized(true); // Mark as optimized for score bonus
       } else {
         throw new Error('Optimizasyon başarısız.');
       }
     } catch (err) {
       setError(err.message || "Optimizasyon hatası.");
+      setPreviousImage(null); // Reset on error
+      setPreviousCtrScore(null);
     } finally {
       setIsOptimizing(false);
     }
@@ -1517,26 +1534,52 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                     {/* Before/After Comparison */}
                     {previousImage && (
                       <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-4 border border-white/10">
-                        <div className="flex items-center gap-2 mb-3">
-                          <BarChart3 className="w-4 h-4 text-blue-400" />
-                          <span className="text-sm font-bold text-white">Önce / Sonra Karşılaştırması</span>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-blue-400" />
+                            <span className="text-sm font-bold text-white">Önce / Sonra Karşılaştırması</span>
+                          </div>
+                          {/* Score Comparison */}
+                          {previousCtrScore && ctrScore && (
+                            <div className="flex items-center gap-2 bg-green-500/20 px-3 py-1 rounded-full">
+                              <span className="text-slate-400 text-xs">{previousCtrScore.score}</span>
+                              <ArrowRight className="w-3 h-3 text-green-400" />
+                              <span className="text-green-400 font-bold text-sm">{ctrScore.score}</span>
+                              <span className="text-green-400 text-xs font-bold">
+                                (+{ctrScore.score - previousCtrScore.score})
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="relative">
-                            <p className="text-[10px] text-slate-400 uppercase mb-1 text-center">Önceki</p>
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              <p className="text-[10px] text-slate-400 uppercase text-center">Önceki</p>
+                              {previousCtrScore && (
+                                <span className="text-xs text-slate-500 font-bold">{previousCtrScore.score} puan</span>
+                              )}
+                            </div>
                             <div className="rounded-xl overflow-hidden border border-white/10">
                               <img src={previousImage} alt="Before" className="w-full h-auto opacity-70" />
                             </div>
                           </div>
                           <div className="relative">
-                            <p className="text-[10px] text-green-400 uppercase mb-1 text-center font-bold">Optimize Edildi ✓</p>
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              <p className="text-[10px] text-green-400 uppercase font-bold">Optimize Edildi ✓</p>
+                              {ctrScore && (
+                                <span className="text-xs text-green-400 font-bold">{ctrScore.score} puan</span>
+                              )}
+                            </div>
                             <div className="rounded-xl overflow-hidden border border-green-500/30 ring-2 ring-green-500/20">
                               <img src={resultImage} alt="After" className="w-full h-auto" />
                             </div>
                           </div>
                         </div>
                         <button
-                          onClick={() => setPreviousImage(null)}
+                          onClick={() => {
+                            setPreviousImage(null);
+                            setPreviousCtrScore(null);
+                          }}
                           className="mt-3 text-xs text-slate-400 hover:text-white flex items-center gap-1 mx-auto"
                         >
                           <X className="w-3 h-3" /> Karşılaştırmayı kapat
