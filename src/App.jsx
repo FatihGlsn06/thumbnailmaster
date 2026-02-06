@@ -18,7 +18,7 @@ const CTR_ARCHETYPES = [
     desc: 'Büyük yüz ifadesi + arkada tehlike',
     icon: '😱',
     ctrBoost: 25,
-    prompt: 'SHOCKED FACE + THREAT: Large expressive face (15-25% of canvas) showing shock/fear. A threatening element approaching from behind. High contrast between face and threat. Eye contact with camera. The face should convey genuine surprise or fear.',
+    prompt: 'SHOCKED FACE + THREAT COMPOSITION: The person\'s face must be LARGE - taking up 40-50% of the frame height. Face should be centered or slightly below center. Shocked/scared expression with wide eyes and open mouth. Threatening creatures or elements surrounding the person from all sides. The threats should frame the face but not cover it. Dramatic colored lighting (green, red, blue glow) illuminating the face. Text overlay at the BOTTOM of the image, large and bold.',
     bestFor: ['Horror', 'FPS', 'Boss fights', 'Jump scares']
   },
   {
@@ -27,7 +27,7 @@ const CTR_ARCHETYPES = [
     desc: 'Dominant poz, aura efekti',
     icon: '⚔️',
     ctrBoost: 22,
-    prompt: 'POWER FANTASY: Character centered in dominant pose. Glowing aura or energy effect around the subject. Subdued background to make subject pop. Heroic lighting from below or dramatic rim light. The subject should look powerful and aspirational.',
+    prompt: 'POWER FANTASY COMPOSITION: The person should be prominent - taking up 40-50% of the frame. Centered or slightly off-center positioning. Confident, powerful expression. Glowing aura or energy effect around the subject. Epic background but blurred/subdued to make person pop. Heroic lighting with rim light. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['RPG', 'ARPG', 'Progression', 'Build showcases']
   },
   {
@@ -36,7 +36,7 @@ const CTR_ARCHETYPES = [
     desc: 'Tek ilginç obje, merak uyandırıcı',
     icon: '❓',
     ctrBoost: 20,
-    prompt: 'MYSTERY OBJECT: One strange or intriguing object highlighted in the center. Minimal background. Spotlight effect on the object. Add visual question marks or curiosity indicators. The object should make viewers ask "What is that?"',
+    prompt: 'MYSTERY OBJECT COMPOSITION: Person\'s face large (35-45% of frame) showing curious/intrigued expression. A strange glowing object near them drawing attention. The person should be looking at or reacting to the mysterious object. Spotlight effect on the object. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Indie games', 'Mods', 'Weird mechanics', 'Easter eggs']
   },
   {
@@ -45,7 +45,7 @@ const CTR_ARCHETYPES = [
     desc: 'HP düşük, kritik an donmuş',
     icon: '💀',
     ctrBoost: 23,
-    prompt: 'ALMOST-FAIL MOMENT: Show a critical moment frozen in time - low HP bar, timer about to hit zero, or near-death situation. Tension should be palpable. Red warning indicators visible. The outcome is uncertain, creating suspense.',
+    prompt: 'ALMOST-FAIL COMPOSITION: Person\'s face large (40-50% of frame) showing panic/stress expression. Critical moment frozen - danger approaching. Red warning tints or indicators visible. The person should look like they\'re about to lose. Tension should be palpable. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Clutch moments', 'Speedruns', 'Challenge runs', 'PvP']
   },
   {
@@ -54,7 +54,7 @@ const CTR_ARCHETYPES = [
     desc: 'Küçük oyuncu vs DEV düşman',
     icon: '🐜',
     ctrBoost: 21,
-    prompt: 'WRONG SCALE: Extreme size contrast between player and enemy/object. Tiny player facing massive threat, or vice versa. The scale difference should be immediately obvious and visually striking. Creates instant comprehension of the situation.',
+    prompt: 'SCALE CONTRAST COMPOSITION: Show extreme size contrast. Either the person is small facing a MASSIVE threat that fills the background, OR the person\'s face is large (40-50%) with tiny enemies swarming around them. The scale difference must be immediately obvious and dramatic. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Boss fights', 'Mods', 'Glitches', 'Size comparison']
   },
   {
@@ -63,7 +63,7 @@ const CTR_ARCHETYPES = [
     desc: 'İlerleme karşılaştırması',
     icon: '📊',
     ctrBoost: 18,
-    prompt: 'BEFORE/AFTER SPLIT: Clear left/right or top/bottom contrast showing transformation. Use arrow or divider. "Before" should look weak/poor, "After" should look powerful/rich. Progress promise should be immediately clear.',
+    prompt: 'BEFORE/AFTER COMPOSITION: Clear left/right split showing transformation. Person can appear on both sides or just one side (40-50% of frame). Left side should look weak/poor/struggling. Right side should look powerful/rich/successful. Clear visual arrow or divider between sides. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Builds', 'Economy', 'Strategy', 'Tutorials']
   }
 ];
@@ -803,13 +803,14 @@ ${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
 This archetype is proven to increase click-through rates. Apply this pattern to the thumbnail composition.
 ` : ''}
 
-REFERENCE PHOTO INTEGRATION:
-The provided photo shows the person who must appear in the thumbnail.
-- SEAMLESSLY BLEND the person into the scene - NOT a simple cutout or paste
-- Match the lighting direction on the person's face to the scene lighting
-- Add subtle rim lighting/glow on the person that matches the scene's color palette
+⚠️ CRITICAL - PERSON SIZE AND POSITIONING (LIKE PROFESSIONAL YOUTUBE THUMBNAILS):
+The provided photo shows the person who must appear LARGE in the thumbnail.
+- THE FACE MUST BE BIG: The person's face should take up 40-50% of the frame HEIGHT
+- Position the person CENTERED or slightly below center in the frame
+- The face is the MAIN FOCAL POINT - everything else is secondary
+- SEAMLESSLY BLEND the person into the scene with matching lighting and color grading
+- Add dramatic colored rim lighting/glow on the person (green, red, blue, orange based on theme)
 - The person should look like they BELONG in this world
-- Keep the person's face UNCHANGED and recognizable
 
 IMPORTANT - COSTUME/CLOTHING TRANSFORMATION:
 - TRANSFORM the person's clothing to match the scene's theme and universe
@@ -819,24 +820,22 @@ IMPORTANT - COSTUME/CLOTHING TRANSFORMATION:
   * Sci-fi/Space → Futuristic suit, space armor, tech gear
   * Horror → Torn/dirty clothes, blood stains, survival gear
   * Gaming → Character-appropriate outfit matching the game's aesthetic
-  * Historical → Period-accurate clothing
-- The costume should feel natural and integrated with the scene
 - Face and facial features must remain unchanged, only transform the body/clothing
-
-- Position the person on the LEFT or RIGHT third of the frame (rule of thirds)
 
 ⚠️ CRITICAL - PERSON FRAMING:
 - The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
-- Show the person from at least waist-up, preferably full body or 3/4 body shot
+- Show from chest-up or shoulders-up so the face is LARGE
 - Leave adequate space above the head (headroom)
-- The face should be the focal point and clearly recognizable
-- Do NOT place the person too close to any edge where they might get cropped
+- The face should fill a significant portion of the frame
+- Do NOT make the person too small - they should DOMINATE the thumbnail
 
 TEXT OVERLAY: "${overlayText || topic}"
-- Place bold, 3D text with strong contrast
-- Text should have thick black stroke/outline for readability
-- Add glow effect matching the scene's "power color"
-- Position text on the opposite side from the person
+- Place text at the BOTTOM of the image (bottom 20-25% of frame)
+- Text must be VERY LARGE and BOLD - easily readable at small sizes
+- Use thick black stroke/outline (3-5px) for readability
+- Add strong glow effect in the scene's dominant color (green, red, blue, etc.)
+- Text can span the full width of the image
+- NEVER put text over the person's face
 - Avoid bottom-right corner (YouTube timestamp area)
 
 VISUAL STYLE: ${selectedTypo.prompt}
@@ -946,28 +945,35 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 ${archetype ? `ARCHETYPE: ${archetype.name}
 ${archetype.prompt}` : ''}
 
+⚠️ CRITICAL SIZE REQUIREMENTS (LIKE PROFESSIONAL YOUTUBE THUMBNAILS):
+- Face must be HUGE - taking up 40-50% of the frame HEIGHT
+- Person should be CENTERED or slightly below center
+- The face is the MAIN FOCAL POINT of the entire thumbnail
+- Show from chest-up or shoulders-up so face is LARGE
+- Add dramatic colored rim lighting (green, red, blue, orange) on the person
+
 MAXIMUM CLICK-THROUGH PRINCIPLES:
-- Face must be LARGE (15-25% of canvas) and show STRONG EMOTION
-- Text must be MASSIVE, BOLD, maximum 3 words
-- Use HIGH CONTRAST - subject must POP from background
+- HIGH CONTRAST - subject must POP from background
 - Add GLOW and ENERGY effects around the subject
 - Create CURIOSITY GAP - something unexpected or dramatic
-- Colors must be VIBRANT - yellows, reds, cyans work best
+- Colors must be VIBRANT and match a theme (green glow, red danger, blue ice, etc.)
 
 ${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
 
-REFERENCE PHOTO - The person in this photo must appear in the thumbnail:
-- Make their face LARGE and EXPRESSIVE
+REFERENCE PHOTO - The person in this photo must appear LARGE in the thumbnail:
+- Face should take up 40-50% of the frame HEIGHT - make it BIG
 - Transform clothing to match theme
-- Add dramatic lighting and glow
-- Keep face unchanged but add emotion through pose/context
-- NEVER crop the head
+- Add dramatic colored lighting matching the scene
+- Keep face unchanged and recognizable
+- NEVER crop the head - leave headroom above
 
 TEXT: "${optimizedText || topic}"
-- MASSIVE bold font, 3D effect
-- Thick black stroke for readability
-- Glowing outline matching scene colors
-- Position opposite to face
+- Place at the BOTTOM of the image (bottom 20-25%)
+- MASSIVE bold font, 3D effect with strong shadow
+- Thick black stroke (3-5px) for readability
+- Glowing outline in the scene's dominant color
+- Text should span most of the width
+- NEVER cover the person's face with text
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
 
