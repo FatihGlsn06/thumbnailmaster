@@ -6,8 +6,214 @@ import {
   Layers, Flame, Key, EyeOff, Zap, Play, Youtube,
   ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
   Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
-  Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3
+  Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3,
+  TrendingUp, Target, MousePointer, BarChart3
 } from 'lucide-react';
+
+// HIGH-CTR THUMBNAIL ARCHETYPES
+const CTR_ARCHETYPES = [
+  {
+    id: 'shocked_threat',
+    name: 'Şok Yüz + Tehdit',
+    desc: 'Büyük yüz ifadesi + arkada tehlike',
+    icon: '😱',
+    ctrBoost: 25,
+    prompt: 'SHOCKED FACE + THREAT: Large expressive face (15-25% of canvas) showing shock/fear. A threatening element approaching from behind. High contrast between face and threat. Eye contact with camera. The face should convey genuine surprise or fear.',
+    bestFor: ['Horror', 'FPS', 'Boss fights', 'Jump scares']
+  },
+  {
+    id: 'power_fantasy',
+    name: 'Güç Fantezisi',
+    desc: 'Dominant poz, aura efekti',
+    icon: '⚔️',
+    ctrBoost: 22,
+    prompt: 'POWER FANTASY: Character centered in dominant pose. Glowing aura or energy effect around the subject. Subdued background to make subject pop. Heroic lighting from below or dramatic rim light. The subject should look powerful and aspirational.',
+    bestFor: ['RPG', 'ARPG', 'Progression', 'Build showcases']
+  },
+  {
+    id: 'mystery_object',
+    name: 'Gizemli Nesne',
+    desc: 'Tek ilginç obje, merak uyandırıcı',
+    icon: '❓',
+    ctrBoost: 20,
+    prompt: 'MYSTERY OBJECT: One strange or intriguing object highlighted in the center. Minimal background. Spotlight effect on the object. Add visual question marks or curiosity indicators. The object should make viewers ask "What is that?"',
+    bestFor: ['Indie games', 'Mods', 'Weird mechanics', 'Easter eggs']
+  },
+  {
+    id: 'almost_fail',
+    name: 'Neredeyse Başarısız',
+    desc: 'HP düşük, kritik an donmuş',
+    icon: '💀',
+    ctrBoost: 23,
+    prompt: 'ALMOST-FAIL MOMENT: Show a critical moment frozen in time - low HP bar, timer about to hit zero, or near-death situation. Tension should be palpable. Red warning indicators visible. The outcome is uncertain, creating suspense.',
+    bestFor: ['Clutch moments', 'Speedruns', 'Challenge runs', 'PvP']
+  },
+  {
+    id: 'scale_contrast',
+    name: 'Ölçek Kontrasti',
+    desc: 'Küçük oyuncu vs DEV düşman',
+    icon: '🐜',
+    ctrBoost: 21,
+    prompt: 'WRONG SCALE: Extreme size contrast between player and enemy/object. Tiny player facing massive threat, or vice versa. The scale difference should be immediately obvious and visually striking. Creates instant comprehension of the situation.',
+    bestFor: ['Boss fights', 'Mods', 'Glitches', 'Size comparison']
+  },
+  {
+    id: 'before_after',
+    name: 'Önce / Sonra',
+    desc: 'İlerleme karşılaştırması',
+    icon: '📊',
+    ctrBoost: 18,
+    prompt: 'BEFORE/AFTER SPLIT: Clear left/right or top/bottom contrast showing transformation. Use arrow or divider. "Before" should look weak/poor, "After" should look powerful/rich. Progress promise should be immediately clear.',
+    bestFor: ['Builds', 'Economy', 'Strategy', 'Tutorials']
+  }
+];
+
+// CTR Score Calculator
+const calculateCTRScore = (settings) => {
+  let score = 50; // Base score
+  const issues = [];
+  const boosts = [];
+
+  // Archetype bonus
+  if (settings.archetype) {
+    const arch = CTR_ARCHETYPES.find(a => a.id === settings.archetype);
+    if (arch) {
+      score += arch.ctrBoost;
+      boosts.push({ text: `${arch.name} arketipi`, value: `+${arch.ctrBoost}` });
+    }
+  }
+
+  // Topic description bonus
+  if (settings.topicDescription && settings.topicDescription.length > 50) {
+    score += 10;
+    boosts.push({ text: 'Detaylı konsept açıklaması', value: '+10' });
+  } else if (!settings.topicDescription) {
+    score -= 5;
+    issues.push({ text: 'Konsept açıklaması eksik', fix: 'Konsept açıklaması ekleyin', impact: 5 });
+  }
+
+  // Overlay text check
+  if (settings.overlayText) {
+    const words = settings.overlayText.trim().split(/\s+/).length;
+    if (words <= 3) {
+      score += 8;
+      boosts.push({ text: 'Kısa ve etkili yazı', value: '+8' });
+    } else if (words > 5) {
+      score -= 10;
+      issues.push({ text: 'Yazı çok uzun', fix: 'Yazıyı 3 kelimeye indirin', impact: 10 });
+    }
+  } else {
+    score -= 5;
+    issues.push({ text: 'Thumbnail yazısı yok', fix: 'Dikkat çekici bir yazı ekleyin', impact: 5 });
+  }
+
+  // Typography style bonus
+  if (settings.typoStyle === 'ctr_beast') {
+    score += 5;
+    boosts.push({ text: 'CTR odaklı tipografi', value: '+5' });
+  }
+
+  // Face/photo bonus
+  if (settings.hasPhoto) {
+    score += 12;
+    boosts.push({ text: 'İnsan yüzü içeriyor', value: '+12' });
+  }
+
+  // Clamp score
+  score = Math.max(0, Math.min(100, score));
+
+  // Determine CTR likelihood
+  let likelihood = 'Düşük';
+  let likelihoodColor = 'text-red-400';
+  if (score >= 80) {
+    likelihood = 'Çok Yüksek';
+    likelihoodColor = 'text-green-400';
+  } else if (score >= 65) {
+    likelihood = 'Yüksek';
+    likelihoodColor = 'text-emerald-400';
+  } else if (score >= 50) {
+    likelihood = 'Orta';
+    likelihoodColor = 'text-yellow-400';
+  }
+
+  return { score, likelihood, likelihoodColor, issues, boosts };
+};
+
+// CTR Score Display Component
+const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMakeClickable, isLoading }) => (
+  <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-4 border border-white/10">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2">
+        <Target className="w-5 h-5 text-blue-400" />
+        <span className="text-sm font-bold text-white">CTR Tahmini</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={`text-2xl font-black ${likelihoodColor}`}>{score}</span>
+        <span className="text-xs text-slate-400">/100</span>
+      </div>
+    </div>
+
+    {/* Score Bar */}
+    <div className="h-2 bg-black/40 rounded-full mb-3 overflow-hidden">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${score}%` }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
+        className={`h-full rounded-full ${
+          score >= 80 ? 'bg-green-500' : score >= 65 ? 'bg-emerald-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+        }`}
+      />
+    </div>
+
+    <p className={`text-sm font-bold mb-4 ${likelihoodColor}`}>
+      CTR Olasılığı: {likelihood}
+    </p>
+
+    {/* Boosts */}
+    {boosts.length > 0 && (
+      <div className="mb-3">
+        <p className="text-[10px] text-slate-500 uppercase mb-1">Artılar</p>
+        <div className="space-y-1">
+          {boosts.slice(0, 3).map((b, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span className="text-slate-300">{b.text}</span>
+              <span className="text-green-400 font-bold">{b.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Issues */}
+    {issues.length > 0 && (
+      <div className="mb-4">
+        <p className="text-[10px] text-slate-500 uppercase mb-1">Düzeltilecekler</p>
+        <div className="space-y-1">
+          {issues.slice(0, 3).map((issue, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span className="text-slate-400">{issue.text}</span>
+              <span className="text-red-400 font-bold">-{issue.impact}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Make it more clickable button */}
+    <button
+      onClick={onMakeClickable}
+      disabled={isLoading}
+      className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+    >
+      {isLoading ? (
+        <RefreshCcw className="w-4 h-4 animate-spin" />
+      ) : (
+        <MousePointer className="w-4 h-4" />
+      )}
+      Daha Tıklanabilir Yap
+    </button>
+  </div>
+);
 
 // Aurora Background Component
 const AuroraBackground = ({ children }) => (
@@ -479,6 +685,23 @@ const App = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showYouTubeMockup, setShowYouTubeMockup] = useState(false);
   const [thumbnailPosition, setThumbnailPosition] = useState('top'); // 'top', 'middle', 'bottom'
+  const [selectedArchetype, setSelectedArchetype] = useState('');
+  const [ctrScore, setCtrScore] = useState(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [previousImage, setPreviousImage] = useState(null);
+
+  // Calculate CTR score whenever settings change
+  useEffect(() => {
+    const settings = {
+      archetype: selectedArchetype,
+      topicDescription,
+      overlayText,
+      typoStyle,
+      hasPhoto: !!base64Image
+    };
+    const score = calculateCTRScore(settings);
+    setCtrScore(score);
+  }, [selectedArchetype, topicDescription, overlayText, typoStyle, base64Image]);
 
   const handleSaveApiKey = (value) => {
     setApiKey(value);
@@ -574,6 +797,12 @@ ${topicDescription}
 Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
 ` : ''}
 
+${selectedArchetype ? `
+🎯 HIGH-CTR ARCHETYPE (IMPORTANT - USE THIS PATTERN):
+${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
+This archetype is proven to increase click-through rates. Apply this pattern to the thumbnail composition.
+` : ''}
+
 REFERENCE PHOTO INTEGRATION:
 The provided photo shows the person who must appear in the thumbnail.
 - SEAMLESSLY BLEND the person into the scene - NOT a simple cutout or paste
@@ -661,6 +890,131 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       setError(err.message || "Bilinmeyen bir hata.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Make it more clickable - regenerate with optimized settings
+  const makeMoreClickable = async () => {
+    if (!resultImage || !base64Image) return;
+
+    setIsOptimizing(true);
+    setPreviousImage(resultImage);
+
+    // Auto-select best archetype if none selected
+    let optimizedArchetype = selectedArchetype;
+    if (!optimizedArchetype) {
+      // Pick based on topic keywords
+      const topicLower = (topic + ' ' + topicDescription).toLowerCase();
+      if (topicLower.includes('horror') || topicLower.includes('korku') || topicLower.includes('scary')) {
+        optimizedArchetype = 'shocked_threat';
+      } else if (topicLower.includes('rpg') || topicLower.includes('build') || topicLower.includes('güçlü')) {
+        optimizedArchetype = 'power_fantasy';
+      } else if (topicLower.includes('boss') || topicLower.includes('dev') || topicLower.includes('huge')) {
+        optimizedArchetype = 'scale_contrast';
+      } else {
+        optimizedArchetype = 'power_fantasy'; // Default to power fantasy
+      }
+      setSelectedArchetype(optimizedArchetype);
+    }
+
+    // Optimize overlay text if too long
+    let optimizedText = overlayText;
+    if (overlayText && overlayText.split(/\s+/).length > 4) {
+      optimizedText = overlayText.split(/\s+/).slice(0, 3).join(' ') + '!';
+      setOverlayText(optimizedText);
+    }
+
+    // Force CTR beast style
+    if (typoStyle !== 'ctr_beast') {
+      setTypoStyle('ctr_beast');
+    }
+
+    const archetype = CTR_ARCHETYPES.find(a => a.id === optimizedArchetype);
+    const selectedTypo = typographyOptions.find(t => t.id === 'ctr_beast');
+
+    try {
+      const optimizedPrompt = `You are an elite YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+
+⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
+- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
+- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
+- ❌ NEVER create vertical/portrait images
+- ✅ ONLY create WIDE horizontal images
+
+🎯 HIGH-CTR OPTIMIZATION MODE - APPLY ALL OF THESE:
+
+${archetype ? `ARCHETYPE: ${archetype.name}
+${archetype.prompt}` : ''}
+
+MAXIMUM CLICK-THROUGH PRINCIPLES:
+- Face must be LARGE (15-25% of canvas) and show STRONG EMOTION
+- Text must be MASSIVE, BOLD, maximum 3 words
+- Use HIGH CONTRAST - subject must POP from background
+- Add GLOW and ENERGY effects around the subject
+- Create CURIOSITY GAP - something unexpected or dramatic
+- Colors must be VIBRANT - yellows, reds, cyans work best
+
+${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
+
+REFERENCE PHOTO - The person in this photo must appear in the thumbnail:
+- Make their face LARGE and EXPRESSIVE
+- Transform clothing to match theme
+- Add dramatic lighting and glow
+- Keep face unchanged but add emotion through pose/context
+- NEVER crop the head
+
+TEXT: "${optimizedText || topic}"
+- MASSIVE bold font, 3D effect
+- Thick black stroke for readability
+- Glowing outline matching scene colors
+- Position opposite to face
+
+VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
+
+${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
+
+MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
+
+      const payload = {
+        contents: [{
+          parts: [
+            { text: optimizedPrompt },
+            { inlineData: { mimeType: "image/png", data: base64Image } }
+          ]
+        }],
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          temperature: 0.7,
+          topP: 0.95
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      };
+
+      const result = await fetchWithRetry(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+      if (generatedBase64) {
+        setResultImage(`data:image/png;base64,${generatedBase64}`);
+      } else {
+        throw new Error('Optimizasyon başarısız.');
+      }
+    } catch (err) {
+      setError(err.message || "Optimizasyon hatası.");
+    } finally {
+      setIsOptimizing(false);
     }
   };
 
@@ -1021,6 +1375,35 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
                   />
                 </section>
 
+                {/* CTR Archetype Selector */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <Target className="w-3 h-3" /> CTR Arketipi (Yüksek Tıklama Kalıbı)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CTR_ARCHETYPES.map((arch) => (
+                      <button
+                        key={arch.id}
+                        onClick={() => setSelectedArchetype(arch.id)}
+                        className={`text-left p-3 rounded-xl border transition-all ${
+                          selectedArchetype === arch.id
+                            ? 'bg-orange-600 border-orange-500 text-white'
+                            : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/10'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">{arch.icon}</span>
+                          <p className="text-xs font-bold">{arch.name}</p>
+                        </div>
+                        <p className={`text-[9px] ${selectedArchetype === arch.id ? 'text-orange-100' : 'text-slate-600'}`}>{arch.desc}</p>
+                        <div className={`text-[9px] mt-1 font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
+                          +{arch.ctrBoost}% CTR
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
                 {/* Style Selector */}
                 <section className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
@@ -1125,9 +1508,55 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
                 {resultImage && !loading && (
                   <div className="w-full space-y-6">
-                    <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
-                      <img src={resultImage} alt="Result" className="w-full h-auto" />
-                    </div>
+                    {/* Before/After Comparison */}
+                    {previousImage && (
+                      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-4 border border-white/10">
+                        <div className="flex items-center gap-2 mb-3">
+                          <BarChart3 className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm font-bold text-white">Önce / Sonra Karşılaştırması</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="relative">
+                            <p className="text-[10px] text-slate-400 uppercase mb-1 text-center">Önceki</p>
+                            <div className="rounded-xl overflow-hidden border border-white/10">
+                              <img src={previousImage} alt="Before" className="w-full h-auto opacity-70" />
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <p className="text-[10px] text-green-400 uppercase mb-1 text-center font-bold">Optimize Edildi ✓</p>
+                            <div className="rounded-xl overflow-hidden border border-green-500/30 ring-2 ring-green-500/20">
+                              <img src={resultImage} alt="After" className="w-full h-auto" />
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setPreviousImage(null)}
+                          className="mt-3 text-xs text-slate-400 hover:text-white flex items-center gap-1 mx-auto"
+                        >
+                          <X className="w-3 h-3" /> Karşılaştırmayı kapat
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Result Image (only show if not comparing) */}
+                    {!previousImage && (
+                      <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                        <img src={resultImage} alt="Result" className="w-full h-auto" />
+                      </div>
+                    )}
+
+                    {/* CTR Score Card */}
+                    {ctrScore && (
+                      <CTRScoreCard
+                        score={ctrScore.score}
+                        likelihood={ctrScore.likelihood}
+                        likelihoodColor={ctrScore.likelihoodColor}
+                        issues={ctrScore.issues}
+                        boosts={ctrScore.boosts}
+                        onMakeClickable={makeMoreClickable}
+                        isLoading={isOptimizing}
+                      />
+                    )}
 
                     <div className="flex flex-wrap gap-3 justify-center">
                       <button
