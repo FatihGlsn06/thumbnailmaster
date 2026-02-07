@@ -749,12 +749,12 @@ const App = () => {
   // Mobile UI states
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // AI Model selection
-  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash-exp');
+  // AI Model selection - Gemini 3 is the latest (2026)
+  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-image-preview');
   const availableModels = [
-    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash (Deneysel)', desc: 'En yeni, gelişmiş görsel anlama' },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Hızlı ve dengeli' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Daha detaylı, yavaş' },
+    { id: 'gemini-3-pro-image-preview', name: 'Gemini 3 Pro Image', desc: 'En yeni! 4K görsel, gelişmiş metin, düşünme modu', badge: 'ÖNERİLEN' },
+    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', desc: 'Hızlı, iyi görsel anlama' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Stable)', desc: 'Stabil ve dengeli' },
   ];
 
   // Concept/Reference image states
@@ -1870,7 +1870,14 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                               : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
                           }`}
                         >
-                          <p className="text-xs font-bold">{model.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold">{model.name}</p>
+                            {model.badge && (
+                              <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold">
+                                {model.badge}
+                              </span>
+                            )}
+                          </div>
                           <p className={`text-[10px] ${selectedModel === model.id ? 'text-purple-200' : 'text-slate-600'}`}>
                             {model.desc}
                           </p>
