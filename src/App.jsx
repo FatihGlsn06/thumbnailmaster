@@ -710,6 +710,10 @@ const App = () => {
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [autoGenerateAfterAnalysis, setAutoGenerateAfterAnalysis] = useState(false);
 
+  // Topic/Concept research states
+  const [topicResearch, setTopicResearch] = useState(null);
+  const [isResearchingTopic, setIsResearchingTopic] = useState(false);
+
   // Calculate CTR score whenever settings change
   useEffect(() => {
     const settings = {
@@ -927,6 +931,86 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
     }
   };
 
+  // Research topic/concept using AI (gaming/lore knowledge)
+  const researchTopic = async () => {
+    if (!topic || !apiKey) return;
+
+    setIsResearchingTopic(true);
+    setTopicResearch(null);
+
+    try {
+      const payload = {
+        contents: [{
+          parts: [{
+            text: `Sen bir GAMER ve OYUN KÜLTÜRÜ uzmanısın. "${topic}" hakkında YouTube thumbnail tasarımı için detaylı bilgi ver.
+
+${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
+
+Lütfen şunları araştır ve Türkçe olarak detaylı yaz:
+
+1. **KARAKTER/KONU KİMLİĞİ**:
+   - Bu kim/ne? (Oyun, film, karakter, boss, item vb.)
+   - Hangi evrene/franchise'a ait?
+   - Lore'daki önemi ve hikayesi
+
+2. **GÖRSEL KİMLİK** (ÇOK ÖNEMLİ):
+   - Karakteristik renk paleti (örn: Ba'lakor = koyu mor, siyah, demon kırmızısı)
+   - İkonik görsel elementler (kanatlar, silahlar, zırh, auralar)
+   - Ortam/atmosfer (karanlık, epik, korkunç, parlak vb.)
+   - Tipik arka plan elementleri
+
+3. **DUYGUSAL TON**:
+   - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem)
+   - Oyuncu bu konuyu görünce ne hissetmeli?
+
+4. **THUMBNAIL ÖNERİLERİ**:
+   - En iyi kompozisyon önerisi
+   - Kullanılması gereken efektler (ışık, parçacık, sis vb.)
+   - Kaçınılması gereken hatalar
+   - Örnek metin önerileri (2-3 kelime)
+
+5. **REFERANS STİLİ**:
+   - Bu konu için en uygun görsel stil (sinematik, çizgi roman, gerçekçi vb.)
+   - Benzer başarılı thumbnail'lar nasıl görünür?
+
+Bir gamer gibi düşün, detaylı ve tutkulu yaz. Bu bilgiler doğrudan thumbnail tasarımında kullanılacak.`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1500
+        }
+      };
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await response.json();
+      const researchText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (researchText) {
+        setTopicResearch(researchText);
+        // Also update topic description with research summary for generation
+        if (!topicDescription) {
+          // Extract key visual info for the prompt
+          setTopicDescription(researchText.substring(0, 500));
+        }
+      } else {
+        setTopicResearch('Araştırma yapılamadı.');
+      }
+    } catch (err) {
+      setTopicResearch('Araştırma hatası: ' + err.message);
+    } finally {
+      setIsResearchingTopic(false);
+    }
+  };
+
   const generateThumbnail = async () => {
     if (!apiKey) {
       setError("Lütfen Gemini API Key'inizi girin.");
@@ -963,6 +1047,17 @@ The user has provided the following description about "${topic}":
 ${topicDescription}
 
 Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
+` : ''}
+
+${topicResearch ? `
+🎮 GAMER KNOWLEDGE - DETAILED RESEARCH (VERY IMPORTANT - FOLLOW THIS):
+An expert gamer has researched "${topic}" and provided the following detailed information.
+YOU MUST USE THIS INFORMATION to create an authentic, lore-accurate thumbnail:
+
+${topicResearch}
+
+⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
+This is not generic - it's specific to "${topic}" and must look authentic to fans of this content.
 ` : ''}
 
 ${conceptAnalysis ? `
@@ -1145,6 +1240,12 @@ MAXIMUM CLICK-THROUGH PRINCIPLES:
 - Colors must be VIBRANT and match a theme (green glow, red danger, blue ice, etc.)
 
 ${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
+
+${topicResearch ? `
+🎮 GAMER KNOWLEDGE (CRITICAL - USE THIS FOR AUTHENTICITY):
+${topicResearch}
+Apply the visual identity, colors, and atmosphere described above!
+` : ''}
 
 ${conceptAnalysis ? `
 🎨 STYLE REFERENCE (from user's concept image):
@@ -1539,32 +1640,70 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
                     <Layers className="w-3 h-3" /> Video Konusu
                   </label>
-                  <input
-                    type="text"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="Örn: Menace RPG, Warhammer 3"
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={topic}
+                      onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); }}
+                      placeholder="Örn: Ba'lakor, Warhammer 3, Elden Ring"
+                      className="flex-1 bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+                    />
+                    <button
+                      onClick={researchTopic}
+                      disabled={!topic || !apiKey || isResearchingTopic}
+                      className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-300 px-4 rounded-xl flex items-center gap-2 hover:from-amber-500/30 hover:to-orange-500/30 transition-all disabled:opacity-30 text-xs font-bold"
+                    >
+                      {isResearchingTopic ? (
+                        <RefreshCcw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                      <span className="hidden sm:inline">{isResearchingTopic ? 'Araştırılıyor...' : 'Araştır'}</span>
+                    </button>
+                  </div>
+                  {/* Topic Research Results */}
+                  {topicResearch && (
+                    <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                          <Gamepad2 className="w-3 h-3" /> Gamer Bilgisi: {topic}
+                        </p>
+                        <button
+                          onClick={() => setTopicResearch(null)}
+                          className="text-slate-500 hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
+                        {topicResearch}
+                      </div>
+                      <p className="text-[9px] text-green-400 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Bu bilgiler thumbnail oluştururken kullanılacak
+                      </p>
+                    </div>
+                  )}
                 </section>
 
                 {/* Konsept Açıklaması */}
                 <section className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <BrainCircuit className="w-3 h-3" /> Konsept Açıklaması
+                    <BrainCircuit className="w-3 h-3" /> Ek Konsept Açıklaması (Opsiyonel)
                   </label>
                   <textarea
                     value={topicDescription}
                     onChange={(e) => setTopicDescription(e.target.value)}
-                    placeholder="AI'ın bilmesi gerekenler: Oyunun/konunun ne hakkında olduğu, görsel stili, atmosferi, karakterler, renkler...
-
-Örn: Menace, karanlık fantezi dünyasında geçen taktiksel RPG. Gotik mimari, canavarlar, şövalyeler. Renkler: koyu mor, kırmızı, ateş efektleri."
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[100px]"
+                    placeholder={topicResearch
+                      ? "AI konuyu araştırdı! İsterseniz ek detaylar ekleyebilirsiniz..."
+                      : "AI'ın bilmesi gerekenler: Oyunun/konunun ne hakkında olduğu, görsel stili, atmosferi, karakterler, renkler...\n\nÖrn: Menace, karanlık fantezi dünyasında geçen taktiksel RPG. Gotik mimari, canavarlar, şövalyeler."}
+                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[80px]"
                   />
-                  <p className="text-[9px] text-amber-500/70 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    Yeni/niş konular için mutlaka doldurun - AI bilemeyeceği şeyleri hayal edemez!
-                  </p>
+                  {!topicResearch && (
+                    <p className="text-[9px] text-amber-500/70 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Yukarıdan "Araştır" butonuna tıklayarak AI'ın konuyu öğrenmesini sağlayın!
+                    </p>
+                  )}
                 </section>
 
                 {/* Overlay Text */}
