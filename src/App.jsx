@@ -109,10 +109,16 @@ const calculateCTRScore = (settings) => {
     issues.push({ text: 'Thumbnail yazısı yok', fix: 'Dikkat çekici bir yazı ekleyin', impact: 5 });
   }
 
-  // Typography style bonus
-  if (settings.typoStyle === 'ctr_beast') {
-    score += 5;
-    boosts.push({ text: 'CTR odaklı tipografi', value: '+5' });
+  // Typography style bonus (2026 optimized)
+  const highCtrTypoStyles = ['mrbeast_style', 'neon_glow', 'gradient_impact'];
+  const goodTypoStyles = ['cinematic_3d', 'retro_comic', 'clean_minimal'];
+
+  if (highCtrTypoStyles.includes(settings.typoStyle)) {
+    score += 8;
+    boosts.push({ text: 'Yüksek CTR tipografi stili', value: '+8' });
+  } else if (goodTypoStyles.includes(settings.typoStyle)) {
+    score += 4;
+    boosts.push({ text: 'Kaliteli tipografi stili', value: '+4' });
   }
 
   // Face/photo bonus
@@ -684,7 +690,7 @@ const App = () => {
   const [overlayText, setOverlayText] = useState('');
   const [extraRequest, setExtraRequest] = useState('');
   const [channelName, setChannelName] = useState('');
-  const [typoStyle, setTypoStyle] = useState('hyper_integrated');
+  const [typoStyle, setTypoStyle] = useState('mrbeast_style');
   const [loading, setLoading] = useState(false);
   const [resultImage, setResultImage] = useState(null);
   const [error, setError] = useState(null);
@@ -752,24 +758,102 @@ const App = () => {
     }
   };
 
+  // 2026 Modern Typography Options - Based on latest YouTube trends
   const typographyOptions = [
     {
-      id: 'hyper_integrated',
-      name: 'Konsept Entegrasyonu',
-      desc: 'Kişiyi sahnenin içine (platform, köprü vb.) tam yerleştirir.',
-      prompt: 'HYPER-INTEGRATION: Place the subject organically on a platform or within the world geometry. Text should have a heavy glow matching the theme energy (e.g., Warpstone Green or Chaos Red).'
+      id: 'mrbeast_style',
+      name: 'MrBeast Stili',
+      desc: 'Kalın comic-style font, beyaz yazı + siyah stroke, devasa rakamlar',
+      prompt: `MRBEAST TYPOGRAPHY STYLE (2026 VIRAL):
+- Font: Bold comic-style display font (like Bangers, Obelix Pro, or Impact)
+- Text Color: Pure WHITE (#FFFFFF) with THICK BLACK STROKE (8-12px outline)
+- Size: MASSIVE - text should take 15-20% of thumbnail width
+- Style: Slightly tilted (2-5 degrees) for dynamic energy
+- Shadow: Hard drop shadow (black, 4px offset) for depth
+- Numbers: If there are numbers, make them EXTRA LARGE and prominent
+- Position: Bottom center or bottom-left, never covering the face
+- Max words: 2-4 words only
+- Effect: Subtle outer glow matching the scene's dominant color`
     },
     {
-      id: 'ctr_beast',
-      name: 'CTR Canavarı (Vurucu)',
-      desc: 'Devasa font, yüksek kontrast ve parlayan neon hatlar.',
-      prompt: 'ULTRA CTR: Massive bold typography with thick black strokes. Use vibrant yellow/white text with intense background-matching outer glow.'
+      id: 'neon_glow',
+      name: 'Neon Glow Effect',
+      desc: 'Parlayan neon yazı, cyberpunk/gaming estetiği',
+      prompt: `NEON GLOW TYPOGRAPHY (2026 GAMING):
+- Font: Clean geometric sans-serif (like Bebas Neue, Anton, or Montserrat Black)
+- Text Color: Vibrant neon (cyan #00FFFF, magenta #FF00FF, or lime #00FF00)
+- Glow: INTENSE multi-layer glow effect:
+  * Inner glow: white/light version of text color
+  * Outer glow: saturated version, 20-30px spread
+  * Ambient glow: soft halo around entire text
+- Stroke: Thin dark stroke (2-3px) for definition
+- Style: ALL CAPS, tight letter spacing
+- Background: Text should "light up" the surrounding area
+- Effect: Like a real neon sign in the dark`
     },
     {
-      id: 'cinematic_epic',
-      name: 'Sinematik / Epik',
-      desc: 'Warhammer/Film posteri stili, dramatik gölgeler.',
-      prompt: 'EPIC CINEMATIC: Use weathered metallic text textures. Dramatic rim lighting on the subject that matches the atmosphere. Deep volumetric fog.'
+      id: 'cinematic_3d',
+      name: '3D Sinematik',
+      desc: 'Film posteri tarzı, metalik dokulu 3D yazı',
+      prompt: `3D CINEMATIC TYPOGRAPHY (MOVIE POSTER):
+- Font: Bold condensed display font with sharp edges
+- Text Color: Metallic gradient (gold, silver, or bronze tones)
+- 3D Effect: Strong perspective depth with:
+  * Beveled edges catching light
+  * Deep extrusion shadow
+  * Reflective highlights on top surfaces
+- Texture: Subtle metal or stone texture overlay
+- Lighting: Match text lighting to scene lighting direction
+- Style: Uppercase, slightly compressed
+- Shadow: Long dramatic shadow matching scene lighting
+- Effect: Like carved metal or stone monument`
+    },
+    {
+      id: 'clean_minimal',
+      name: 'Clean & Minimal',
+      desc: 'Modern, okunabilir, profesyonel - eğitim/tutorial içerikleri',
+      prompt: `CLEAN MINIMAL TYPOGRAPHY (PROFESSIONAL):
+- Font: Modern geometric sans-serif (Poppins Bold, Inter Black, or SF Pro Bold)
+- Text Color: Pure white or soft cream
+- Stroke: Clean black outline (4-6px) for readability
+- Style: Clean, professional, balanced
+- Spacing: Generous letter-spacing for clarity
+- Shadow: Soft, subtle drop shadow only
+- Size: Large but not overwhelming
+- Position: Strategic placement with breathing room
+- Effect: Easy to read at ANY size, even 120px thumbnail preview`
+    },
+    {
+      id: 'gradient_impact',
+      name: 'Gradient Impact',
+      desc: 'Canlı gradient dolgu, modern ve dikkat çekici',
+      prompt: `GRADIENT IMPACT TYPOGRAPHY (2026 TREND):
+- Font: Extra bold display font (Impact, Anton, or Archivo Black)
+- Text Fill: Vibrant gradient:
+  * Option 1: Sunset (orange #FF6B35 to pink #FF1493)
+  * Option 2: Ocean (cyan #00D4FF to purple #8B5CF6)
+  * Option 3: Fire (yellow #FFD700 to red #FF0000)
+  * Choose gradient that CONTRASTS with background
+- Stroke: Thick white or black outline (6-8px)
+- Shadow: Colored shadow matching gradient end color
+- Style: Bold, condensed, ALL CAPS
+- Effect: Text should POP and feel energetic`
+    },
+    {
+      id: 'retro_comic',
+      name: 'Retro Comic',
+      desc: 'Vintage çizgi roman tarzı, eğlenceli ve nostaljik',
+      prompt: `RETRO COMIC TYPOGRAPHY:
+- Font: Classic comic book font (Comic Sans alternative, Bangers, or Komika)
+- Text Color: Bright yellow (#FFFF00) or white
+- Stroke: THICK black outline (10-14px) - key to comic look
+- Style: Slightly warped/curved text following action
+- Effects:
+  * Halftone dot pattern overlay (subtle)
+  * Action lines radiating from text
+  * Slight rotation for dynamism
+- Shadow: Hard offset shadow (red or blue for vintage feel)
+- Vibe: Fun, energetic, action-packed`
     }
   ];
 
@@ -1207,12 +1291,12 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
     }
 
     // Force CTR beast style
-    if (typoStyle !== 'ctr_beast') {
-      setTypoStyle('ctr_beast');
+    if (typoStyle !== 'mrbeast_style') {
+      setTypoStyle('mrbeast_style');
     }
 
     const archetype = CTR_ARCHETYPES.find(a => a.id === optimizedArchetype);
-    const selectedTypo = typographyOptions.find(t => t.id === 'ctr_beast');
+    const selectedTypo = typographyOptions.find(t => t.id === 'mrbeast_style');
 
     try {
       const optimizedPrompt = `You are an elite YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
