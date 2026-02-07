@@ -1286,7 +1286,8 @@ IMPORTANT - COSTUME/CLOTHING TRANSFORMATION:
 - The face should fill a significant portion of the frame
 - Do NOT make the person too small - they should DOMINATE the thumbnail
 
-TEXT OVERLAY: "${overlayText || topic}"
+${overlayText ? `
+TEXT OVERLAY: "${overlayText}"
 - Place text at the BOTTOM of the image (bottom 20-25% of frame)
 - Text must be VERY LARGE and BOLD - easily readable at small sizes
 - Use thick black stroke/outline (3-5px) for readability
@@ -1304,6 +1305,12 @@ The text color MUST harmonize with the scene. Follow these rules:
 5. The text GLOW/OUTLINE should use a color FROM the scene
 6. Never use a text color that blends into the background
 7. Test: Would this text be readable at 120px thumbnail size?
+` : `
+⚠️ NO TEXT OVERLAY - This thumbnail should have NO text on it.
+- Focus entirely on the visual composition
+- Let the person and scene tell the story
+- Clean, text-free thumbnail
+`}
 
 VISUAL STYLE: ${selectedTypo.prompt}
 
@@ -1452,7 +1459,8 @@ REFERENCE PHOTO - The person in this photo must appear LARGE in the thumbnail:
 - Keep face unchanged and recognizable
 - NEVER crop the head - leave headroom above
 
-TEXT: "${optimizedText || topic}"
+${optimizedText ? `
+TEXT: "${optimizedText}"
 - Place at the BOTTOM of the image (bottom 20-25%)
 - MASSIVE bold font, 3D effect with strong shadow
 - Thick black stroke (3-5px) for readability
@@ -1466,6 +1474,9 @@ TEXT: "${optimizedText || topic}"
 3. Warm scene → Cool accent text (white + blue glow)
 4. Text GLOW must use a color FROM the scene
 5. Maximum contrast for 120px thumbnail readability
+` : `
+⚠️ NO TEXT - Create a clean, text-free thumbnail.
+`}
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
 
@@ -2112,17 +2123,22 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                 </div>
               )}
 
-              {/* Overlay Text */}
+              {/* Overlay Text - Optional */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Thumbnail Yazısı</label>
+                <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                  Thumbnail Yazısı
+                  <span className="text-[10px] text-slate-600 font-normal">(opsiyonel)</span>
+                </label>
                 <input
                   type="text"
                   value={overlayText}
                   onChange={(e) => setOverlayText(e.target.value)}
-                  placeholder="Örn: IMKANSIZ!"
+                  placeholder="Boş bırakılabilir - yazısız thumbnail"
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                 />
-                <p className="text-[10px] text-slate-600">3 kelimeden az olması önerilir</p>
+                <p className="text-[10px] text-slate-600">
+                  {overlayText ? '3 kelimeden az olması önerilir' : 'Boş bırakırsanız yazısız thumbnail oluşturulur'}
+                </p>
               </div>
             </CollapsibleSection>
 
