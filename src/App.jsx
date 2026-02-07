@@ -9,6 +9,8 @@ import {
   Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3,
   TrendingUp, Target, MousePointer, BarChart3
 } from 'lucide-react';
+import { WebGLShader } from '@/components/ui/web-gl-shader';
+import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
 
 // HIGH-CTR THUMBNAIL ARCHETYPES
 const CTR_ARCHETYPES = [
@@ -1404,24 +1406,25 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
               CTR'nizi katlamaya hazır mısınız?
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <MetalButton
+                variant="primary"
                 onClick={() => setCurrentSection('app')}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 shadow-xl shadow-blue-500/25"
               >
-                Ücretsiz Dene
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-white/5 border border-white/10 text-white px-8 py-4 rounded-full font-bold text-lg flex items-center justify-center gap-2 hover:bg-white/10 transition-all"
+                <span className="flex items-center gap-2">
+                  Ücretsiz Dene
+                  <ArrowRight className="w-5 h-5" />
+                </span>
+              </MetalButton>
+              <LiquidButton
+                size="xl"
+                className="text-white border border-white/20 rounded-full"
               >
-                <Play className="w-5 h-5" />
-                Nasıl Çalışır?
-              </motion.button>
+                <span className="flex items-center gap-2">
+                  <Play className="w-5 h-5" />
+                  Nasıl Çalışır?
+                </span>
+              </LiquidButton>
             </div>
           </motion.div>
 
@@ -1471,6 +1474,66 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* WebGL Shader Demo Section */}
+        <section className="py-20 px-6 relative overflow-hidden">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
+                Görsel Efektlerle{' '}
+                <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                  Dikkat Çek
+                </span>
+              </h2>
+              <p className="text-white/60 max-w-2xl mx-auto">
+                WebGL shader efektleri ile thumbnail'larınızı bir üst seviyeye taşıyın
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative border border-white/10 rounded-[2rem] overflow-hidden h-[400px]"
+            >
+              {/* WebGL Shader Background */}
+              <div className="absolute inset-0">
+                <WebGLShader />
+              </div>
+
+              {/* Content Overlay */}
+              <div className="relative z-10 h-full flex flex-col items-center justify-center p-8">
+                <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center max-w-lg">
+                  <h3 className="text-2xl md:text-3xl font-black text-white mb-3">
+                    Design is Everything
+                  </h3>
+                  <p className="text-white/60 text-sm md:text-base mb-6">
+                    Sınırsız yaratıcılık, etkileyici görseller ve kesintisiz deneyim
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mb-6">
+                    <span className="relative flex h-3 w-3 items-center justify-center">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                    </span>
+                    <p className="text-xs text-green-500">WebGL Shader Aktif</p>
+                  </div>
+                  <LiquidButton
+                    size="lg"
+                    className="text-white border border-white/20 rounded-full"
+                    onClick={() => setCurrentSection('app')}
+                  >
+                    Hemen Dene
+                  </LiquidButton>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
 
