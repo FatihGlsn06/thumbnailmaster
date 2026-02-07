@@ -749,6 +749,14 @@ const App = () => {
   // Mobile UI states
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
+  // AI Model selection
+  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash-exp');
+  const availableModels = [
+    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash (Deneysel)', desc: 'En yeni, gelişmiş görsel anlama' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', desc: 'Hızlı ve dengeli' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', desc: 'Daha detaylı, yavaş' },
+  ];
+
   // Concept/Reference image states
   const [conceptImage, setConceptImage] = useState(null);
   const [conceptBase64, setConceptBase64] = useState(null);
@@ -1329,7 +1337,7 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       };
 
       const result = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1486,7 +1494,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       };
 
       const result = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1844,6 +1852,34 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* AI Model Selector */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                      <BrainCircuit className="w-3 h-3" /> AI Modeli
+                    </label>
+                    <div className="space-y-2">
+                      {availableModels.map((model) => (
+                        <button
+                          key={model.id}
+                          onClick={() => setSelectedModel(model.id)}
+                          className={`w-full p-3 rounded-lg border text-left transition-all ${
+                            selectedModel === model.id
+                              ? 'bg-purple-600 border-purple-500 text-white'
+                              : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                          }`}
+                        >
+                          <p className="text-xs font-bold">{model.name}</p>
+                          <p className={`text-[10px] ${selectedModel === model.id ? 'text-purple-200' : 'text-slate-600'}`}>
+                            {model.desc}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-600">
+                      Deneysel model daha iyi sonuç verebilir ama yavaş olabilir
+                    </p>
                   </div>
                 </div>
               </motion.div>
