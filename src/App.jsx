@@ -294,9 +294,9 @@ const FakeThumbnail = ({ text, bg, color }) => (
 const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted, thumbText, thumbBg }) => (
   <div className={`group cursor-pointer ${isHighlighted ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-[#0f0f0f] rounded-xl' : ''}`}>
     {/* Thumbnail */}
-    <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
+    <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-black">
       {thumbnail ? (
-        <img src={thumbnail} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+        <img src={thumbnail} alt={title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200" />
       ) : thumbText && thumbBg ? (
         <FakeThumbnail text={thumbText} bg={thumbBg} color={color} />
       ) : (
@@ -308,7 +308,7 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
         {duration}
       </div>
       {isHighlighted && (
-        <div className="absolute bottom-8 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
+        <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
           SENİN VİDEON
         </div>
       )}
@@ -375,9 +375,9 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
   // Mobile Video Card Component
   const MobileVideoCard = ({ video }) => (
     <div className={`flex gap-3 p-2 ${video.isHighlighted ? 'bg-red-500/10 border border-red-500/30 rounded-xl' : ''}`}>
-      <div className="relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden">
+      <div className="relative w-44 flex-shrink-0 rounded-lg overflow-hidden bg-black aspect-video">
         {video.thumbnail ? (
-          <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+          <img src={video.thumbnail} alt={video.title} className="w-full h-full object-contain" />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${video.color} flex items-center justify-center`}>
             <Play className="w-8 h-8 text-white/80" />
@@ -387,7 +387,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           {video.duration}
         </div>
         {video.isHighlighted && (
-          <div className="absolute bottom-6 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-bold shadow-lg">
+          <div className="absolute top-1 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-bold shadow-lg">
             SENİN VİDEON
           </div>
         )}
@@ -403,9 +403,9 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
   // Search Result Card Component
   const SearchResultCard = ({ video }) => (
     <div className={`flex gap-4 ${video.isHighlighted ? 'bg-red-500/10 border border-red-500/30 rounded-xl p-2' : 'p-2'}`}>
-      <div className="relative w-80 h-44 flex-shrink-0 rounded-xl overflow-hidden">
+      <div className="relative w-80 flex-shrink-0 rounded-xl overflow-hidden bg-black aspect-video">
         {video.thumbnail ? (
-          <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+          <img src={video.thumbnail} alt={video.title} className="w-full h-full object-contain" />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${video.color} flex items-center justify-center`}>
             <Play className="w-12 h-12 text-white/80" />
@@ -415,7 +415,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           {video.duration}
         </div>
         {video.isHighlighted && (
-          <div className="absolute bottom-8 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
+          <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
             SENİN VİDEON
           </div>
         )}
@@ -1353,229 +1353,189 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
   // Landing Page Section
   if (currentSection === 'landing') {
     return (
-      <AuroraBackground>
-        <style>{`
-          @keyframes aurora {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(-5%, 5%) scale(1.1); }
-            100% { transform: translate(5%, -5%) scale(1); }
-          }
-        `}</style>
+      <div className="relative min-h-screen bg-black overflow-hidden">
+        {/* WebGL Shader Background */}
+        <div className="fixed inset-0 z-0">
+          <WebGLShader />
+        </div>
 
-        {/* Navigation */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/5">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
-                <Flame className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xl font-black text-white tracking-tight">THUMBNAIL<span className="text-blue-400">MAX</span></span>
-            </div>
-            <button
-              onClick={() => setCurrentSection('app')}
-              className="bg-white text-black px-6 py-2.5 rounded-full font-bold text-sm hover:bg-blue-100 transition-all"
-            >
-              Hemen Başla
-            </button>
-          </div>
-        </nav>
-
-        {/* Hero Section */}
-        <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl"
-          >
-            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 mb-8">
-              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-              <span className="text-sm text-white/80">Gemini AI Destekli</span>
-            </div>
-
-            <h1 className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
-              YouTube Thumbnail'lerinizi{' '}
-              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Saniyeler İçinde
-              </span>{' '}
-              Oluşturun
-            </h1>
-
-            <p className="text-lg md:text-xl text-white/60 mb-10 max-w-2xl mx-auto">
-              Fotoğrafınızı yükleyin, konunuzu yazın. AI sizin için viral thumbnail tasarlasın.
-              CTR'nizi katlamaya hazır mısınız?
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <MetalButton
-                variant="primary"
-                onClick={() => setCurrentSection('app')}
-              >
-                <span className="flex items-center gap-2">
-                  Ücretsiz Dene
-                  <ArrowRight className="w-5 h-5" />
-                </span>
-              </MetalButton>
-              <LiquidButton
-                size="xl"
-                className="text-white border border-white/20 rounded-full"
-              >
-                <span className="flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  Nasıl Çalışır?
-                </span>
-              </LiquidButton>
-            </div>
-          </motion.div>
-
-          {/* Scroll Indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 1 }}
-            className="absolute bottom-10"
-          >
-            <ChevronDown className="w-8 h-8 text-white/30 animate-bounce" />
-          </motion.div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-32 px-6">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
-                Neden ThumbnailMAX?
-              </h2>
-              <p className="text-white/50 text-lg">
-                Profesyonel YouTuber'ların tercih ettiği AI thumbnail aracı
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all group"
-                >
-                  <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 transition-transform">
-                    {feature.icon}
+        {/* Content Container */}
+        <div className="relative z-10">
+          {/* Navigation */}
+          <nav className="fixed top-0 left-0 right-0 z-50 p-4">
+            <div className="max-w-6xl mx-auto">
+              <div className="bg-black/30 backdrop-blur-xl border border-[#27272a] rounded-2xl px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
+                    <Flame className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-white font-bold text-lg mb-2">{feature.title}</h3>
-                  <p className="text-white/50 text-sm">{feature.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* WebGL Shader Demo Section */}
-        <section className="py-20 px-6 relative overflow-hidden">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-                Görsel Efektlerle{' '}
-                <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-                  Dikkat Çek
-                </span>
-              </h2>
-              <p className="text-white/60 max-w-2xl mx-auto">
-                WebGL shader efektleri ile thumbnail'larınızı bir üst seviyeye taşıyın
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="relative border border-white/10 rounded-[2rem] overflow-hidden h-[400px]"
-            >
-              {/* WebGL Shader Background */}
-              <div className="absolute inset-0">
-                <WebGLShader />
+                  <span className="text-lg font-black text-white tracking-tight">THUMBNAIL<span className="text-blue-400">MAX</span></span>
+                </div>
+                <LiquidButton
+                  size="sm"
+                  className="text-white border border-white/20 rounded-full"
+                  onClick={() => setCurrentSection('app')}
+                >
+                  Hemen Başla
+                </LiquidButton>
               </div>
+            </div>
+          </nav>
 
-              {/* Content Overlay */}
-              <div className="relative z-10 h-full flex flex-col items-center justify-center p-8">
-                <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center max-w-lg">
-                  <h3 className="text-2xl md:text-3xl font-black text-white mb-3">
-                    Design is Everything
-                  </h3>
-                  <p className="text-white/60 text-sm md:text-base mb-6">
-                    Sınırsız yaratıcılık, etkileyici görseller ve kesintisiz deneyim
-                  </p>
-                  <div className="flex items-center justify-center gap-2 mb-6">
+          {/* Hero Section */}
+          <section className="min-h-screen flex items-center justify-center px-4 pt-20">
+            <div className="w-full max-w-4xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="border border-[#27272a] p-2 rounded-3xl bg-black/20 backdrop-blur-sm"
+              >
+                <div className="border border-[#27272a] rounded-2xl py-12 px-6 md:px-12 overflow-hidden bg-black/40 backdrop-blur-xl">
+                  {/* Status Badge */}
+                  <div className="flex items-center justify-center gap-2 mb-8">
                     <span className="relative flex h-3 w-3 items-center justify-center">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
                     </span>
-                    <p className="text-xs text-green-500">WebGL Shader Aktif</p>
+                    <p className="text-xs text-green-500">Gemini AI ile Çalışıyor</p>
                   </div>
-                  <LiquidButton
-                    size="lg"
-                    className="text-white border border-white/20 rounded-full"
+
+                  {/* Main Heading */}
+                  <h1 className="text-white text-center text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter mb-4">
+                    Thumbnail Oluştur
+                  </h1>
+                  <h2 className="text-white/80 text-center text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tighter mb-6">
+                    <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                      Saniyeler İçinde
+                    </span>
+                  </h2>
+
+                  {/* Description */}
+                  <p className="text-white/60 px-4 text-center text-sm md:text-base lg:text-lg max-w-2xl mx-auto mb-10">
+                    Fotoğrafınızı yükleyin, konunuzu yazın. AI sizin için viral YouTube thumbnail tasarlasın.
+                  </p>
+
+                  {/* CTA Buttons */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <MetalButton
+                      variant="primary"
+                      onClick={() => setCurrentSection('app')}
+                    >
+                      <span className="flex items-center gap-2">
+                        Ücretsiz Dene
+                        <ArrowRight className="w-5 h-5" />
+                      </span>
+                    </MetalButton>
+                    <LiquidButton
+                      size="xl"
+                      className="text-white border border-white/20 rounded-full"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Play className="w-5 h-5" />
+                        Nasıl Çalışır?
+                      </span>
+                    </LiquidButton>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Scroll Indicator */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1, duration: 1 }}
+                className="flex justify-center mt-8"
+              >
+                <ChevronDown className="w-6 h-6 text-white/30 animate-bounce" />
+              </motion.div>
+            </div>
+          </section>
+
+          {/* Features Section */}
+          <section className="py-20 px-4">
+            <div className="max-w-6xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="border border-[#27272a] p-2 rounded-3xl bg-black/20 backdrop-blur-sm"
+              >
+                <div className="border border-[#27272a] rounded-2xl py-12 px-6 bg-black/40 backdrop-blur-xl">
+                  <h2 className="text-3xl md:text-4xl font-black text-white text-center mb-4">
+                    Neden ThumbnailMAX?
+                  </h2>
+                  <p className="text-white/50 text-center mb-12">
+                    Profesyonel YouTuber'ların tercih ettiği AI thumbnail aracı
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {features.map((feature, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: index * 0.1 }}
+                        className="border border-[#27272a] rounded-xl p-5 hover:bg-white/5 transition-all group"
+                      >
+                        <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 w-10 h-10 rounded-xl flex items-center justify-center text-blue-400 mb-3 group-hover:scale-110 transition-transform">
+                          {feature.icon}
+                        </div>
+                        <h3 className="text-white font-bold mb-1">{feature.title}</h3>
+                        <p className="text-white/50 text-sm">{feature.desc}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section className="py-20 px-4 pb-32">
+            <div className="max-w-3xl mx-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="border border-[#27272a] p-2 rounded-3xl bg-black/20 backdrop-blur-sm"
+              >
+                <div className="border border-[#27272a] rounded-2xl py-12 px-6 text-center bg-black/40 backdrop-blur-xl">
+                  <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
+                    Hemen Başlamaya Hazır mısın?
+                  </h2>
+                  <p className="text-white/60 mb-8 text-sm md:text-base max-w-md mx-auto">
+                    Kendi Gemini API Key'inle sınırsız thumbnail oluştur. Tamamen ücretsiz.
+                  </p>
+                  <MetalButton
+                    variant="gold"
                     onClick={() => setCurrentSection('app')}
                   >
-                    Hemen Dene
-                  </LiquidButton>
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5" />
+                      Thumbnail Oluşturmaya Başla
+                    </span>
+                  </MetalButton>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-32 px-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="max-w-4xl mx-auto bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-white/10 rounded-[3rem] p-12 text-center"
-          >
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-              Hemen Başlamaya Hazır mısın?
-            </h2>
-            <p className="text-white/60 mb-8 max-w-lg mx-auto">
-              Kendi Gemini API Key'inle sınırsız thumbnail oluştur.
-              Tamamen ücretsiz, kayıt gerektirmez.
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setCurrentSection('app')}
-              className="bg-white text-black px-10 py-4 rounded-full font-black text-lg shadow-2xl"
-            >
-              Thumbnail Oluşturmaya Başla
-            </motion.button>
-          </motion.div>
-        </section>
-
-        {/* Footer */}
-        <footer className="border-t border-white/5 py-8 px-6">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-white/40 text-sm">
-              <Flame className="w-4 h-4" />
-              <span>ThumbnailMAX — Powered by Gemini AI</span>
+              </motion.div>
             </div>
-            <p className="text-white/30 text-sm">
-              Kendi API key'inizi kullanın. Verileriniz bizde saklanmaz.
-            </p>
-          </div>
-        </footer>
-      </AuroraBackground>
+          </section>
+
+          {/* Footer */}
+          <footer className="border-t border-[#27272a] py-6 px-4 bg-black/40 backdrop-blur-xl">
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-white/40 text-sm">
+                <Flame className="w-4 h-4" />
+                <span>ThumbnailMAX — Powered by Gemini AI</span>
+              </div>
+              <p className="text-white/30 text-xs">
+                Kendi API key'inizi kullanın. Verileriniz bizde saklanmaz.
+              </p>
+            </div>
+          </footer>
+        </div>
+      </div>
     );
   }
 
