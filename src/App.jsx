@@ -681,6 +681,45 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
   );
 };
 
+// Collapsible Section Component
+const CollapsibleSection = ({ title, icon, children, defaultOpen = false, badge = null }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-white/5 rounded-2xl overflow-hidden bg-black/20">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-blue-400">{icon}</div>
+          <span className="text-sm font-bold text-white">{title}</span>
+          {badge && (
+            <span className="bg-blue-500/20 text-blue-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+              {badge}
+            </span>
+          )}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 pt-0 space-y-4">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const App = () => {
   const [currentSection, setCurrentSection] = useState('landing');
   const [image, setImage] = useState(null);
@@ -698,13 +737,16 @@ const App = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [showApiKey, setShowApiKey] = useState(false);
   const [showYouTubeMockup, setShowYouTubeMockup] = useState(false);
-  const [thumbnailPosition, setThumbnailPosition] = useState('top'); // 'top', 'middle', 'bottom'
+  const [thumbnailPosition, setThumbnailPosition] = useState('top');
   const [selectedArchetype, setSelectedArchetype] = useState('');
   const [ctrScore, setCtrScore] = useState(null);
   const [previousCtrScore, setPreviousCtrScore] = useState(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isOptimized, setIsOptimized] = useState(false);
   const [previousImage, setPreviousImage] = useState(null);
+
+  // Mobile UI states
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Concept/Reference image states
   const [conceptImage, setConceptImage] = useState(null);
@@ -1445,81 +1487,73 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
 
         {/* Content Container */}
         <div className="relative z-10">
-          {/* Navigation */}
-          <nav className="fixed top-0 left-0 right-0 z-50 p-4">
+          {/* Navigation - Mobile Optimized */}
+          <nav className="fixed top-0 left-0 right-0 z-50 p-3 sm:p-4">
             <div className="max-w-6xl mx-auto">
-              <div className="bg-black/30 backdrop-blur-xl border border-[#27272a] rounded-2xl px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
-                    <Flame className="w-5 h-5 text-white" />
+              <div className="bg-black/40 backdrop-blur-xl border border-[#27272a] rounded-xl sm:rounded-2xl px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl">
+                    <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
-                  <span className="text-lg font-black text-white tracking-tight">THUMBNAIL<span className="text-blue-400">MAX</span></span>
+                  <span className="text-sm sm:text-lg font-black text-white tracking-tight">
+                    <span className="hidden sm:inline">THUMBNAIL</span>
+                    <span className="sm:hidden">THUMB</span>
+                    <span className="text-blue-400">MAX</span>
+                  </span>
                 </div>
-                <LiquidButton
-                  size="sm"
-                  className="text-white border border-white/20 rounded-full"
+                <button
                   onClick={() => setCurrentSection('app')}
+                  className="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg sm:rounded-full transition-all border border-white/10"
                 >
-                  Hemen Başla
-                </LiquidButton>
+                  Başla
+                </button>
               </div>
             </div>
           </nav>
 
-          {/* Hero Section */}
-          <section className="min-h-screen flex items-center justify-center px-4 pt-20">
+          {/* Hero Section - Mobile Optimized */}
+          <section className="min-h-screen flex items-center justify-center px-3 sm:px-4 pt-16 sm:pt-20">
             <div className="w-full max-w-4xl mx-auto">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="border border-[#27272a] p-2 rounded-3xl bg-black/20 backdrop-blur-sm"
+                className="border border-[#27272a] p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl bg-black/20 backdrop-blur-sm"
               >
-                <div className="border border-[#27272a] rounded-2xl py-12 px-6 md:px-12 overflow-hidden bg-black/40 backdrop-blur-xl">
+                <div className="border border-[#27272a] rounded-xl sm:rounded-2xl py-8 sm:py-12 px-4 sm:px-6 md:px-12 overflow-hidden bg-black/40 backdrop-blur-xl">
                   {/* Status Badge */}
-                  <div className="flex items-center justify-center gap-2 mb-8">
-                    <span className="relative flex h-3 w-3 items-center justify-center">
+                  <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8">
+                    <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3 items-center justify-center">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
                     </span>
-                    <p className="text-xs text-green-500">Gemini AI ile Çalışıyor</p>
+                    <p className="text-[10px] sm:text-xs text-green-500">Gemini AI ile Çalışıyor</p>
                   </div>
 
                   {/* Main Heading */}
-                  <h1 className="text-white text-center text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter mb-4">
+                  <h1 className="text-white text-center text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter mb-2 sm:mb-4">
                     Thumbnail Oluştur
                   </h1>
-                  <h2 className="text-white/80 text-center text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tighter mb-6">
+                  <h2 className="text-white/80 text-center text-xl sm:text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tighter mb-4 sm:mb-6">
                     <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                       Saniyeler İçinde
                     </span>
                   </h2>
 
                   {/* Description */}
-                  <p className="text-white/60 px-4 text-center text-sm md:text-base lg:text-lg max-w-2xl mx-auto mb-10">
+                  <p className="text-white/60 px-2 sm:px-4 text-center text-xs sm:text-sm md:text-base lg:text-lg max-w-2xl mx-auto mb-6 sm:mb-10">
                     Fotoğrafınızı yükleyin, konunuzu yazın. AI sizin için viral YouTube thumbnail tasarlasın.
                   </p>
 
-                  {/* CTA Buttons */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <MetalButton
-                      variant="primary"
+                  {/* CTA Button - Simplified for mobile */}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                    <button
                       onClick={() => setCurrentSection('app')}
+                      className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-black text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
                     >
-                      <span className="flex items-center gap-2">
-                        Ücretsiz Dene
-                        <ArrowRight className="w-5 h-5" />
-                      </span>
-                    </MetalButton>
-                    <LiquidButton
-                      size="xl"
-                      className="text-white border border-white/20 rounded-full"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Play className="w-5 h-5" />
-                        Nasıl Çalışır?
-                      </span>
-                    </LiquidButton>
+                      Ücretsiz Dene
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -1529,31 +1563,31 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1, duration: 1 }}
-                className="flex justify-center mt-8"
+                className="flex justify-center mt-6 sm:mt-8"
               >
-                <ChevronDown className="w-6 h-6 text-white/30 animate-bounce" />
+                <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 text-white/30 animate-bounce" />
               </motion.div>
             </div>
           </section>
 
-          {/* Features Section */}
-          <section className="py-20 px-4">
+          {/* Features Section - Mobile Optimized */}
+          <section className="py-12 sm:py-20 px-3 sm:px-4">
             <div className="max-w-6xl mx-auto">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="border border-[#27272a] p-2 rounded-3xl bg-black/20 backdrop-blur-sm"
+                className="border border-[#27272a] p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl bg-black/20 backdrop-blur-sm"
               >
-                <div className="border border-[#27272a] rounded-2xl py-12 px-6 bg-black/40 backdrop-blur-xl">
-                  <h2 className="text-3xl md:text-4xl font-black text-white text-center mb-4">
+                <div className="border border-[#27272a] rounded-xl sm:rounded-2xl py-8 sm:py-12 px-4 sm:px-6 bg-black/40 backdrop-blur-xl">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white text-center mb-2 sm:mb-4">
                     Neden ThumbnailMAX?
                   </h2>
-                  <p className="text-white/50 text-center mb-12">
+                  <p className="text-white/50 text-center text-xs sm:text-sm mb-8 sm:mb-12">
                     Profesyonel YouTuber'ların tercih ettiği AI thumbnail aracı
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {features.map((feature, index) => (
                       <motion.div
                         key={index}
@@ -1561,13 +1595,13 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: index * 0.1 }}
-                        className="border border-[#27272a] rounded-xl p-5 hover:bg-white/5 transition-all group"
+                        className="border border-[#27272a] rounded-lg sm:rounded-xl p-3 sm:p-5 hover:bg-white/5 transition-all group"
                       >
-                        <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 w-10 h-10 rounded-xl flex items-center justify-center text-blue-400 mb-3 group-hover:scale-110 transition-transform">
-                          {feature.icon}
+                        <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center text-blue-400 mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                          {React.cloneElement(feature.icon, { className: 'w-4 h-4 sm:w-6 sm:h-6' })}
                         </div>
-                        <h3 className="text-white font-bold mb-1">{feature.title}</h3>
-                        <p className="text-white/50 text-sm">{feature.desc}</p>
+                        <h3 className="text-white font-bold text-xs sm:text-base mb-0.5 sm:mb-1">{feature.title}</h3>
+                        <p className="text-white/50 text-[10px] sm:text-sm leading-tight">{feature.desc}</p>
                       </motion.div>
                     ))}
                   </div>
@@ -1576,45 +1610,43 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
             </div>
           </section>
 
-          {/* CTA Section */}
-          <section className="py-20 px-4 pb-32">
+          {/* CTA Section - Mobile Optimized */}
+          <section className="py-12 sm:py-20 px-3 sm:px-4 pb-24 sm:pb-32">
             <div className="max-w-3xl mx-auto">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="border border-[#27272a] p-2 rounded-3xl bg-black/20 backdrop-blur-sm"
+                className="border border-[#27272a] p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl bg-black/20 backdrop-blur-sm"
               >
-                <div className="border border-[#27272a] rounded-2xl py-12 px-6 text-center bg-black/40 backdrop-blur-xl">
-                  <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
+                <div className="border border-[#27272a] rounded-xl sm:rounded-2xl py-8 sm:py-12 px-4 sm:px-6 text-center bg-black/40 backdrop-blur-xl">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white mb-2 sm:mb-3">
                     Hemen Başlamaya Hazır mısın?
                   </h2>
-                  <p className="text-white/60 mb-8 text-sm md:text-base max-w-md mx-auto">
+                  <p className="text-white/60 mb-6 sm:mb-8 text-xs sm:text-sm md:text-base max-w-md mx-auto">
                     Kendi Gemini API Key'inle sınırsız thumbnail oluştur. Tamamen ücretsiz.
                   </p>
-                  <MetalButton
-                    variant="gold"
+                  <button
                     onClick={() => setCurrentSection('app')}
+                    className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 mx-auto shadow-lg shadow-orange-500/20"
                   >
-                    <span className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5" />
-                      Thumbnail Oluşturmaya Başla
-                    </span>
-                  </MetalButton>
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Thumbnail Oluştur
+                  </button>
                 </div>
               </motion.div>
             </div>
           </section>
 
-          {/* Footer */}
-          <footer className="border-t border-[#27272a] py-6 px-4 bg-black/40 backdrop-blur-xl">
-            <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-white/40 text-sm">
-                <Flame className="w-4 h-4" />
-                <span>ThumbnailMAX — Powered by Gemini AI</span>
+          {/* Footer - Mobile Optimized */}
+          <footer className="border-t border-[#27272a] py-4 sm:py-6 px-3 sm:px-4 bg-black/40 backdrop-blur-xl">
+            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 text-white/40 text-xs sm:text-sm">
+                <Flame className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span>ThumbnailMAX — Gemini AI</span>
               </div>
-              <p className="text-white/30 text-xs">
-                Kendi API key'inizi kullanın. Verileriniz bizde saklanmaz.
+              <p className="text-white/30 text-[10px] sm:text-xs text-center">
+                Verileriniz bizde saklanmaz
               </p>
             </div>
           </footer>
@@ -1638,517 +1670,532 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-[#08080a] text-slate-200 font-sans">
-        {/* Header */}
-        <header className="sticky top-0 z-50 bg-[#08080a]/80 backdrop-blur-xl border-b border-white/5">
-          <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="min-h-screen bg-[#08080a] text-slate-200 font-sans pb-24 lg:pb-6">
+        {/* Header - Mobile Optimized */}
+        <header className="sticky top-0 z-50 bg-[#08080a]/90 backdrop-blur-xl border-b border-white/5">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <button
               onClick={() => setCurrentSection('landing')}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl">
-                <Flame className="w-5 h-5 text-white" />
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl">
+                <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <span className="text-lg font-black text-white tracking-tight">THUMBNAIL<span className="text-blue-400">MAX</span></span>
+              <span className="text-base sm:text-lg font-black text-white tracking-tight">
+                THUMB<span className="text-blue-400 hidden sm:inline">NAIL</span><span className="text-blue-400">MAX</span>
+              </span>
             </button>
 
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-full flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <span className="text-xs font-bold text-blue-400">Gemini AI Active</span>
-              </div>
+            <div className="flex items-center gap-2">
+              {/* API Status - Compact on mobile */}
+              {apiKey ? (
+                <div className="bg-green-500/10 border border-green-500/20 px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500" />
+                  <span className="text-[10px] sm:text-xs font-bold text-green-400 hidden sm:inline">Bağlı</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowMobileMenu(true)}
+                  className="bg-amber-500/10 border border-amber-500/20 px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5"
+                >
+                  <Key className="w-3 h-3 text-amber-400" />
+                  <span className="text-[10px] sm:text-xs font-bold text-amber-400">API Key</span>
+                </button>
+              )}
+
+              {/* Settings Menu Button */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-slate-400" />
+              </button>
             </div>
           </div>
         </header>
 
-        <div className="max-w-[1600px] mx-auto p-6">
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-
-            {/* Left: Input Panel */}
-            <div className="xl:col-span-4 space-y-6">
-              <div className="bg-[#101014] rounded-3xl p-6 border border-white/5 space-y-6">
-
-                {/* API Key */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <Key className="w-3 h-3" /> Gemini API Key
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showApiKey ? 'text' : 'password'}
-                      value={apiKey}
-                      onChange={(e) => handleSaveApiKey(e.target.value)}
-                      placeholder="AIzaSy..."
-                      className="w-full bg-black/40 border border-white/5 rounded-xl p-4 pr-12 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 font-mono"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowApiKey(!showApiKey)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 hover:text-slate-300"
-                    >
-                      {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        {/* Mobile Settings Drawer */}
+        <AnimatePresence>
+          {showMobileMenu && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
+              onClick={() => setShowMobileMenu(false)}
+            >
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25 }}
+                className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-[#101014] border-l border-white/10 overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-4 space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-white">Ayarlar</h2>
+                    <button onClick={() => setShowMobileMenu(false)} className="p-2 rounded-lg bg-white/5">
+                      <X className="w-5 h-5 text-slate-400" />
                     </button>
                   </div>
-                  {apiKey ? (
-                    <p className="text-[9px] text-green-500/70 font-bold uppercase flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Kaydedildi
-                    </p>
-                  ) : (
-                    <p className="text-[9px] text-amber-500/70 font-bold uppercase flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" /> API Key gerekli
-                    </p>
-                  )}
-                </section>
 
-                {/* Channel Name */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <User className="w-3 h-3" /> Kanal Adı (YouTube Önizleme için)
-                  </label>
-                  <input
-                    type="text"
-                    value={channelName}
-                    onChange={(e) => setChannelName(e.target.value)}
-                    placeholder="Örn: Benim Kanalım"
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
-                  />
-                </section>
-
-                {/* Thumbnail Position Selector */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <Layers className="w-3 h-3" /> Thumbnail Konumu (YouTube Önizleme)
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { id: 'top', label: 'Üst', icon: '⬆️' },
-                      { id: 'middle', label: 'Orta', icon: '⏺️' },
-                      { id: 'bottom', label: 'Alt', icon: '⬇️' }
-                    ].map((pos) => (
+                  {/* API Key */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                      <Key className="w-3 h-3" /> Gemini API Key
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showApiKey ? 'text' : 'password'}
+                        value={apiKey}
+                        onChange={(e) => handleSaveApiKey(e.target.value)}
+                        placeholder="AIzaSy..."
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 pr-10 text-sm font-mono"
+                      />
                       <button
-                        key={pos.id}
-                        type="button"
-                        onClick={() => setThumbnailPosition(pos.id)}
-                        className={`p-3 rounded-xl border text-center transition-all ${
-                          thumbnailPosition === pos.id
-                            ? 'bg-blue-600 border-blue-500 text-white'
-                            : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/10'
-                        }`}
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
                       >
-                        <span className="text-lg block mb-1">{pos.icon}</span>
-                        <span className="text-xs font-bold">{pos.label}</span>
+                        {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
-                    ))}
+                    </div>
+                    {apiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> Kaydedildi</p>}
                   </div>
-                </section>
 
-                {/* Video Topic */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <Layers className="w-3 h-3" /> Video Konusu
-                  </label>
-                  <div className="flex gap-2">
+                  {/* Channel Name */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500">Kanal Adı</label>
                     <input
                       type="text"
-                      value={topic}
-                      onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); }}
-                      placeholder="Örn: Ba'lakor, Warhammer 3, Elden Ring"
-                      className="flex-1 bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+                      value={channelName}
+                      onChange={(e) => setChannelName(e.target.value)}
+                      placeholder="Örn: Benim Kanalım"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm"
                     />
-                    <button
-                      onClick={researchTopic}
-                      disabled={!topic || !apiKey || isResearchingTopic}
-                      className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-300 px-4 rounded-xl flex items-center gap-2 hover:from-amber-500/30 hover:to-orange-500/30 transition-all disabled:opacity-30 text-xs font-bold"
-                    >
-                      {isResearchingTopic ? (
-                        <RefreshCcw className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Search className="w-4 h-4" />
+                  </div>
+
+                  {/* Thumbnail Position */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500">YouTube Önizleme Konumu</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'top', label: 'Üst', icon: '⬆️' },
+                        { id: 'middle', label: 'Orta', icon: '⏺️' },
+                        { id: 'bottom', label: 'Alt', icon: '⬇️' }
+                      ].map((pos) => (
+                        <button
+                          key={pos.id}
+                          onClick={() => setThumbnailPosition(pos.id)}
+                          className={`p-2 rounded-lg border text-center transition-all text-xs ${
+                            thumbnailPosition === pos.id
+                              ? 'bg-blue-600 border-blue-500 text-white'
+                              : 'bg-black/40 border-white/10 text-slate-400'
+                          }`}
+                        >
+                          <span className="text-sm block">{pos.icon}</span>
+                          <span className="font-bold">{pos.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+          {/* Result Section - Show at top when available */}
+          {resultImage && !loading && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+            >
+              <div className="bg-[#101014] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/5">
+                {/* Before/After Comparison */}
+                {previousImage && (
+                  <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/10 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-blue-400" />
+                        Önce / Sonra
+                      </span>
+                      {previousCtrScore && ctrScore && (
+                        <div className="flex items-center gap-1.5 bg-green-500/20 px-2 py-1 rounded-full">
+                          <span className="text-slate-400 text-xs">{previousCtrScore.score}</span>
+                          <ArrowRight className="w-3 h-3 text-green-400" />
+                          <span className="text-green-400 font-bold text-sm">{ctrScore.score}</span>
+                        </div>
                       )}
-                      <span className="hidden sm:inline">{isResearchingTopic ? 'Araştırılıyor...' : 'Araştır'}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      <div>
+                        <p className="text-[10px] text-slate-400 text-center mb-1">Önceki</p>
+                        <img src={previousImage} alt="Before" className="w-full rounded-lg opacity-70" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-green-400 text-center mb-1 font-bold">Optimize ✓</p>
+                        <img src={resultImage} alt="After" className="w-full rounded-lg border border-green-500/30" />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setPreviousImage(null); setPreviousCtrScore(null); }}
+                      className="mt-2 text-xs text-slate-500 hover:text-white flex items-center gap-1 mx-auto"
+                    >
+                      <X className="w-3 h-3" /> Kapat
                     </button>
                   </div>
-                  {/* Topic Research Results */}
-                  {topicResearch && (
-                    <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
-                          <Gamepad2 className="w-3 h-3" /> Gamer Bilgisi: {topic}
-                        </p>
-                        <button
-                          onClick={() => setTopicResearch(null)}
-                          className="text-slate-500 hover:text-white"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
+                )}
+
+                {/* Main Result */}
+                {!previousImage && (
+                  <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 bg-black mb-4">
+                    <img src={resultImage} alt="Result" className="w-full h-auto" />
+                  </div>
+                )}
+
+                {/* CTR Score - Compact */}
+                {ctrScore && (
+                  <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-xl p-3 sm:p-4 border border-white/10 mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-blue-400" />
+                        <span className="text-sm font-bold text-white">CTR Skoru</span>
                       </div>
-                      <div className="text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
-                        {topicResearch}
-                      </div>
-                      <p className="text-[9px] text-green-400 flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Bu bilgiler thumbnail oluştururken kullanılacak
-                      </p>
+                      <span className={`text-2xl font-black ${ctrScore.likelihoodColor}`}>{ctrScore.score}</span>
                     </div>
-                  )}
-                </section>
-
-                {/* Konsept Açıklaması */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <BrainCircuit className="w-3 h-3" /> Ek Konsept Açıklaması (Opsiyonel)
-                  </label>
-                  <textarea
-                    value={topicDescription}
-                    onChange={(e) => setTopicDescription(e.target.value)}
-                    placeholder={topicResearch
-                      ? "AI konuyu araştırdı! İsterseniz ek detaylar ekleyebilirsiniz..."
-                      : "AI'ın bilmesi gerekenler: Oyunun/konunun ne hakkında olduğu, görsel stili, atmosferi, karakterler, renkler...\n\nÖrn: Menace, karanlık fantezi dünyasında geçen taktiksel RPG. Gotik mimari, canavarlar, şövalyeler."}
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[80px]"
-                  />
-                  {!topicResearch && (
-                    <p className="text-[9px] text-amber-500/70 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" />
-                      Yukarıdan "Araştır" butonuna tıklayarak AI'ın konuyu öğrenmesini sağlayın!
-                    </p>
-                  )}
-                </section>
-
-                {/* Overlay Text */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <Type className="w-3 h-3" /> Thumbnail Yazısı
-                  </label>
-                  <input
-                    type="text"
-                    value={overlayText}
-                    onChange={(e) => setOverlayText(e.target.value)}
-                    placeholder="Örn: FARE İSTİLASI"
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 font-bold"
-                  />
-                </section>
-
-                {/* CTR Archetype Selector */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <Target className="w-3 h-3" /> CTR Arketipi (Yüksek Tıklama Kalıbı)
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CTR_ARCHETYPES.map((arch) => (
-                      <button
-                        key={arch.id}
-                        onClick={() => setSelectedArchetype(arch.id)}
-                        className={`text-left p-3 rounded-xl border transition-all ${
-                          selectedArchetype === arch.id
-                            ? 'bg-orange-600 border-orange-500 text-white'
-                            : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/10'
+                    <div className="h-2 bg-black/40 rounded-full overflow-hidden mb-2">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${ctrScore.score}%` }}
+                        className={`h-full rounded-full ${
+                          ctrScore.score >= 80 ? 'bg-green-500' : ctrScore.score >= 65 ? 'bg-emerald-500' : ctrScore.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
                         }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg">{arch.icon}</span>
-                          <p className="text-xs font-bold">{arch.name}</p>
-                        </div>
-                        <p className={`text-[9px] ${selectedArchetype === arch.id ? 'text-orange-100' : 'text-slate-600'}`}>{arch.desc}</p>
-                        <div className={`text-[9px] mt-1 font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
-                          +{arch.ctrBoost}% CTR
-                        </div>
-                      </button>
-                    ))}
+                      />
+                    </div>
+                    <p className={`text-xs font-bold ${ctrScore.likelihoodColor}`}>{ctrScore.likelihood}</p>
                   </div>
-                </section>
+                )}
 
-                {/* Style Selector */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <Palette className="w-3 h-3" /> Stil
-                  </label>
-                  <div className="space-y-2">
-                    {typographyOptions.map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => setTypoStyle(opt.id)}
-                        className={`w-full text-left p-3 rounded-xl border transition-all ${
-                          typoStyle === opt.id
-                            ? 'bg-blue-600 border-blue-500 text-white'
-                            : 'bg-black/40 border-white/5 text-slate-400 hover:border-white/10'
-                        }`}
-                      >
-                        <p className="text-xs font-bold">{opt.name}</p>
-                        <p className={`text-[10px] mt-0.5 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>{opt.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                {/* Image Upload */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <User className="w-3 h-3" /> Kendi Fotoğrafınız
-                  </label>
-                  <div
-                    onClick={() => fileInputRef.current.click()}
-                    className={`border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all ${
-                      image ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/10 bg-black/40 hover:bg-white/5'
-                    }`}
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = resultImage;
+                      link.download = `thumbnail-${Date.now()}.png`;
+                      link.click();
+                    }}
+                    className="flex-1 sm:flex-none bg-white text-black px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-all text-sm"
                   >
-                    <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
-                    {image ? (
-                      <div className="flex items-center gap-4">
-                        <img src={image} className="w-16 h-16 rounded-lg object-cover" alt="Ref" />
-                        <div className="flex-1">
-                          <p className="text-xs font-bold text-blue-400">Yüklendi</p>
-                          <p className="text-[10px] text-slate-600">Değiştirmek için tıkla</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 opacity-40">
-                        <Upload className="w-6 h-6 mx-auto mb-2" />
-                        <p className="text-xs font-bold">Fotoğraf Yükle</p>
-                        <p className="text-[10px] text-slate-500 mt-1">Thumbnail'da görünecek yüzünüz</p>
-                      </div>
-                    )}
-                  </div>
-                  {/* Photo Analysis Button & Result */}
-                  {image && (
-                    <div className="space-y-2">
+                    <Download className="w-4 h-4" />
+                    <span>İndir</span>
+                  </button>
+                  <button
+                    onClick={() => setShowYouTubeMockup(true)}
+                    className="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm"
+                  >
+                    <Youtube className="w-4 h-4" />
+                    <span>Önizle</span>
+                  </button>
+                  <button
+                    onClick={makeMoreClickable}
+                    disabled={isOptimizing}
+                    className="flex-1 sm:flex-none bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm disabled:opacity-50"
+                  >
+                    {isOptimizing ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    <span className="hidden sm:inline">Optimize Et</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="bg-[#101014] rounded-2xl p-8 border border-white/5 mb-6">
+              <div className="text-center">
+                <div className="relative inline-block mb-4">
+                  <div className="w-20 h-20 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
+                  <BrainCircuit className="w-8 h-8 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                </div>
+                <p className="text-xl font-black text-white animate-pulse">Oluşturuluyor...</p>
+                <p className="text-sm text-blue-400 mt-1">AI thumbnail tasarlıyor</p>
+              </div>
+            </div>
+          )}
+
+          {/* Main Form - Collapsible Sections */}
+          <div className="space-y-3 sm:space-y-4">
+
+            {/* Essential: Photo + Topic */}
+            <CollapsibleSection
+              title="Fotoğraf ve Konu"
+              icon={<Upload className="w-4 h-4" />}
+              defaultOpen={true}
+              badge={image && topic ? "✓" : null}
+            >
+              {/* Photo Upload */}
+              <div
+                onClick={() => fileInputRef.current.click()}
+                className={`border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all ${
+                  image ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/10 bg-black/40 hover:bg-white/5'
+                }`}
+              >
+                <input type="file" ref={fileInputRef} onChange={handleImageUpload} className="hidden" accept="image/*" />
+                {image ? (
+                  <div className="flex items-center gap-4">
+                    <img src={image} className="w-16 h-16 rounded-lg object-cover" alt="Ref" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-blue-400">Fotoğraf Yüklendi</p>
+                      <p className="text-xs text-slate-500">Değiştirmek için dokun</p>
+                    </div>
+                    {!photoAnalysis && (
                       <button
                         onClick={(e) => { e.stopPropagation(); analyzePhoto(); }}
                         disabled={isAnalyzingPhoto || !apiKey}
-                        className="w-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:from-purple-500/30 hover:to-blue-500/30 transition-all disabled:opacity-50"
+                        className="bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 disabled:opacity-50"
                       >
-                        {isAnalyzingPhoto ? (
-                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Analiz Ediliyor...</>
-                        ) : loading ? (
-                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Thumbnail Oluşturuluyor...</>
-                        ) : (
-                          <><Eye className="w-3 h-3" /> {topic ? 'Analiz Et & Oluştur' : 'AI ile Analiz Et'}</>
-                        )}
+                        {isAnalyzingPhoto ? <RefreshCcw className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                        Analiz
                       </button>
-                      {photoAnalysis && (
-                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
-                          <p className="text-[10px] font-bold text-purple-400 mb-2 flex items-center gap-1">
-                            <BrainCircuit className="w-3 h-3" /> AI Fotoğraf Analizi
-                          </p>
-                          <div className="text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed">
-                            {photoAnalysis}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </section>
-
-                {/* Concept/Reference Image Upload */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <ImageIcon className="w-3 h-3" /> Konsept / Referans Görsel (Opsiyonel)
-                  </label>
-                  <div
-                    onClick={() => conceptInputRef.current.click()}
-                    className={`border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all ${
-                      conceptImage ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/10 bg-black/40 hover:bg-white/5'
-                    }`}
-                  >
-                    <input type="file" ref={conceptInputRef} onChange={handleConceptUpload} className="hidden" accept="image/*" />
-                    {conceptImage ? (
-                      <div className="flex items-center gap-4">
-                        <img src={conceptImage} className="w-16 h-16 rounded-lg object-cover" alt="Concept" />
-                        <div className="flex-1">
-                          <p className="text-xs font-bold text-emerald-400">Konsept Yüklendi</p>
-                          <p className="text-[10px] text-slate-600">Değiştirmek için tıkla</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 opacity-40">
-                        <Palette className="w-6 h-6 mx-auto mb-2" />
-                        <p className="text-xs font-bold">Referans Görsel Yükle</p>
-                        <p className="text-[10px] text-slate-500 mt-1">Örnek thumbnail veya stil referansı</p>
-                      </div>
                     )}
                   </div>
-                  {/* Concept Analysis Button & Result */}
-                  {conceptImage && (
-                    <div className="space-y-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); analyzeConceptImage(); }}
-                        disabled={isAnalyzingConcept || !apiKey}
-                        className="w-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:from-emerald-500/30 hover:to-teal-500/30 transition-all disabled:opacity-50"
-                      >
-                        {isAnalyzingConcept ? (
-                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Analiz Ediliyor...</>
-                        ) : loading ? (
-                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Thumbnail Oluşturuluyor...</>
-                        ) : (
-                          <><Eye className="w-3 h-3" /> {(base64Image && topic) ? 'Analiz Et & Oluştur' : 'AI ile Analiz Et'}</>
-                        )}
-                      </button>
-                      {conceptAnalysis && (
-                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                          <p className="text-[10px] font-bold text-emerald-400 mb-2 flex items-center gap-1">
-                            <BrainCircuit className="w-3 h-3" /> AI Konsept Analizi
-                          </p>
-                          <div className="text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed">
-                            {conceptAnalysis}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </section>
+                ) : (
+                  <div className="text-center py-6">
+                    <Upload className="w-10 h-10 mx-auto mb-2 text-slate-600" />
+                    <p className="text-sm font-bold text-slate-400">Fotoğrafınızı Yükleyin</p>
+                    <p className="text-xs text-slate-600 mt-1">Thumbnail'da görünecek yüz</p>
+                  </div>
+                )}
+              </div>
 
-                {/* Extra Request */}
-                <section className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <Sparkles className="w-3 h-3" /> Ekstra İstek (Opsiyonel)
-                  </label>
-                  <textarea
-                    value={extraRequest}
-                    onChange={(e) => setExtraRequest(e.target.value)}
-                    placeholder="Örn: Arka planda yeşil sis olsun..."
-                    className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[60px]"
+              {/* Photo Analysis Result */}
+              {photoAnalysis && (
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
+                  <p className="text-xs font-bold text-purple-400 mb-2 flex items-center gap-1">
+                    <BrainCircuit className="w-3 h-3" /> AI Analizi
+                  </p>
+                  <p className="text-xs text-slate-300 line-clamp-3">{photoAnalysis}</p>
+                </div>
+              )}
+
+              {/* Topic Input */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Video Konusu *</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={topic}
+                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); }}
+                    placeholder="Örn: Elden Ring, Minecraft Hardcore"
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
-                </section>
+                  <button
+                    onClick={researchTopic}
+                    disabled={!topic || !apiKey || isResearchingTopic}
+                    className="bg-amber-500/20 border border-amber-500/30 text-amber-300 px-3 rounded-xl flex items-center gap-1 hover:bg-amber-500/30 transition-all disabled:opacity-30 text-xs font-bold"
+                  >
+                    {isResearchingTopic ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
-                <button
-                  onClick={generateThumbnail}
-                  disabled={loading || !image || !topic || !apiKey}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 text-sm"
+              {/* Topic Research Results */}
+              {topicResearch && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                      <Gamepad2 className="w-3 h-3" /> {topic}
+                    </p>
+                    <button onClick={() => setTopicResearch(null)} className="text-slate-500 hover:text-white">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-300 line-clamp-4">{topicResearch}</p>
+                </div>
+              )}
+
+              {/* Overlay Text */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Thumbnail Yazısı</label>
+                <input
+                  type="text"
+                  value={overlayText}
+                  onChange={(e) => setOverlayText(e.target.value)}
+                  placeholder="Örn: IMKANSIZ!"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/40"
+                />
+                <p className="text-[10px] text-slate-600">3 kelimeden az olması önerilir</p>
+              </div>
+            </CollapsibleSection>
+
+            {/* Style Selection */}
+            <CollapsibleSection
+              title="Stil Seçimi"
+              icon={<Palette className="w-4 h-4" />}
+              badge={selectedArchetype ? CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.icon : null}
+            >
+              {/* CTR Archetypes - Compact Grid */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">CTR Arketipi</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {CTR_ARCHETYPES.map((arch) => (
+                    <button
+                      key={arch.id}
+                      onClick={() => setSelectedArchetype(arch.id)}
+                      className={`p-3 rounded-xl border transition-all text-left ${
+                        selectedArchetype === arch.id
+                          ? 'bg-orange-600 border-orange-500 text-white'
+                          : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{arch.icon}</span>
+                        <span className="text-xs font-bold truncate">{arch.name}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
+                        +{arch.ctrBoost}% CTR
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Typography - Horizontal Scroll on Mobile */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Yazı Stili</label>
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-visible">
+                  {typographyOptions.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setTypoStyle(opt.id)}
+                      className={`flex-shrink-0 w-40 sm:w-auto p-3 rounded-xl border transition-all text-left ${
+                        typoStyle === opt.id
+                          ? 'bg-blue-600 border-blue-500 text-white'
+                          : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                      }`}
+                    >
+                      <p className="text-xs font-bold truncate">{opt.name}</p>
+                      <p className={`text-[10px] mt-0.5 line-clamp-1 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>
+                        {opt.desc}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CollapsibleSection>
+
+            {/* Advanced Options */}
+            <CollapsibleSection
+              title="Gelişmiş Seçenekler"
+              icon={<Sparkles className="w-4 h-4" />}
+            >
+              {/* Concept Description */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Konsept Açıklaması</label>
+                <textarea
+                  value={topicDescription}
+                  onChange={(e) => setTopicDescription(e.target.value)}
+                  placeholder="Oyunun atmosferi, karakterler, renkler..."
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[60px]"
+                />
+              </div>
+
+              {/* Concept/Reference Image */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Referans Görsel</label>
+                <div
+                  onClick={() => conceptInputRef.current.click()}
+                  className={`border-2 border-dashed rounded-xl p-3 cursor-pointer transition-all ${
+                    conceptImage ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/10 bg-black/40'
+                  }`}
                 >
-                  {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-                  {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
-                </button>
-
-                {error && <p className="text-xs text-red-500 font-bold text-center">{error}</p>}
-              </div>
-            </div>
-
-            {/* Right: Result & Preview */}
-            <div className="xl:col-span-8 space-y-6">
-
-              {/* Result Image */}
-              <div className="bg-[#101014] rounded-3xl p-6 border border-white/5 min-h-[400px] flex flex-col items-center justify-center">
-                {!resultImage && !loading && (
-                  <div className="text-center opacity-20">
-                    <Monitor className="w-24 h-24 mx-auto mb-4" />
-                    <p className="text-lg font-bold">Stüdyo Hazır</p>
-                    <p className="text-sm text-slate-500">Thumbnail oluşturmak için formu doldurun</p>
-                  </div>
-                )}
-
-                {loading && (
-                  <div className="text-center">
-                    <div className="relative inline-block mb-6">
-                      <div className="w-32 h-32 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
-                      <BrainCircuit className="w-12 h-12 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-                    </div>
-                    <p className="text-2xl font-black text-white animate-pulse">İşleniyor...</p>
-                    <p className="text-sm text-blue-400 mt-2">AI thumbnail oluşturuyor</p>
-                  </div>
-                )}
-
-                {resultImage && !loading && (
-                  <div className="w-full space-y-6">
-                    {/* Before/After Comparison */}
-                    {previousImage && (
-                      <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-4 border border-white/10">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4 text-blue-400" />
-                            <span className="text-sm font-bold text-white">Önce / Sonra Karşılaştırması</span>
-                          </div>
-                          {/* Score Comparison */}
-                          {previousCtrScore && ctrScore && (
-                            <div className="flex items-center gap-2 bg-green-500/20 px-3 py-1 rounded-full">
-                              <span className="text-slate-400 text-xs">{previousCtrScore.score}</span>
-                              <ArrowRight className="w-3 h-3 text-green-400" />
-                              <span className="text-green-400 font-bold text-sm">{ctrScore.score}</span>
-                              <span className="text-green-400 text-xs font-bold">
-                                (+{ctrScore.score - previousCtrScore.score})
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="relative">
-                            <div className="flex items-center justify-center gap-2 mb-1">
-                              <p className="text-[10px] text-slate-400 uppercase text-center">Önceki</p>
-                              {previousCtrScore && (
-                                <span className="text-xs text-slate-500 font-bold">{previousCtrScore.score} puan</span>
-                              )}
-                            </div>
-                            <div className="rounded-xl overflow-hidden border border-white/10">
-                              <img src={previousImage} alt="Before" className="w-full h-auto opacity-70" />
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <div className="flex items-center justify-center gap-2 mb-1">
-                              <p className="text-[10px] text-green-400 uppercase font-bold">Optimize Edildi ✓</p>
-                              {ctrScore && (
-                                <span className="text-xs text-green-400 font-bold">{ctrScore.score} puan</span>
-                              )}
-                            </div>
-                            <div className="rounded-xl overflow-hidden border border-green-500/30 ring-2 ring-green-500/20">
-                              <img src={resultImage} alt="After" className="w-full h-auto" />
-                            </div>
-                          </div>
-                        </div>
+                  <input type="file" ref={conceptInputRef} onChange={handleConceptUpload} className="hidden" accept="image/*" />
+                  {conceptImage ? (
+                    <div className="flex items-center gap-3">
+                      <img src={conceptImage} className="w-12 h-12 rounded-lg object-cover" alt="Concept" />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-emerald-400">Yüklendi</p>
+                        <p className="text-[10px] text-slate-600">Değiştirmek için dokun</p>
+                      </div>
+                      {!conceptAnalysis && (
                         <button
-                          onClick={() => {
-                            setPreviousImage(null);
-                            setPreviousCtrScore(null);
-                          }}
-                          className="mt-3 text-xs text-slate-400 hover:text-white flex items-center gap-1 mx-auto"
+                          onClick={(e) => { e.stopPropagation(); analyzeConceptImage(); }}
+                          disabled={isAnalyzingConcept || !apiKey}
+                          className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
                         >
-                          <X className="w-3 h-3" /> Karşılaştırmayı kapat
+                          {isAnalyzingConcept ? <RefreshCcw className="w-3 h-3 animate-spin" /> : 'Analiz'}
                         </button>
-                      </div>
-                    )}
-
-                    {/* Result Image (only show if not comparing) */}
-                    {!previousImage && (
-                      <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
-                        <img src={resultImage} alt="Result" className="w-full h-auto" />
-                      </div>
-                    )}
-
-                    {/* CTR Score Card */}
-                    {ctrScore && (
-                      <CTRScoreCard
-                        score={ctrScore.score}
-                        likelihood={ctrScore.likelihood}
-                        likelihoodColor={ctrScore.likelihoodColor}
-                        issues={ctrScore.issues}
-                        boosts={ctrScore.boosts}
-                        onMakeClickable={makeMoreClickable}
-                        isLoading={isOptimizing}
-                      />
-                    )}
-
-                    <div className="flex flex-wrap gap-3 justify-center">
-                      <button
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = resultImage;
-                          link.download = `thumbnail-${Date.now()}.png`;
-                          link.click();
-                        }}
-                        className="bg-white text-black px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-100 transition-all"
-                      >
-                        <Download className="w-4 h-4" />
-                        İndir
-                      </button>
-                      <button
-                        onClick={() => setShowYouTubeMockup(true)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all"
-                      >
-                        <Youtube className="w-4 h-4" />
-                        YouTube'da Gör
-                      </button>
+                      )}
                     </div>
+                  ) : (
+                    <div className="text-center py-4 opacity-40">
+                      <ImageIcon className="w-6 h-6 mx-auto mb-1" />
+                      <p className="text-xs">Örnek thumbnail yükle</p>
+                    </div>
+                  )}
+                </div>
+
+                {conceptAnalysis && (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                    <p className="text-xs font-bold text-emerald-400 mb-1">AI Analizi</p>
+                    <p className="text-xs text-slate-300 line-clamp-3">{conceptAnalysis}</p>
                   </div>
                 )}
               </div>
+
+              {/* Extra Request */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">Ekstra İstek</label>
+                <textarea
+                  value={extraRequest}
+                  onChange={(e) => setExtraRequest(e.target.value)}
+                  placeholder="Örn: Arka planda yeşil sis olsun..."
+                  className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[50px]"
+                />
+              </div>
+            </CollapsibleSection>
+
+            {/* Desktop Generate Button */}
+            <div className="hidden lg:block">
+              <button
+                onClick={generateThumbnail}
+                disabled={loading || !image || !topic || !apiKey}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3"
+              >
+                {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+                {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
+              </button>
             </div>
+
+            {error && <p className="text-sm text-red-500 font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl p-3">{error}</p>}
+
+            {/* Empty State - Desktop Only */}
+            {!resultImage && !loading && (
+              <div className="hidden lg:block bg-[#101014] rounded-2xl p-8 border border-white/5">
+                <div className="text-center opacity-30">
+                  <Monitor className="w-16 h-16 mx-auto mb-3" />
+                  <p className="text-lg font-bold">Stüdyo Hazır</p>
+                  <p className="text-sm text-slate-500">Formu doldurup oluştur'a tıklayın</p>
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Mobile Floating Action Button */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#08080a] via-[#08080a] to-transparent lg:hidden">
+          <button
+            onClick={generateThumbnail}
+            disabled={loading || !image || !topic || !apiKey}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20"
+          >
+            {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+            {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
+          </button>
         </div>
       </div>
     </>
