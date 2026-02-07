@@ -111,7 +111,7 @@ const calculateCTRScore = (settings) => {
   }
 
   // Typography style bonus (2026 - color harmony focused)
-  const highCtrTypoStyles = ['auto_harmony', 'bold_impact', 'gaming_neon'];
+  const highCtrTypoStyles = ['auto_harmony', 'bold_impact', 'gaming_neon', 'simple_brush'];
   const goodTypoStyles = ['cinematic_epic', 'comic_action', 'elegant_modern'];
 
   if (highCtrTypoStyles.includes(settings.typoStyle)) {
@@ -948,6 +948,47 @@ EFFECTS:
 - Burst/explosion shapes behind text in scene colors
 - Dynamic, energetic positioning
 VIBE: Fun, exciting, eye-catching`
+    },
+    {
+      id: 'simple_brush',
+      name: 'Sade Fırça',
+      desc: 'El yazısı tarzı, sade, sahneyle uyumlu koyu renk',
+      prompt: `SIMPLE BRUSH TYPOGRAPHY (CLEAN & NATURAL):
+
+⚠️ THIS IS A SUBTLE, CLEAN STYLE - NOT FLASHY:
+The text should look hand-written/brush style but READABLE and SIMPLE.
+
+COLOR SELECTION (SCENE-MATCHED):
+- Analyze the scene's DARK tones
+- Use a DARK color that exists in the scene:
+  * Dark scene with fire/orange → Dark navy blue (#1a365d) or dark teal
+  * Dark scene with purple/magic → Dark indigo (#312e81) or dark purple
+  * Dark scene with green → Dark forest green (#14532d)
+  * Cold/ice scene → Dark slate blue (#334155)
+- The text should BLEND with the scene, not stand out harshly
+- Add a SUBTLE lighter stroke (2-3px) in a slightly lighter shade for readability
+
+FONT: Brush/handwritten style font (Permanent Marker, Kalam, Patrick Hand, or Caveat Bold)
+SIZE: Large but not overwhelming - readable at small sizes
+STYLE:
+- Casual, hand-drawn feel
+- Slightly imperfect/organic edges
+- Natural baseline (not perfectly straight)
+- ALL CAPS or Title Case
+
+STROKE: Subtle outline (2-3px) in a LIGHTER shade of the text color
+- Example: Dark blue text (#1a365d) with medium blue stroke (#3b82f6)
+- This creates depth without being flashy
+
+NO EFFECTS:
+- NO glow
+- NO 3D extrusion
+- NO gradients
+- NO drop shadow (or very subtle only)
+- Keep it CLEAN and SIMPLE
+
+POSITION: Bottom-left corner, leaving space for game logos on right
+VIBE: Professional, clean, gaming channel style`
     }
   ];
 
