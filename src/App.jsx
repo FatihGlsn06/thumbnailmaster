@@ -110,16 +110,16 @@ const calculateCTRScore = (settings) => {
     issues.push({ text: 'Thumbnail yazısı yok', fix: 'Dikkat çekici bir yazı ekleyin', impact: 5 });
   }
 
-  // Typography style bonus (2026 optimized)
-  const highCtrTypoStyles = ['mrbeast_style', 'neon_glow', 'gradient_impact'];
-  const goodTypoStyles = ['cinematic_3d', 'retro_comic', 'clean_minimal'];
+  // Typography style bonus (2026 - color harmony focused)
+  const highCtrTypoStyles = ['auto_harmony', 'bold_impact', 'gaming_neon'];
+  const goodTypoStyles = ['cinematic_epic', 'comic_action', 'elegant_modern'];
 
   if (highCtrTypoStyles.includes(settings.typoStyle)) {
-    score += 8;
-    boosts.push({ text: 'Yüksek CTR tipografi stili', value: '+8' });
+    score += 10;
+    boosts.push({ text: 'Renk uyumlu yüksek CTR stili', value: '+10' });
   } else if (goodTypoStyles.includes(settings.typoStyle)) {
-    score += 4;
-    boosts.push({ text: 'Kaliteli tipografi stili', value: '+4' });
+    score += 6;
+    boosts.push({ text: 'Kaliteli tipografi stili', value: '+6' });
   }
 
   // Face/photo bonus
@@ -730,7 +730,7 @@ const App = () => {
   const [overlayText, setOverlayText] = useState('');
   const [extraRequest, setExtraRequest] = useState('');
   const [channelName, setChannelName] = useState('');
-  const [typoStyle, setTypoStyle] = useState('mrbeast_style');
+  const [typoStyle, setTypoStyle] = useState('auto_harmony');
   const [loading, setLoading] = useState(false);
   const [resultImage, setResultImage] = useState(null);
   const [error, setError] = useState(null);
@@ -802,101 +802,144 @@ const App = () => {
   };
 
   // 2026 Modern Typography Options - Based on latest YouTube trends
+  // 2026 Typography with SCENE-AWARE COLOR HARMONY
   const typographyOptions = [
     {
-      id: 'mrbeast_style',
-      name: 'MrBeast Stili',
-      desc: 'Kalın comic-style font, beyaz yazı + siyah stroke, devasa rakamlar',
-      prompt: `MRBEAST TYPOGRAPHY STYLE (2026 VIRAL):
-- Font: Bold comic-style display font (like Bangers, Obelix Pro, or Impact)
-- Text Color: Pure WHITE (#FFFFFF) with THICK BLACK STROKE (8-12px outline)
-- Size: MASSIVE - text should take 15-20% of thumbnail width
-- Style: Slightly tilted (2-5 degrees) for dynamic energy
-- Shadow: Hard drop shadow (black, 4px offset) for depth
-- Numbers: If there are numbers, make them EXTRA LARGE and prominent
-- Position: Bottom center or bottom-left, never covering the face
-- Max words: 2-4 words only
-- Effect: Subtle outer glow matching the scene's dominant color`
+      id: 'auto_harmony',
+      name: 'Otomatik Renk Uyumu',
+      desc: 'AI sahneyi analiz eder, en uyumlu rengi seçer',
+      prompt: `AUTOMATIC COLOR HARMONY TYPOGRAPHY (BEST FOR CTR):
+
+⚠️ CRITICAL - ANALYZE THE SCENE FIRST:
+Before choosing text color, analyze the background/scene dominant colors:
+- If scene is DARK (black, dark blue, purple) → Use BRIGHT text (white, yellow, cyan)
+- If scene is WARM (red, orange, fire) → Use COOL accent (white with cyan glow, or gold)
+- If scene is COOL (blue, ice, water) → Use WARM accent (orange, gold, or white with warm glow)
+- If scene is GREEN (nature, poison, matrix) → Use COMPLEMENTARY (magenta, pink, or white with green glow)
+- If scene is PURPLE/MAGIC → Use GOLD or CYAN as accent
+
+COLOR HARMONY RULES:
+1. Text color must have 70%+ contrast ratio with background
+2. Use COMPLEMENTARY colors (opposite on color wheel) for maximum pop
+3. Add a GLOW that matches scene's secondary color
+4. Stroke color should be darker version of scene's dominant color
+
+FONT: Modern bold display font (Gotham Black, Gilroy ExtraBold, or Montserrat Black)
+SIZE: LARGE - 15-20% of thumbnail width
+STYLE: Clean, modern, slightly condensed
+STROKE: 6-8px outline in scene's dark color
+GLOW: Soft outer glow in scene's accent color
+POSITION: Bottom area, never covering the face`
     },
     {
-      id: 'neon_glow',
-      name: 'Neon Glow Effect',
-      desc: 'Parlayan neon yazı, cyberpunk/gaming estetiği',
-      prompt: `NEON GLOW TYPOGRAPHY (2026 GAMING):
-- Font: Clean geometric sans-serif (like Bebas Neue, Anton, or Montserrat Black)
-- Text Color: Vibrant neon (cyan #00FFFF, magenta #FF00FF, or lime #00FF00)
-- Glow: INTENSE multi-layer glow effect:
-  * Inner glow: white/light version of text color
-  * Outer glow: saturated version, 20-30px spread
-  * Ambient glow: soft halo around entire text
-- Stroke: Thin dark stroke (2-3px) for definition
-- Style: ALL CAPS, tight letter spacing
-- Background: Text should "light up" the surrounding area
-- Effect: Like a real neon sign in the dark`
+      id: 'cinematic_epic',
+      name: 'Sinematik Epik',
+      desc: 'Film posteri kalitesi, metalik/taş doku, sahne ışığıyla uyumlu',
+      prompt: `CINEMATIC EPIC TYPOGRAPHY (MOVIE POSTER QUALITY):
+
+⚠️ COLOR MATCHING - CRITICAL:
+- Analyze the scene's LIGHTING DIRECTION and COLOR TEMPERATURE
+- Text should be lit from the SAME direction as the scene
+- If scene has golden hour light → Gold/bronze metallic text
+- If scene has cold/blue light → Silver/platinum metallic text
+- If scene has fire/red light → Copper/rose gold metallic text
+- If scene is dark/mysterious → Deep chrome with colored rim light
+
+FONT: Cinematic display font (Trajan Pro, Cinzel, Times New Roman Bold, or Playfair Display Black)
+3D EFFECT:
+- Beveled edges catching scene's light color
+- Deep extrusion shadow in scene's dark color
+- Reflective highlights matching scene's brightest point
+TEXTURE: Subtle metal or stone texture
+STYLE: Uppercase, elegant, powerful
+SHADOW: Dramatic shadow matching scene lighting angle`
     },
     {
-      id: 'cinematic_3d',
-      name: '3D Sinematik',
-      desc: 'Film posteri tarzı, metalik dokulu 3D yazı',
-      prompt: `3D CINEMATIC TYPOGRAPHY (MOVIE POSTER):
-- Font: Bold condensed display font with sharp edges
-- Text Color: Metallic gradient (gold, silver, or bronze tones)
-- 3D Effect: Strong perspective depth with:
-  * Beveled edges catching light
-  * Deep extrusion shadow
-  * Reflective highlights on top surfaces
-- Texture: Subtle metal or stone texture overlay
-- Lighting: Match text lighting to scene lighting direction
-- Style: Uppercase, slightly compressed
-- Shadow: Long dramatic shadow matching scene lighting
-- Effect: Like carved metal or stone monument`
+      id: 'gaming_neon',
+      name: 'Gaming Neon',
+      desc: 'Oyun/teknoloji teması, parlak neon, sahne rengiyle uyumlu glow',
+      prompt: `GAMING NEON TYPOGRAPHY (SCENE-MATCHED):
+
+⚠️ NEON COLOR SELECTION:
+- Pick neon color that COMPLEMENTS the scene:
+  * Dark/purple scene → Cyan (#00FFFF) or Pink (#FF00FF) neon
+  * Blue/ice scene → Orange (#FF6600) or Yellow (#FFFF00) neon
+  * Green/matrix scene → Magenta (#FF00FF) or White neon
+  * Red/fire scene → Electric Blue (#0066FF) or Cyan neon
+  * Orange/sunset scene → Purple (#9900FF) or Cyan neon
+
+FONT: Modern tech font (Orbitron, Rajdhani Bold, Exo 2 Black, or Industry Bold)
+GLOW EFFECT:
+- Inner glow: White/light version of neon color
+- Outer glow: Saturated neon, 20-30px spread
+- Ambient: Soft colored light on nearby surfaces
+STROKE: Thin dark stroke (2-3px) for definition
+STYLE: ALL CAPS, tight letter spacing, futuristic
+VIBE: High-tech, energetic, electric`
     },
     {
-      id: 'clean_minimal',
-      name: 'Clean & Minimal',
-      desc: 'Modern, okunabilir, profesyonel - eğitim/tutorial içerikleri',
-      prompt: `CLEAN MINIMAL TYPOGRAPHY (PROFESSIONAL):
-- Font: Modern geometric sans-serif (Poppins Bold, Inter Black, or SF Pro Bold)
-- Text Color: Pure white or soft cream
-- Stroke: Clean black outline (4-6px) for readability
-- Style: Clean, professional, balanced
-- Spacing: Generous letter-spacing for clarity
-- Shadow: Soft, subtle drop shadow only
-- Size: Large but not overwhelming
-- Position: Strategic placement with breathing room
-- Effect: Easy to read at ANY size, even 120px thumbnail preview`
+      id: 'bold_impact',
+      name: 'Maksimum Etki',
+      desc: 'En yüksek okunabilirlik, kontrast renk seçimi',
+      prompt: `MAXIMUM IMPACT TYPOGRAPHY (HIGHEST READABILITY):
+
+⚠️ CONTRAST-FIRST COLOR SELECTION:
+- ALWAYS choose the color with MAXIMUM contrast to background
+- Dark background → Pure WHITE text with colored glow
+- Light background → Pure BLACK text with white outline
+- Colorful background → WHITE text + THICK black stroke + scene-color glow
+
+FONT: Ultra bold sans-serif (Bebas Neue, Anton, Oswald Bold, or Impact)
+SIZE: MASSIVE - largest possible while readable
+STROKE: THICK 8-12px black or dark outline
+SHADOW: Hard drop shadow (4-6px offset)
+GLOW: Outer glow in scene's DOMINANT color (subtle, 10-15px)
+STYLE: ALL CAPS, condensed, powerful
+NUMBERS: If present, make 50% larger than text
+POSITION: Bottom center, commanding presence`
     },
     {
-      id: 'gradient_impact',
-      name: 'Gradient Impact',
-      desc: 'Canlı gradient dolgu, modern ve dikkat çekici',
-      prompt: `GRADIENT IMPACT TYPOGRAPHY (2026 TREND):
-- Font: Extra bold display font (Impact, Anton, or Archivo Black)
-- Text Fill: Vibrant gradient:
-  * Option 1: Sunset (orange #FF6B35 to pink #FF1493)
-  * Option 2: Ocean (cyan #00D4FF to purple #8B5CF6)
-  * Option 3: Fire (yellow #FFD700 to red #FF0000)
-  * Choose gradient that CONTRASTS with background
-- Stroke: Thick white or black outline (6-8px)
-- Shadow: Colored shadow matching gradient end color
-- Style: Bold, condensed, ALL CAPS
-- Effect: Text should POP and feel energetic`
+      id: 'elegant_modern',
+      name: 'Elegant Modern',
+      desc: 'Premium görünüm, sofistike renk paleti',
+      prompt: `ELEGANT MODERN TYPOGRAPHY (PREMIUM LOOK):
+
+⚠️ SOPHISTICATED COLOR PALETTE:
+- Use MUTED, sophisticated versions of scene colors
+- Dark scene → Off-white (#F5F5F5) or cream (#FFF8DC)
+- Warm scene → Soft gold (#D4AF37) or champagne (#F7E7CE)
+- Cool scene → Platinum (#E5E4E2) or ice blue (#D4F1F9)
+- Add subtle gradient that flows WITH the scene's color direction
+
+FONT: Premium sans-serif (Proxima Nova Bold, Avenir Black, or Gotham Bold)
+STYLE: Clean, balanced, generous letter-spacing
+STROKE: Subtle 3-4px outline in scene's darkest color
+SHADOW: Soft, diffused shadow (no hard edges)
+EFFECT: Professional, trustworthy, high-end
+POSITION: Strategic placement with breathing room`
     },
     {
-      id: 'retro_comic',
-      name: 'Retro Comic',
-      desc: 'Vintage çizgi roman tarzı, eğlenceli ve nostaljik',
-      prompt: `RETRO COMIC TYPOGRAPHY:
-- Font: Classic comic book font (Comic Sans alternative, Bangers, or Komika)
-- Text Color: Bright yellow (#FFFF00) or white
-- Stroke: THICK black outline (10-14px) - key to comic look
-- Style: Slightly warped/curved text following action
-- Effects:
-  * Halftone dot pattern overlay (subtle)
-  * Action lines radiating from text
-  * Slight rotation for dynamism
-- Shadow: Hard offset shadow (red or blue for vintage feel)
-- Vibe: Fun, energetic, action-packed`
+      id: 'comic_action',
+      name: 'Comic Action',
+      desc: 'Çizgi roman tarzı, dinamik, sahne rengiyle uyumlu aksiyon efekti',
+      prompt: `COMIC ACTION TYPOGRAPHY (DYNAMIC & FUN):
+
+⚠️ COLOR MATCHING FOR COMICS:
+- Main text: YELLOW (#FFFF00) or WHITE (always readable)
+- Stroke: THICK BLACK (12-16px) - essential for comic look
+- Action lines/effects: Use scene's DOMINANT color
+- Shadow: Use scene's SECONDARY color (complementary)
+
+FONT: Comic display font (Bangers, Comic Neue Bold, or Luckiest Guy)
+STYLE:
+- Slightly tilted (5-10 degrees) for energy
+- Warped/curved following action
+- Action speed lines in scene's color
+EFFECTS:
+- Halftone dots in scene's colors (subtle)
+- Burst/explosion shapes behind text in scene colors
+- Dynamic, energetic positioning
+VIBE: Fun, exciting, eye-catching`
     }
   ];
 
@@ -1244,6 +1287,16 @@ TEXT OVERLAY: "${overlayText || topic}"
 - NEVER put text over the person's face
 - Avoid bottom-right corner (YouTube timestamp area)
 
+⚠️ CRITICAL - TEXT COLOR HARMONY:
+The text color MUST harmonize with the scene. Follow these rules:
+1. ANALYZE the scene's dominant colors FIRST
+2. Choose text color that CONTRASTS but COMPLEMENTS the background
+3. If scene is dark/cold → Use warm bright text (white, yellow, gold)
+4. If scene is warm/red → Use cool accent (white with blue glow)
+5. The text GLOW/OUTLINE should use a color FROM the scene
+6. Never use a text color that blends into the background
+7. Test: Would this text be readable at 120px thumbnail size?
+
 VISUAL STYLE: ${selectedTypo.prompt}
 
 SCENE COMPOSITION:
@@ -1330,13 +1383,13 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       setOverlayText(optimizedText);
     }
 
-    // Force CTR beast style
-    if (typoStyle !== 'mrbeast_style') {
-      setTypoStyle('mrbeast_style');
+    // Force best CTR style with color harmony
+    if (typoStyle !== 'auto_harmony') {
+      setTypoStyle('auto_harmony');
     }
 
     const archetype = CTR_ARCHETYPES.find(a => a.id === optimizedArchetype);
-    const selectedTypo = typographyOptions.find(t => t.id === 'mrbeast_style');
+    const selectedTypo = typographyOptions.find(t => t.id === 'auto_harmony');
 
     try {
       const optimizedPrompt = `You are an elite YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
@@ -1398,6 +1451,13 @@ TEXT: "${optimizedText || topic}"
 - Glowing outline in the scene's dominant color
 - Text should span most of the width
 - NEVER cover the person's face with text
+
+⚠️ CRITICAL - TEXT COLOR HARMONY:
+1. Analyze scene colors → Choose COMPLEMENTARY text color
+2. Dark scene → Bright text (white/yellow/gold)
+3. Warm scene → Cool accent text (white + blue glow)
+4. Text GLOW must use a color FROM the scene
+5. Maximum contrast for 120px thumbnail readability
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
 
