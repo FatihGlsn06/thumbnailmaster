@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Image as ImageIcon, Sparkles, Download, RefreshCcw,
   Type, BrainCircuit, Check, Monitor, Wand2, AlertTriangle, Palette, Eye,
-  Layers, Flame, Key, EyeOff, Zap, Play, Youtube,
+  Layers, Key, EyeOff, Zap, Play, Youtube,
   ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
   Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
   Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { WebGLShader } from '@/components/ui/web-gl-shader';
 import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
+import { Logo, LogoIcon, LogoMinimal } from '@/components/ui/logo';
 
 // HIGH-CTR THUMBNAIL ARCHETYPES
 const CTR_ARCHETYPES = [
@@ -1491,16 +1492,8 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
           <nav className="fixed top-0 left-0 right-0 z-50 p-3 sm:p-4">
             <div className="max-w-6xl mx-auto">
               <div className="bg-black/40 backdrop-blur-xl border border-[#27272a] rounded-xl sm:rounded-2xl px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl">
-                    <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                  </div>
-                  <span className="text-sm sm:text-lg font-black text-white tracking-tight">
-                    <span className="hidden sm:inline">THUMBNAIL</span>
-                    <span className="sm:hidden">THUMB</span>
-                    <span className="text-blue-400">MAX</span>
-                  </span>
-                </div>
+                <Logo size="sm" className="sm:hidden" />
+                <Logo size="md" className="hidden sm:flex" />
                 <button
                   onClick={() => setCurrentSection('app')}
                   className="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg sm:rounded-full transition-all border border-white/10"
@@ -1642,7 +1635,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
           <footer className="border-t border-[#27272a] py-4 sm:py-6 px-3 sm:px-4 bg-black/40 backdrop-blur-xl">
             <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-2 text-white/40 text-xs sm:text-sm">
-                <Flame className="w-3 h-3 sm:w-4 sm:h-4" />
+                <LogoMinimal size={16} />
                 <span>ThumbnailMAX — Gemini AI</span>
               </div>
               <p className="text-white/30 text-[10px] sm:text-xs text-center">
@@ -1676,14 +1669,10 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <button
               onClick={() => setCurrentSection('landing')}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              className="hover:opacity-80 transition-opacity"
             >
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-1.5 sm:p-2 rounded-lg sm:rounded-xl">
-                <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </div>
-              <span className="text-base sm:text-lg font-black text-white tracking-tight">
-                THUMB<span className="text-blue-400 hidden sm:inline">NAIL</span><span className="text-blue-400">MAX</span>
-              </span>
+              <Logo size="sm" className="sm:hidden" />
+              <Logo size="md" className="hidden sm:flex" />
             </button>
 
             <div className="flex items-center gap-2">
