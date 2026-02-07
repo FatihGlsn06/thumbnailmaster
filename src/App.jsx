@@ -698,6 +698,17 @@ const App = () => {
   const [isOptimized, setIsOptimized] = useState(false);
   const [previousImage, setPreviousImage] = useState(null);
 
+  // Concept/Reference image states
+  const [conceptImage, setConceptImage] = useState(null);
+  const [conceptBase64, setConceptBase64] = useState(null);
+  const [conceptAnalysis, setConceptAnalysis] = useState(null);
+  const [isAnalyzingConcept, setIsAnalyzingConcept] = useState(false);
+  const conceptInputRef = useRef(null);
+
+  // Photo analysis states
+  const [photoAnalysis, setPhotoAnalysis] = useState(null);
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+
   // Calculate CTR score whenever settings change
   useEffect(() => {
     const settings = {
@@ -772,6 +783,128 @@ const App = () => {
     }
   };
 
+  // Handle concept/reference image upload
+  const handleConceptUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setConceptImage(URL.createObjectURL(file));
+        setConceptBase64(reader.result.split(',')[1]);
+        setConceptAnalysis(null); // Reset previous analysis
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Analyze concept/reference image with AI
+  const analyzeConceptImage = async () => {
+    if (!conceptBase64 || !apiKey) return;
+
+    setIsAnalyzingConcept(true);
+    try {
+      const payload = {
+        contents: [{
+          parts: [
+            {
+              text: `Bu bir YouTube thumbnail referans/konsept görseli. Lütfen şunları analiz et ve Türkçe olarak özetle:
+
+1. **Stil**: Görsel stili (sinematik, çizgi film, gerçekçi, vb.)
+2. **Renk Paleti**: Baskın renkler ve ton
+3. **Kompozisyon**: Öğelerin yerleşimi
+4. **Metin Stili**: Varsa yazı tipi ve efektleri
+5. **Atmosfer**: Genel hava ve duygu
+6. **CTR Elementleri**: Dikkat çeken unsurlar
+
+Kısa ve öz ol. Her madde 1-2 cümle olsun.`
+            },
+            { inlineData: { mimeType: "image/png", data: conceptBase64 } }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 500
+        }
+      };
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await response.json();
+      const analysisText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (analysisText) {
+        setConceptAnalysis(analysisText);
+      } else {
+        setConceptAnalysis('Analiz yapılamadı.');
+      }
+    } catch (err) {
+      setConceptAnalysis('Analiz hatası: ' + err.message);
+    } finally {
+      setIsAnalyzingConcept(false);
+    }
+  };
+
+  // Analyze uploaded photo with AI
+  const analyzePhoto = async () => {
+    if (!base64Image || !apiKey) return;
+
+    setIsAnalyzingPhoto(true);
+    try {
+      const payload = {
+        contents: [{
+          parts: [
+            {
+              text: `Bu fotoğrafı analiz et ve YouTube thumbnail için kullanılacak şekilde Türkçe özetle:
+
+1. **Kişi**: Cinsiyet, tahmini yaş, genel görünüm
+2. **Yüz İfadesi**: Mevcut duygu/ifade
+3. **Giyim**: Kıyafet tipi ve renkleri
+4. **Poz**: Duruş ve açı
+5. **Aydınlatma**: Işık yönü ve kalitesi
+6. **Öneri**: Hangi thumbnail stili/arketipi uygun olur
+
+Kısa ve öz ol. Her madde 1-2 cümle olsun.`
+            },
+            { inlineData: { mimeType: "image/png", data: base64Image } }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 500
+        }
+      };
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await response.json();
+      const analysisText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (analysisText) {
+        setPhotoAnalysis(analysisText);
+      } else {
+        setPhotoAnalysis('Analiz yapılamadı.');
+      }
+    } catch (err) {
+      setPhotoAnalysis('Analiz hatası: ' + err.message);
+    } finally {
+      setIsAnalyzingPhoto(false);
+    }
+  };
+
   const generateThumbnail = async () => {
     if (!apiKey) {
       setError("Lütfen Gemini API Key'inizi girin.");
@@ -808,6 +941,23 @@ The user has provided the following description about "${topic}":
 ${topicDescription}
 
 Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
+` : ''}
+
+${conceptAnalysis ? `
+🎨 REFERENCE STYLE ANALYSIS (Apply this style to the thumbnail):
+The user provided a reference/concept image. Here's the AI analysis of that reference:
+${conceptAnalysis}
+
+IMPORTANT: Use this style analysis to match the visual style, colors, composition, and atmosphere of the reference image.
+But you MUST include the person from the provided photo - the reference is only for STYLE, not for replacing the person.
+` : ''}
+
+${photoAnalysis ? `
+👤 PHOTO SUBJECT ANALYSIS:
+Here's the AI analysis of the person's photo:
+${photoAnalysis}
+
+Use this information to better integrate the person into the scene and choose appropriate expressions/poses.
 ` : ''}
 
 ${selectedArchetype ? `
@@ -973,6 +1123,17 @@ MAXIMUM CLICK-THROUGH PRINCIPLES:
 - Colors must be VIBRANT and match a theme (green glow, red danger, blue ice, etc.)
 
 ${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
+
+${conceptAnalysis ? `
+🎨 STYLE REFERENCE (from user's concept image):
+${conceptAnalysis}
+Apply this style but ALWAYS include the person from the photo.
+` : ''}
+
+${photoAnalysis ? `
+👤 PHOTO ANALYSIS:
+${photoAnalysis}
+` : ''}
 
 REFERENCE PHOTO - The person in this photo must appear LARGE in the thumbnail:
 - Face should take up 40-50% of the frame HEIGHT - make it BIG
@@ -1453,7 +1614,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                 {/* Image Upload */}
                 <section className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                    <ImageIcon className="w-3 h-3" /> Referans Fotoğraf
+                    <User className="w-3 h-3" /> Kendi Fotoğrafınız
                   </label>
                   <div
                     onClick={() => fileInputRef.current.click()}
@@ -1465,7 +1626,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                     {image ? (
                       <div className="flex items-center gap-4">
                         <img src={image} className="w-16 h-16 rounded-lg object-cover" alt="Ref" />
-                        <div>
+                        <div className="flex-1">
                           <p className="text-xs font-bold text-blue-400">Yüklendi</p>
                           <p className="text-[10px] text-slate-600">Değiştirmek için tıkla</p>
                         </div>
@@ -1474,9 +1635,92 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                       <div className="text-center py-4 opacity-40">
                         <Upload className="w-6 h-6 mx-auto mb-2" />
                         <p className="text-xs font-bold">Fotoğraf Yükle</p>
+                        <p className="text-[10px] text-slate-500 mt-1">Thumbnail'da görünecek yüzünüz</p>
                       </div>
                     )}
                   </div>
+                  {/* Photo Analysis Button & Result */}
+                  {image && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); analyzePhoto(); }}
+                        disabled={isAnalyzingPhoto || !apiKey}
+                        className="w-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-purple-300 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:from-purple-500/30 hover:to-blue-500/30 transition-all disabled:opacity-50"
+                      >
+                        {isAnalyzingPhoto ? (
+                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Analiz Ediliyor...</>
+                        ) : (
+                          <><Eye className="w-3 h-3" /> AI ile Analiz Et</>
+                        )}
+                      </button>
+                      {photoAnalysis && (
+                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
+                          <p className="text-[10px] font-bold text-purple-400 mb-2 flex items-center gap-1">
+                            <BrainCircuit className="w-3 h-3" /> AI Fotoğraf Analizi
+                          </p>
+                          <div className="text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed">
+                            {photoAnalysis}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                {/* Concept/Reference Image Upload */}
+                <section className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <ImageIcon className="w-3 h-3" /> Konsept / Referans Görsel (Opsiyonel)
+                  </label>
+                  <div
+                    onClick={() => conceptInputRef.current.click()}
+                    className={`border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all ${
+                      conceptImage ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/10 bg-black/40 hover:bg-white/5'
+                    }`}
+                  >
+                    <input type="file" ref={conceptInputRef} onChange={handleConceptUpload} className="hidden" accept="image/*" />
+                    {conceptImage ? (
+                      <div className="flex items-center gap-4">
+                        <img src={conceptImage} className="w-16 h-16 rounded-lg object-cover" alt="Concept" />
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-emerald-400">Konsept Yüklendi</p>
+                          <p className="text-[10px] text-slate-600">Değiştirmek için tıkla</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 opacity-40">
+                        <Palette className="w-6 h-6 mx-auto mb-2" />
+                        <p className="text-xs font-bold">Referans Görsel Yükle</p>
+                        <p className="text-[10px] text-slate-500 mt-1">Örnek thumbnail veya stil referansı</p>
+                      </div>
+                    )}
+                  </div>
+                  {/* Concept Analysis Button & Result */}
+                  {conceptImage && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); analyzeConceptImage(); }}
+                        disabled={isAnalyzingConcept || !apiKey}
+                        className="w-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-2 hover:from-emerald-500/30 hover:to-teal-500/30 transition-all disabled:opacity-50"
+                      >
+                        {isAnalyzingConcept ? (
+                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Analiz Ediliyor...</>
+                        ) : (
+                          <><Eye className="w-3 h-3" /> AI ile Analiz Et</>
+                        )}
+                      </button>
+                      {conceptAnalysis && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                          <p className="text-[10px] font-bold text-emerald-400 mb-2 flex items-center gap-1">
+                            <BrainCircuit className="w-3 h-3" /> AI Konsept Analizi
+                          </p>
+                          <div className="text-[10px] text-slate-300 whitespace-pre-wrap leading-relaxed">
+                            {conceptAnalysis}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </section>
 
                 {/* Extra Request */}
