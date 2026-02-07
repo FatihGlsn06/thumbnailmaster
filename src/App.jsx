@@ -1125,11 +1125,8 @@ Bir gamer gibi düşün, detaylı ve tutkulu yaz. Bu bilgiler doğrudan thumbnai
 
       if (researchText) {
         setTopicResearch(researchText);
-        // Also update topic description with research summary for generation
-        if (!topicDescription) {
-          // Extract key visual info for the prompt
-          setTopicDescription(researchText.substring(0, 500));
-        }
+        // Research is stored separately and used in generation prompt
+        // topicDescription remains available for user's additional notes
       } else {
         setTopicResearch('Araştırma yapılamadı.');
       }
@@ -1994,16 +1991,21 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
 
               {/* Topic Research Results */}
               {topicResearch && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                      <Gamepad2 className="w-3 h-3" /> {topic}
+                      <Gamepad2 className="w-3 h-3" /> AI Araştırması: {topic}
                     </p>
                     <button onClick={() => setTopicResearch(null)} className="text-slate-500 hover:text-white">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
-                  <p className="text-xs text-slate-300 line-clamp-4">{topicResearch}</p>
+                  <div className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
+                    {topicResearch}
+                  </div>
+                  <p className="text-[10px] text-green-400 flex items-center gap-1 pt-1 border-t border-amber-500/20">
+                    <Check className="w-3 h-3" /> Bu araştırma thumbnail oluştururken kullanılacak
+                  </p>
                 </div>
               )}
 
@@ -2088,7 +2090,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                 <textarea
                   value={topicDescription}
                   onChange={(e) => setTopicDescription(e.target.value)}
-                  placeholder="Oyunun atmosferi, karakterler, renkler..."
+                  placeholder={topicResearch ? "Araştırma tamamlandı! Ekstra detay eklemek isterseniz buraya yazın..." : "AI araştırması yapmadan önce konu hakkında bilgi verin..."}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[60px]"
                 />
               </div>
