@@ -708,6 +708,7 @@ const App = () => {
   // Photo analysis states
   const [photoAnalysis, setPhotoAnalysis] = useState(null);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const [autoGenerateAfterAnalysis, setAutoGenerateAfterAnalysis] = useState(false);
 
   // Calculate CTR score whenever settings change
   useEffect(() => {
@@ -722,6 +723,19 @@ const App = () => {
     const score = calculateCTRScore(settings);
     setCtrScore(score);
   }, [selectedArchetype, topicDescription, overlayText, typoStyle, base64Image, isOptimized]);
+
+  // Auto-generate thumbnail after analysis completes
+  useEffect(() => {
+    if (autoGenerateAfterAnalysis && photoAnalysis && !isAnalyzingPhoto && !isAnalyzingConcept && !loading) {
+      setAutoGenerateAfterAnalysis(false);
+      // Small delay to ensure state is fully updated
+      setTimeout(() => {
+        if (base64Image && topic && apiKey) {
+          generateThumbnail();
+        }
+      }, 100);
+    }
+  }, [autoGenerateAfterAnalysis, photoAnalysis, isAnalyzingPhoto, isAnalyzingConcept, loading]);
 
   const handleSaveApiKey = (value) => {
     setApiKey(value);
@@ -841,6 +855,10 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
       if (analysisText) {
         setConceptAnalysis(analysisText);
+        // Trigger auto-generate if photo and topic are set
+        if (base64Image && topic) {
+          setAutoGenerateAfterAnalysis(true);
+        }
       } else {
         setConceptAnalysis('Analiz yapılamadı.');
       }
@@ -895,6 +913,10 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
       if (analysisText) {
         setPhotoAnalysis(analysisText);
+        // Trigger auto-generate if topic is set
+        if (topic) {
+          setAutoGenerateAfterAnalysis(true);
+        }
       } else {
         setPhotoAnalysis('Analiz yapılamadı.');
       }
@@ -1649,8 +1671,10 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                       >
                         {isAnalyzingPhoto ? (
                           <><RefreshCcw className="w-3 h-3 animate-spin" /> Analiz Ediliyor...</>
+                        ) : loading ? (
+                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Thumbnail Oluşturuluyor...</>
                         ) : (
-                          <><Eye className="w-3 h-3" /> AI ile Analiz Et</>
+                          <><Eye className="w-3 h-3" /> {topic ? 'Analiz Et & Oluştur' : 'AI ile Analiz Et'}</>
                         )}
                       </button>
                       {photoAnalysis && (
@@ -1705,8 +1729,10 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                       >
                         {isAnalyzingConcept ? (
                           <><RefreshCcw className="w-3 h-3 animate-spin" /> Analiz Ediliyor...</>
+                        ) : loading ? (
+                          <><RefreshCcw className="w-3 h-3 animate-spin" /> Thumbnail Oluşturuluyor...</>
                         ) : (
-                          <><Eye className="w-3 h-3" /> AI ile Analiz Et</>
+                          <><Eye className="w-3 h-3" /> {(base64Image && topic) ? 'Analiz Et & Oluştur' : 'AI ile Analiz Et'}</>
                         )}
                       </button>
                       {conceptAnalysis && (
