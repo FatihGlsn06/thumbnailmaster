@@ -206,7 +206,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
       align: 'left',
       visible: true
     };
-    setLayers([...layers, newLayer]);
+    setLayers(prevLayers => [...prevLayers, newLayer]);
     setSelectedLayerId(newLayer.id);
   };
 
@@ -235,7 +235,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
           rotation: 0,
           visible: true
         };
-        setLayers([...layers, newLayer]);
+        setLayers(prevLayers => [...prevLayers, newLayer]);
         setSelectedLayerId(newLayer.id);
       };
       img.src = e.target.result;
@@ -271,25 +271,28 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
     }
   };
 
-  // Update layer
+  // Update layer - using functional update to avoid stale closure
   const updateLayer = (id, updates) => {
-    setLayers(layers.map(l => l.id === id ? { ...l, ...updates } : l));
+    setLayers(prevLayers => prevLayers.map(l => l.id === id ? { ...l, ...updates } : l));
   };
 
   // Delete layer
   const deleteLayer = (id) => {
-    setLayers(layers.filter(l => l.id !== id));
+    setLayers(prevLayers => prevLayers.filter(l => l.id !== id));
     if (selectedLayerId === id) setSelectedLayerId(null);
   };
 
   // Duplicate layer
   const duplicateLayer = (id) => {
-    const layer = layers.find(l => l.id === id);
-    if (layer) {
-      const newLayer = { ...layer, id: Date.now(), x: layer.x + 20, y: layer.y + 20 };
-      setLayers([...layers, newLayer]);
-      setSelectedLayerId(newLayer.id);
-    }
+    setLayers(prevLayers => {
+      const layer = prevLayers.find(l => l.id === id);
+      if (layer) {
+        const newLayer = { ...layer, id: Date.now(), x: layer.x + 20, y: layer.y + 20 };
+        setSelectedLayerId(newLayer.id);
+        return [...prevLayers, newLayer];
+      }
+      return prevLayers;
+    });
   };
 
   // Apply style preset
