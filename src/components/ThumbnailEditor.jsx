@@ -6,58 +6,82 @@ import {
   Search, Sparkles, Move, RotateCcw, ZoomIn, ZoomOut
 } from 'lucide-react';
 
+// En popüler fontlar - kolay erişim için
+const POPULAR_FONTS = [
+  { name: 'Bangers', url: 'https://fonts.googleapis.com/css2?family=Bangers&display=swap', style: 'En Popüler', emoji: '⭐' },
+  { name: 'Bebas Neue', url: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', style: 'Film Afişi', emoji: '🎬' },
+  { name: 'Anton', url: 'https://fonts.googleapis.com/css2?family=Anton&display=swap', style: 'Güçlü', emoji: '💪' },
+  { name: 'Oswald', url: 'https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap', style: 'Şık', emoji: '✨' },
+  { name: 'Russo One', url: 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap', style: 'Gaming', emoji: '🎮' },
+  { name: 'Permanent Marker', url: 'https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap', style: 'El Yazısı', emoji: '✍️' },
+];
+
 // Kategorize edilmiş fontlar
 const FONT_CATEGORIES = [
   {
+    id: 'popular',
+    name: 'Popüler',
+    icon: '⭐',
+    fonts: POPULAR_FONTS,
+  },
+  {
     id: 'gaming',
-    name: 'Gaming & Esports',
+    name: 'Gaming',
     icon: '🎮',
     fonts: [
-      { name: 'Orbitron', url: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap', style: 'Fütüristik / Sci-Fi' },
-      { name: 'Press Start 2P', url: 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap', style: 'Retro Pixel' },
-      { name: 'Bungee', url: 'https://fonts.googleapis.com/css2?family=Bungee&display=swap', style: 'Kalın Blok' },
-      { name: 'Black Ops One', url: 'https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap', style: 'Askeri / FPS' },
-      { name: 'Russo One', url: 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap', style: 'Mekanik / Robot' },
-      { name: 'Audiowide', url: 'https://fonts.googleapis.com/css2?family=Audiowide&display=swap', style: 'Neon / Cyber' },
+      { name: 'Orbitron', url: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap', style: 'Sci-Fi' },
+      { name: 'Press Start 2P', url: 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap', style: 'Pixel' },
+      { name: 'Bungee', url: 'https://fonts.googleapis.com/css2?family=Bungee&display=swap', style: 'Blok' },
+      { name: 'Black Ops One', url: 'https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap', style: 'FPS' },
+      { name: 'Russo One', url: 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap', style: 'Robot' },
+      { name: 'Audiowide', url: 'https://fonts.googleapis.com/css2?family=Audiowide&display=swap', style: 'Cyber' },
+      { name: 'Rajdhani', url: 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&display=swap', style: 'Tech' },
+      { name: 'Exo 2', url: 'https://fonts.googleapis.com/css2?family=Exo+2:wght@700;900&display=swap', style: 'Modern' },
     ],
   },
   {
     id: 'youtube',
-    name: 'YouTube & Sosyal Medya',
+    name: 'YouTube',
     icon: '📺',
     fonts: [
-      { name: 'Bangers', url: 'https://fonts.googleapis.com/css2?family=Bangers&display=swap', style: 'Çizgi Roman / Eğlenceli' },
-      { name: 'Luckiest Guy', url: 'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap', style: 'Karikatür / Enerjik' },
-      { name: 'Lilita One', url: 'https://fonts.googleapis.com/css2?family=Lilita+One&display=swap', style: 'Kalın / Dikkat Çekici' },
-      { name: 'Righteous', url: 'https://fonts.googleapis.com/css2?family=Righteous&display=swap', style: 'Retro / Groovy' },
-      { name: 'Fredoka One', url: 'https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap', style: 'Yumuşak / Samimi' },
-      { name: 'Passion One', url: 'https://fonts.googleapis.com/css2?family=Passion+One:wght@400;700;900&display=swap', style: 'Spor / Dinamik' },
+      { name: 'Bangers', url: 'https://fonts.googleapis.com/css2?family=Bangers&display=swap', style: 'Eğlenceli' },
+      { name: 'Luckiest Guy', url: 'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap', style: 'Enerjik' },
+      { name: 'Lilita One', url: 'https://fonts.googleapis.com/css2?family=Lilita+One&display=swap', style: 'Kalın' },
+      { name: 'Righteous', url: 'https://fonts.googleapis.com/css2?family=Righteous&display=swap', style: 'Retro' },
+      { name: 'Fredoka One', url: 'https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap', style: 'Yumuşak' },
+      { name: 'Passion One', url: 'https://fonts.googleapis.com/css2?family=Passion+One:wght@700;900&display=swap', style: 'Spor' },
+      { name: 'Titan One', url: 'https://fonts.googleapis.com/css2?family=Titan+One&display=swap', style: 'Büyük' },
+      { name: 'Bowlby One SC', url: 'https://fonts.googleapis.com/css2?family=Bowlby+One+SC&display=swap', style: 'Yuvarlak' },
     ],
   },
   {
     id: 'cinematic',
-    name: 'Sinematik & Profesyonel',
+    name: 'Sinematik',
     icon: '🎬',
     fonts: [
-      { name: 'Oswald', url: 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap', style: 'Dar / Şık' },
-      { name: 'Bebas Neue', url: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', style: 'Film Afişi' },
-      { name: 'Anton', url: 'https://fonts.googleapis.com/css2?family=Anton&display=swap', style: 'Güçlü Başlık' },
-      { name: 'Teko', url: 'https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&display=swap', style: 'Teknik / Modern' },
-      { name: 'Staatliches', url: 'https://fonts.googleapis.com/css2?family=Staatliches&display=swap', style: 'Gazete Manşeti' },
-      { name: 'Big Shoulders Display', url: 'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;900&display=swap', style: 'Endüstriyel' },
+      { name: 'Oswald', url: 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap', style: 'Şık' },
+      { name: 'Bebas Neue', url: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', style: 'Film' },
+      { name: 'Anton', url: 'https://fonts.googleapis.com/css2?family=Anton&display=swap', style: 'Güçlü' },
+      { name: 'Teko', url: 'https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&display=swap', style: 'Modern' },
+      { name: 'Staatliches', url: 'https://fonts.googleapis.com/css2?family=Staatliches&display=swap', style: 'Manşet' },
+      { name: 'Big Shoulders Display', url: 'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap', style: 'Endüstriyel' },
+      { name: 'Archivo Black', url: 'https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap', style: 'Kalın' },
+      { name: 'Saira Condensed', url: 'https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800&display=swap', style: 'Dar' },
     ],
   },
   {
     id: 'decorative',
-    name: 'El Yazısı & Dekoratif',
+    name: 'Dekoratif',
     icon: '✍️',
     fonts: [
-      { name: 'Permanent Marker', url: 'https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap', style: 'Kalem / Marker' },
-      { name: 'Creepster', url: 'https://fonts.googleapis.com/css2?family=Creepster&display=swap', style: 'Korku / Halloween' },
+      { name: 'Permanent Marker', url: 'https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap', style: 'Marker' },
+      { name: 'Creepster', url: 'https://fonts.googleapis.com/css2?family=Creepster&display=swap', style: 'Korku' },
       { name: 'Special Elite', url: 'https://fonts.googleapis.com/css2?family=Special+Elite&display=swap', style: 'Daktilo' },
-      { name: 'Bungee Shade', url: 'https://fonts.googleapis.com/css2?family=Bungee+Shade&display=swap', style: '3D Gölgeli' },
-      { name: 'Fascinate Inline', url: 'https://fonts.googleapis.com/css2?family=Fascinate+Inline&display=swap', style: 'Art Deco' },
-      { name: 'Metal Mania', url: 'https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap', style: 'Metal / Rock' },
+      { name: 'Bungee Shade', url: 'https://fonts.googleapis.com/css2?family=Bungee+Shade&display=swap', style: '3D' },
+      { name: 'Metal Mania', url: 'https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap', style: 'Metal' },
+      { name: 'Knewave', url: 'https://fonts.googleapis.com/css2?family=Knewave&display=swap', style: 'Dalga' },
+      { name: 'Shrikhand', url: 'https://fonts.googleapis.com/css2?family=Shrikhand&display=swap', style: 'Retro' },
+      { name: 'Sigmar One', url: 'https://fonts.googleapis.com/css2?family=Sigmar+One&display=swap', style: 'Kalın' },
     ],
   },
 ];
@@ -88,7 +112,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
 
   // UI state
   const [activeTab, setActiveTab] = useState('text');
-  const [activeCategory, setActiveCategory] = useState('gaming');
+  const [activeCategory, setActiveCategory] = useState('popular');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -512,167 +536,64 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                   Yazı Ekle
                 </button>
 
-                {/* Font Upload */}
-                <div
-                  onDragOver={(e) => { e.preventDefault(); setFontDragOver(true); }}
-                  onDragLeave={() => setFontDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setFontDragOver(false); handleFontUpload(e.dataTransfer.files); }}
-                  onClick={() => fontInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
-                    fontDragOver ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-white/20'
-                  }`}
-                >
-                  <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" multiple hidden
-                    onChange={(e) => handleFontUpload(e.target.files)} />
-                  <Upload className="w-5 h-5 mx-auto mb-2 text-purple-400" />
-                  <p className="text-xs text-purple-300 font-medium">Özel Font Yükle</p>
-                  <p className="text-[10px] text-slate-500 mt-1">.ttf, .otf, .woff</p>
-                </div>
-
-                {/* Custom Fonts */}
-                {customFonts.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-purple-400 font-bold uppercase tracking-wider">📁 Yüklenen Fontlar</p>
-                    {customFonts.map((font, i) => (
-                      <button
-                        key={i}
-                        onClick={() => selectedLayer?.type === 'text' && updateLayer(selectedLayerId, { fontFamily: font.name })}
-                        className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
-                          selectedLayer?.fontFamily === font.name
-                            ? 'bg-purple-500/20 border border-purple-500/40'
-                            : 'bg-white/5 border border-transparent hover:bg-white/10'
-                        }`}
-                      >
-                        <span style={{ fontFamily: font.name }} className="text-white">{font.displayName}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setCustomFonts(prev => prev.filter((_, idx) => idx !== i)); }}
-                          className="text-red-400 hover:text-red-300 p-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Font ara..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
-                  />
-                </div>
-
-                {/* Categories */}
-                {!searchQuery && (
-                  <div className="flex flex-wrap gap-2">
-                    {FONT_CATEGORIES.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setActiveCategory(cat.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                          activeCategory === cat.id
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                            : 'bg-white/5 text-slate-400 border border-transparent hover:bg-white/10'
-                        }`}
-                      >
-                        {cat.icon} {cat.name.split(' ')[0]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Font List */}
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {getFilteredFonts().map((font, i) => (
-                    <button
-                      key={i}
-                      onClick={() => selectedLayer?.type === 'text' && updateLayer(selectedLayerId, { fontFamily: font.name })}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-all ${
-                        selectedLayer?.fontFamily === font.name
-                          ? 'bg-purple-500/20 border border-purple-500/40'
-                          : 'bg-white/[0.03] border border-transparent hover:bg-white/[0.06]'
-                      }`}
-                    >
-                      <div>
-                        <span style={{ fontFamily: font.name }} className="text-white text-lg block">{font.name}</span>
-                        <span className="text-[10px] text-slate-500">{font.style}</span>
-                      </div>
-                      <span style={{ fontFamily: font.name }} className="text-slate-600 text-sm">Abc</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Text Properties */}
+                {/* Text Properties - Show first if text selected */}
                 {selectedLayer?.type === 'text' && (
-                  <div className="space-y-3 p-3 bg-white/5 rounded-xl border border-white/10">
-                    <p className="text-xs text-slate-400 font-medium">Yazı Ayarları</p>
+                  <div className="space-y-3 p-3 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/20">
+                    <p className="text-xs text-purple-300 font-bold">✏️ Yazı Düzenle</p>
 
                     <input
                       type="text"
                       value={selectedLayer.text}
                       onChange={(e) => updateLayer(selectedLayerId, { text: e.target.value })}
-                      className="w-full bg-black/40 border border-white/10 rounded-lg p-2.5 text-white text-sm focus:outline-none focus:border-purple-500/50"
-                      placeholder="Yazı..."
+                      className="w-full bg-black/40 border border-white/20 rounded-lg p-2.5 text-white font-medium focus:outline-none focus:border-purple-500"
+                      placeholder="Yazınızı girin..."
                     />
 
-                    {/* Size */}
-                    <div>
-                      <label className="text-[10px] text-slate-500 mb-1 block">Boyut: {selectedLayer.fontSize}px</label>
-                      <input
-                        type="range" min="20" max="200" value={selectedLayer.fontSize}
-                        onChange={(e) => updateLayer(selectedLayerId, { fontSize: parseInt(e.target.value) })}
-                        className="w-full accent-purple-500"
-                      />
+                    {/* Size & Rotation */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] text-slate-400 mb-1 block">Boyut: {selectedLayer.fontSize}px</label>
+                        <input
+                          type="range" min="20" max="200" value={selectedLayer.fontSize}
+                          onChange={(e) => updateLayer(selectedLayerId, { fontSize: parseInt(e.target.value) })}
+                          className="w-full accent-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-400 mb-1 block">Döndür: {selectedLayer.rotation}°</label>
+                        <input
+                          type="range" min="-45" max="45" value={selectedLayer.rotation}
+                          onChange={(e) => updateLayer(selectedLayerId, { rotation: parseInt(e.target.value) })}
+                          className="w-full accent-purple-500"
+                        />
+                      </div>
                     </div>
 
                     {/* Colors */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] text-slate-500 mb-1 block">Renk</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color" value={selectedLayer.color}
-                            onChange={(e) => updateLayer(selectedLayerId, { color: e.target.value })}
-                            className="w-8 h-8 rounded cursor-pointer border-0"
-                          />
-                          <span className="text-xs text-slate-500">{selectedLayer.color}</span>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color" value={selectedLayer.color}
+                          onChange={(e) => updateLayer(selectedLayerId, { color: e.target.value })}
+                          className="w-8 h-8 rounded cursor-pointer border-0"
+                        />
+                        <span className="text-[10px] text-slate-400">Renk</span>
                       </div>
-                      <div>
-                        <label className="text-[10px] text-slate-500 mb-1 block">Kenar</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color" value={selectedLayer.strokeColor}
-                            onChange={(e) => updateLayer(selectedLayerId, { strokeColor: e.target.value })}
-                            className="w-8 h-8 rounded cursor-pointer border-0"
-                          />
-                          <span className="text-xs text-slate-500">{selectedLayer.strokeColor}</span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color" value={selectedLayer.strokeColor}
+                          onChange={(e) => updateLayer(selectedLayerId, { strokeColor: e.target.value })}
+                          className="w-8 h-8 rounded cursor-pointer border-0"
+                        />
+                        <span className="text-[10px] text-slate-400">Kenar</span>
                       </div>
-                    </div>
-
-                    {/* Stroke Width */}
-                    <div>
-                      <label className="text-[10px] text-slate-500 mb-1 block">Kenar: {selectedLayer.strokeWidth}px</label>
-                      <input
-                        type="range" min="0" max="20" value={selectedLayer.strokeWidth}
-                        onChange={(e) => updateLayer(selectedLayerId, { strokeWidth: parseInt(e.target.value) })}
-                        className="w-full accent-purple-500"
-                      />
-                    </div>
-
-                    {/* Rotation */}
-                    <div>
-                      <label className="text-[10px] text-slate-500 mb-1 block">Döndürme: {selectedLayer.rotation}°</label>
-                      <input
-                        type="range" min="-45" max="45" value={selectedLayer.rotation}
-                        onChange={(e) => updateLayer(selectedLayerId, { rotation: parseInt(e.target.value) })}
-                        className="w-full accent-purple-500"
-                      />
+                      <div className="flex-1">
+                        <input
+                          type="range" min="0" max="15" value={selectedLayer.strokeWidth}
+                          onChange={(e) => updateLayer(selectedLayerId, { strokeWidth: parseInt(e.target.value) })}
+                          className="w-full accent-purple-500"
+                        />
+                      </div>
                     </div>
 
                     {/* Style buttons */}
@@ -696,12 +617,139 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                       <button
                         onClick={() => updateLayer(selectedLayerId, { rotation: 0 })}
                         className="flex-1 p-2 rounded-lg border bg-black/40 border-white/10 hover:bg-white/10 transition-colors"
+                        title="Sıfırla"
                       >
                         <RotateCcw className="w-4 h-4 mx-auto text-white" />
                       </button>
                     </div>
                   </div>
                 )}
+
+                {/* Popular Fonts - Quick Select */}
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-400 font-medium">⭐ Popüler Fontlar</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {POPULAR_FONTS.map((font, i) => (
+                      <button
+                        key={i}
+                        onClick={() => selectedLayer?.type === 'text' && updateLayer(selectedLayerId, { fontFamily: font.name })}
+                        disabled={selectedLayer?.type !== 'text'}
+                        className={`p-3 rounded-xl text-left transition-all ${
+                          selectedLayer?.fontFamily === font.name
+                            ? 'bg-purple-500/30 border-2 border-purple-500'
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 disabled:opacity-40'
+                        }`}
+                      >
+                        <span className="text-lg mb-1 block">{font.emoji}</span>
+                        <span style={{ fontFamily: font.name }} className="text-white text-sm font-bold block truncate">{font.name}</span>
+                        <span className="text-[10px] text-slate-500">{font.style}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* All Fonts Section */}
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-400 font-medium">🔤 Tüm Fontlar</p>
+
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Font ara..."
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+                    />
+                  </div>
+
+                  {/* Categories */}
+                  {!searchQuery && (
+                    <div className="flex flex-wrap gap-1">
+                      {FONT_CATEGORIES.map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setActiveCategory(cat.id)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                            activeCategory === cat.id
+                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                              : 'bg-white/5 text-slate-400 border border-transparent hover:bg-white/10'
+                          }`}
+                        >
+                          {cat.icon} {cat.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Font List */}
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {getFilteredFonts().map((font, i) => (
+                      <button
+                        key={i}
+                        onClick={() => selectedLayer?.type === 'text' && updateLayer(selectedLayerId, { fontFamily: font.name })}
+                        disabled={selectedLayer?.type !== 'text'}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all ${
+                          selectedLayer?.fontFamily === font.name
+                            ? 'bg-purple-500/20 border border-purple-500/40'
+                            : 'bg-white/[0.03] border border-transparent hover:bg-white/[0.06] disabled:opacity-40'
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <span style={{ fontFamily: font.name }} className="text-white text-base block truncate">{font.name}</span>
+                          <span className="text-[10px] text-slate-500">{font.style}</span>
+                        </div>
+                        <span style={{ fontFamily: font.name }} className="text-slate-500 text-lg ml-2">Aa</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Font Upload - At bottom, collapsed */}
+                <details className="group">
+                  <summary className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer hover:text-slate-400 py-2">
+                    <Upload className="w-3 h-3" />
+                    <span>Kendi fontunu yükle (ileri düzey)</span>
+                  </summary>
+                  <div className="pt-2 space-y-2">
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setFontDragOver(true); }}
+                      onDragLeave={() => setFontDragOver(false)}
+                      onDrop={(e) => { e.preventDefault(); setFontDragOver(false); handleFontUpload(e.dataTransfer.files); }}
+                      onClick={() => fontInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-all ${
+                        fontDragOver ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" multiple hidden
+                        onChange={(e) => handleFontUpload(e.target.files)} />
+                      <p className="text-[11px] text-slate-400">.ttf, .otf, .woff dosyası seçin</p>
+                    </div>
+
+                    {/* Custom Fonts List */}
+                    {customFonts.length > 0 && (
+                      <div className="space-y-1">
+                        {customFonts.map((font, i) => (
+                          <div
+                            key={i}
+                            onClick={() => selectedLayer?.type === 'text' && updateLayer(selectedLayerId, { fontFamily: font.name })}
+                            className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${
+                              selectedLayer?.fontFamily === font.name ? 'bg-purple-500/20' : 'bg-white/5 hover:bg-white/10'
+                            }`}
+                          >
+                            <span style={{ fontFamily: font.name }} className="text-white text-sm">{font.displayName}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setCustomFonts(prev => prev.filter((_, idx) => idx !== i)); }}
+                              className="text-red-400 hover:text-red-300 p-1"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </details>
               </>
             )}
 
