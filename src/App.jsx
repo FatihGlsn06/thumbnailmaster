@@ -1573,6 +1573,93 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
     }
   };
 
+  // Yazısız yeniden oluştur
+  const regenerateWithoutText = async () => {
+    const savedText = overlayText;
+    setOverlayText(''); // Geçici olarak yazıyı kaldır
+
+    // State güncellemesi için kısa bir bekleme
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Mevcut generate fonksiyonunu çağırmak yerine, doğrudan API çağrısı yapıyoruz
+    if (!apiKey || !base64Image || !topic) {
+      setOverlayText(savedText); // Hata varsa geri al
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
+
+      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+
+⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
+- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
+- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
+
+🎯 ARCHETYPE: ${THUMBNAIL_ARCHETYPES[selectedArchetype]?.name || 'Power Fantasy'}
+${THUMBNAIL_ARCHETYPES[selectedArchetype]?.description || ''}
+
+${topicResearch ? `🎮 GAME INFO:\n${topicResearch}` : ''}
+${photoAnalysis ? `👤 PHOTO:\n${photoAnalysis}` : ''}
+
+REFERENCE PHOTO - The person must appear LARGE (face 40-50% height):
+- Transform to match theme
+- Dramatic lighting
+- Keep face recognizable
+
+⚠️ NO TEXT ON THE IMAGE - Create a completely clean, text-free thumbnail.
+The thumbnail should be designed so the user can add their own text later.
+
+VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors'}
+
+MAKE IT CLICK-WORTHY!`;
+
+      const payload = {
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: "image/png", data: base64Image } }
+          ]
+        }],
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          temperature: 0.7
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      };
+
+      const result = await fetchWithRetry(
+        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+      if (generatedBase64) {
+        setResultImage(`data:image/png;base64,${generatedBase64}`);
+      } else {
+        throw new Error('Yazısız thumbnail oluşturulamadı.');
+      }
+    } catch (err) {
+      setError(err.message);
+      setOverlayText(savedText); // Hata durumunda geri al
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const features = [
     {
       icon: <BrainCircuit className="w-6 h-6" />,
@@ -2068,6 +2155,23 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                     {isOptimizing ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                     <span className="hidden sm:inline">Optimize Et</span>
                   </button>
+                </div>
+
+                {/* Yazısız Yeniden Oluştur - İpucu */}
+                <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-amber-300">
+                      💡 AI yazı eklemiş mi? Yazısız versiyon oluşturup editörde kendi yazınızı ekleyebilirsiniz.
+                    </p>
+                    <button
+                      onClick={regenerateWithoutText}
+                      disabled={loading}
+                      className="shrink-0 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                    >
+                      <RefreshCcw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                      Yazısız Oluştur
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

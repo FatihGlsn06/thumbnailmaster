@@ -394,6 +394,21 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Clear All Button - only show if there are layers */}
+          {layers.length > 0 && (
+            <button
+              onClick={() => {
+                if (confirm(`${layers.length} katmanı silmek istediğinize emin misiniz?`)) {
+                  setLayers([]);
+                  setSelectedLayerId(null);
+                }
+              }}
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors border border-red-500/20"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Tümünü Sil ({layers.length})</span>
+            </button>
+          )}
           <button
             onClick={handleSave}
             className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
@@ -690,7 +705,18 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
             {/* STYLES TAB */}
             {activeTab === 'styles' && (
               <>
-                <p className="text-xs text-slate-400">Bir yazı katmanı seçin ve hızlı stil uygulayın</p>
+                {/* Warning if no text layer selected */}
+                {selectedLayer?.type !== 'text' && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-3">
+                    <p className="text-xs text-amber-300">
+                      {layers.filter(l => l.type === 'text').length === 0
+                        ? '⚠️ Önce "Yazı" sekmesinden bir yazı ekleyin'
+                        : '💡 Stil uygulamak için bir yazı katmanı seçin'}
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-400 mb-2">Hızlı stil uygula:</p>
 
                 <div className="grid grid-cols-2 gap-2">
                   {STYLE_PRESETS.map(preset => (
@@ -713,23 +739,6 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                       <span className="text-xs text-slate-400">{preset.label}</span>
                     </button>
                   ))}
-                </div>
-
-                {/* Quick add with preset */}
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-xs text-slate-400 mb-3">Stilli Yazı Ekle</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {STYLE_PRESETS.slice(0, 4).map(preset => (
-                      <button
-                        key={preset.id}
-                        onClick={() => addTextLayer(preset)}
-                        className="p-2 rounded-lg bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/20 hover:border-purple-500/40 transition-all text-xs text-white"
-                      >
-                        <Plus className="w-3 h-3 inline mr-1" />
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </>
             )}
