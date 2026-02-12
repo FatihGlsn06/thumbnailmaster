@@ -6,37 +6,50 @@ import {
   Search, Sparkles, Move, RotateCcw, ZoomIn, ZoomOut
 } from 'lucide-react';
 
+// 2026 TREND FONTLARI - Kapsamlı Koleksiyon
+
 // En popüler fontlar - kolay erişim için
 const POPULAR_FONTS = [
-  { name: 'Bangers', url: 'https://fonts.googleapis.com/css2?family=Bangers&display=swap', style: 'En Popüler', emoji: '⭐' },
-  { name: 'Bebas Neue', url: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', style: 'Film Afişi', emoji: '🎬' },
-  { name: 'Anton', url: 'https://fonts.googleapis.com/css2?family=Anton&display=swap', style: 'Güçlü', emoji: '💪' },
-  { name: 'Oswald', url: 'https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap', style: 'Şık', emoji: '✨' },
-  { name: 'Russo One', url: 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap', style: 'Gaming', emoji: '🎮' },
-  { name: 'Permanent Marker', url: 'https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap', style: 'El Yazısı', emoji: '✍️' },
+  { name: 'Bebas Neue', url: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', style: '#1 Trend 2026', emoji: '🔥' },
+  { name: 'Impact', url: 'https://fonts.googleapis.com/css2?family=Impact&display=swap', style: 'Klasik Güç', emoji: '💪' },
+  { name: 'Anton', url: 'https://fonts.googleapis.com/css2?family=Anton&display=swap', style: 'YouTube Favorisi', emoji: '⭐' },
+  { name: 'Oswald', url: 'https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap', style: 'Modern Şık', emoji: '✨' },
+  { name: 'Montserrat', url: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap', style: 'Çok Yönlü', emoji: '🎯' },
+  { name: 'Bangers', url: 'https://fonts.googleapis.com/css2?family=Bangers&display=swap', style: 'Eğlenceli', emoji: '🎉' },
 ];
 
 // Kategorize edilmiş fontlar
 const FONT_CATEGORIES = [
   {
-    id: 'popular',
-    name: 'Popüler',
-    icon: '⭐',
-    fonts: POPULAR_FONTS,
+    id: 'trending',
+    name: '2026 Trend',
+    icon: '🔥',
+    fonts: [
+      { name: 'Bebas Neue', url: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', style: '#1 Display' },
+      { name: 'Space Grotesk', url: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap', style: 'Tech Trend' },
+      { name: 'Syne', url: 'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap', style: 'Modern' },
+      { name: 'Lexend', url: 'https://fonts.googleapis.com/css2?family=Lexend:wght@600;700;800&display=swap', style: 'Okunabilir' },
+      { name: 'Plus Jakarta Sans', url: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap', style: 'Şık' },
+      { name: 'Outfit', url: 'https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&display=swap', style: 'Geometrik' },
+      { name: 'Urbanist', url: 'https://fonts.googleapis.com/css2?family=Urbanist:wght@600;700;800;900&display=swap', style: 'Minimalist' },
+      { name: 'DM Sans', url: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;700&display=swap', style: 'Clean' },
+    ],
   },
   {
     id: 'gaming',
     name: 'Gaming',
     icon: '🎮',
     fonts: [
-      { name: 'Orbitron', url: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap', style: 'Sci-Fi' },
-      { name: 'Press Start 2P', url: 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap', style: 'Pixel' },
-      { name: 'Bungee', url: 'https://fonts.googleapis.com/css2?family=Bungee&display=swap', style: 'Blok' },
-      { name: 'Black Ops One', url: 'https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap', style: 'FPS' },
-      { name: 'Russo One', url: 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap', style: 'Robot' },
-      { name: 'Audiowide', url: 'https://fonts.googleapis.com/css2?family=Audiowide&display=swap', style: 'Cyber' },
-      { name: 'Rajdhani', url: 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&display=swap', style: 'Tech' },
-      { name: 'Exo 2', url: 'https://fonts.googleapis.com/css2?family=Exo+2:wght@700;900&display=swap', style: 'Modern' },
+      { name: 'Orbitron', url: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap', style: 'Sci-Fi' },
+      { name: 'Press Start 2P', url: 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap', style: 'Retro Pixel' },
+      { name: 'Bungee', url: 'https://fonts.googleapis.com/css2?family=Bungee&display=swap', style: 'Arcade' },
+      { name: 'Black Ops One', url: 'https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap', style: 'FPS/Askeri' },
+      { name: 'Russo One', url: 'https://fonts.googleapis.com/css2?family=Russo+One&display=swap', style: 'Robot/Mech' },
+      { name: 'Audiowide', url: 'https://fonts.googleapis.com/css2?family=Audiowide&display=swap', style: 'Cyberpunk' },
+      { name: 'Rajdhani', url: 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&display=swap', style: 'Tech' },
+      { name: 'Exo 2', url: 'https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800;900&display=swap', style: 'Futuristik' },
+      { name: 'Chakra Petch', url: 'https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap', style: 'Cyber' },
+      { name: 'Share Tech Mono', url: 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap', style: 'Hacker' },
     ],
   },
   {
@@ -44,14 +57,16 @@ const FONT_CATEGORIES = [
     name: 'YouTube',
     icon: '📺',
     fonts: [
-      { name: 'Bangers', url: 'https://fonts.googleapis.com/css2?family=Bangers&display=swap', style: 'Eğlenceli' },
+      { name: 'Bangers', url: 'https://fonts.googleapis.com/css2?family=Bangers&display=swap', style: 'MrBeast Tarzı' },
       { name: 'Luckiest Guy', url: 'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap', style: 'Enerjik' },
-      { name: 'Lilita One', url: 'https://fonts.googleapis.com/css2?family=Lilita+One&display=swap', style: 'Kalın' },
-      { name: 'Righteous', url: 'https://fonts.googleapis.com/css2?family=Righteous&display=swap', style: 'Retro' },
-      { name: 'Fredoka One', url: 'https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap', style: 'Yumuşak' },
+      { name: 'Lilita One', url: 'https://fonts.googleapis.com/css2?family=Lilita+One&display=swap', style: 'Dikkat Çekici' },
+      { name: 'Righteous', url: 'https://fonts.googleapis.com/css2?family=Righteous&display=swap', style: 'Cool' },
+      { name: 'Fredoka', url: 'https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap', style: 'Samimi' },
       { name: 'Passion One', url: 'https://fonts.googleapis.com/css2?family=Passion+One:wght@700;900&display=swap', style: 'Spor' },
       { name: 'Titan One', url: 'https://fonts.googleapis.com/css2?family=Titan+One&display=swap', style: 'Büyük' },
       { name: 'Bowlby One SC', url: 'https://fonts.googleapis.com/css2?family=Bowlby+One+SC&display=swap', style: 'Yuvarlak' },
+      { name: 'Boogaloo', url: 'https://fonts.googleapis.com/css2?family=Boogaloo&display=swap', style: 'Eğlenceli' },
+      { name: 'Chewy', url: 'https://fonts.googleapis.com/css2?family=Chewy&display=swap', style: 'Çocuk Dostu' },
     ],
   },
   {
@@ -59,14 +74,48 @@ const FONT_CATEGORIES = [
     name: 'Sinematik',
     icon: '🎬',
     fonts: [
-      { name: 'Oswald', url: 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap', style: 'Şık' },
-      { name: 'Bebas Neue', url: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap', style: 'Film' },
+      { name: 'Oswald', url: 'https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap', style: 'Film Afişi' },
       { name: 'Anton', url: 'https://fonts.googleapis.com/css2?family=Anton&display=swap', style: 'Güçlü' },
-      { name: 'Teko', url: 'https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&display=swap', style: 'Modern' },
+      { name: 'Teko', url: 'https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&display=swap', style: 'Modern' },
       { name: 'Staatliches', url: 'https://fonts.googleapis.com/css2?family=Staatliches&display=swap', style: 'Manşet' },
-      { name: 'Big Shoulders Display', url: 'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap', style: 'Endüstriyel' },
+      { name: 'Big Shoulders Display', url: 'https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&display=swap', style: 'Endüstriyel' },
       { name: 'Archivo Black', url: 'https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap', style: 'Kalın' },
       { name: 'Saira Condensed', url: 'https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800&display=swap', style: 'Dar' },
+      { name: 'Barlow Condensed', url: 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap', style: 'Şık' },
+      { name: 'League Spartan', url: 'https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;800;900&display=swap', style: 'Cesur' },
+      { name: 'Fjalla One', url: 'https://fonts.googleapis.com/css2?family=Fjalla+One&display=swap', style: 'İskandinav' },
+    ],
+  },
+  {
+    id: 'retro',
+    name: 'Retro/Funky',
+    icon: '🕹️',
+    fonts: [
+      { name: 'Pacifico', url: 'https://fonts.googleapis.com/css2?family=Pacifico&display=swap', style: '70s Vibe' },
+      { name: 'Lobster', url: 'https://fonts.googleapis.com/css2?family=Lobster&display=swap', style: 'Script' },
+      { name: 'Satisfy', url: 'https://fonts.googleapis.com/css2?family=Satisfy&display=swap', style: 'El Yazısı' },
+      { name: 'Comfortaa', url: 'https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&display=swap', style: 'Yuvarlak' },
+      { name: 'Rubik Mono One', url: 'https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap', style: 'Chunky' },
+      { name: 'Bungee Inline', url: 'https://fonts.googleapis.com/css2?family=Bungee+Inline&display=swap', style: 'Neon' },
+      { name: 'Monoton', url: 'https://fonts.googleapis.com/css2?family=Monoton&display=swap', style: 'Disco' },
+      { name: 'Faster One', url: 'https://fonts.googleapis.com/css2?family=Faster+One&display=swap', style: 'Racing' },
+      { name: 'Fugaz One', url: 'https://fonts.googleapis.com/css2?family=Fugaz+One&display=swap', style: 'Italic Bold' },
+      { name: 'Modak', url: 'https://fonts.googleapis.com/css2?family=Modak&display=swap', style: 'Bubble' },
+    ],
+  },
+  {
+    id: 'horror',
+    name: 'Korku/Dark',
+    icon: '💀',
+    fonts: [
+      { name: 'Creepster', url: 'https://fonts.googleapis.com/css2?family=Creepster&display=swap', style: 'Halloween' },
+      { name: 'Nosifer', url: 'https://fonts.googleapis.com/css2?family=Nosifer&display=swap', style: 'Kanlı' },
+      { name: 'Eater', url: 'https://fonts.googleapis.com/css2?family=Eater&display=swap', style: 'Korkunç' },
+      { name: 'Butcherman', url: 'https://fonts.googleapis.com/css2?family=Butcherman&display=swap', style: 'Slasher' },
+      { name: 'Metal Mania', url: 'https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap', style: 'Metal' },
+      { name: 'Jolly Lodger', url: 'https://fonts.googleapis.com/css2?family=Jolly+Lodger&display=swap', style: 'Gotik' },
+      { name: 'Lacquer', url: 'https://fonts.googleapis.com/css2?family=Lacquer&display=swap', style: 'Grunge' },
+      { name: 'Rubik Glitch', url: 'https://fonts.googleapis.com/css2?family=Rubik+Glitch&display=swap', style: 'Glitch' },
     ],
   },
   {
@@ -75,13 +124,30 @@ const FONT_CATEGORIES = [
     icon: '✍️',
     fonts: [
       { name: 'Permanent Marker', url: 'https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap', style: 'Marker' },
-      { name: 'Creepster', url: 'https://fonts.googleapis.com/css2?family=Creepster&display=swap', style: 'Korku' },
       { name: 'Special Elite', url: 'https://fonts.googleapis.com/css2?family=Special+Elite&display=swap', style: 'Daktilo' },
       { name: 'Bungee Shade', url: 'https://fonts.googleapis.com/css2?family=Bungee+Shade&display=swap', style: '3D' },
-      { name: 'Metal Mania', url: 'https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap', style: 'Metal' },
       { name: 'Knewave', url: 'https://fonts.googleapis.com/css2?family=Knewave&display=swap', style: 'Dalga' },
-      { name: 'Shrikhand', url: 'https://fonts.googleapis.com/css2?family=Shrikhand&display=swap', style: 'Retro' },
+      { name: 'Shrikhand', url: 'https://fonts.googleapis.com/css2?family=Shrikhand&display=swap', style: 'Hindi' },
       { name: 'Sigmar One', url: 'https://fonts.googleapis.com/css2?family=Sigmar+One&display=swap', style: 'Kalın' },
+      { name: 'Fascinate', url: 'https://fonts.googleapis.com/css2?family=Fascinate&display=swap', style: 'Art Deco' },
+      { name: 'Rammetto One', url: 'https://fonts.googleapis.com/css2?family=Rammetto+One&display=swap', style: 'Heavy' },
+      { name: 'Sancreek', url: 'https://fonts.googleapis.com/css2?family=Sancreek&display=swap', style: 'Western' },
+      { name: 'Londrina Solid', url: 'https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@400;900&display=swap', style: 'El Çizimi' },
+    ],
+  },
+  {
+    id: 'anime',
+    name: 'Anime/Manga',
+    icon: '🎌',
+    fonts: [
+      { name: 'Zen Dots', url: 'https://fonts.googleapis.com/css2?family=Zen+Dots&display=swap', style: 'Japonca' },
+      { name: 'Rampart One', url: 'https://fonts.googleapis.com/css2?family=Rampart+One&display=swap', style: 'Manga' },
+      { name: 'Dela Gothic One', url: 'https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap', style: 'Gotik JP' },
+      { name: 'Hachi Maru Pop', url: 'https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&display=swap', style: 'Kawaii' },
+      { name: 'Yuji Syuku', url: 'https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap', style: 'Fırça' },
+      { name: 'Rock 3D', url: 'https://fonts.googleapis.com/css2?family=Rock+3D&display=swap', style: '3D Manga' },
+      { name: 'Mochiy Pop One', url: 'https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&display=swap', style: 'Pop' },
+      { name: 'DotGothic16', url: 'https://fonts.googleapis.com/css2?family=DotGothic16&display=swap', style: 'Pixel JP' },
     ],
   },
 ];
@@ -112,7 +178,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
 
   // UI state
   const [activeTab, setActiveTab] = useState('text');
-  const [activeCategory, setActiveCategory] = useState('popular');
+  const [activeCategory, setActiveCategory] = useState('trending');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
