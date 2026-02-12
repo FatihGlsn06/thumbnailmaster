@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Image as ImageIcon, Sparkles, Download, RefreshCcw,
   Type, BrainCircuit, Check, Monitor, Wand2, AlertTriangle, Palette, Eye,
-  Layers, Key, EyeOff, Zap, Play, Youtube,
+  Layers, Key, EyeOff, Zap, Play, Youtube, Edit3,
   ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
   Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
   Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3,
@@ -12,6 +12,7 @@ import {
 import { WebGLShader } from '@/components/ui/web-gl-shader';
 import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
 import { Logo, LogoIcon, LogoMinimal } from '@/components/ui/logo';
+import ThumbnailEditor from '@/components/ThumbnailEditor';
 
 // HIGH-CTR THUMBNAIL ARCHETYPES
 const CTR_ARCHETYPES = [
@@ -738,6 +739,7 @@ const App = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [showApiKey, setShowApiKey] = useState(false);
   const [showYouTubeMockup, setShowYouTubeMockup] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
   const [thumbnailPosition, setThumbnailPosition] = useState('top');
   const [selectedArchetype, setSelectedArchetype] = useState('');
   const [ctrScore, setCtrScore] = useState(null);
@@ -1778,6 +1780,16 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
             onClose={() => setShowYouTubeMockup(false)}
           />
         )}
+        {showEditor && resultImage && (
+          <ThumbnailEditor
+            thumbnail={resultImage}
+            onClose={() => setShowEditor(false)}
+            onSave={(editedImage) => {
+              setResultImage(editedImage);
+              setShowEditor(false);
+            }}
+          />
+        )}
       </AnimatePresence>
 
       <div className="min-h-screen bg-[#08080a] text-slate-200 font-sans pb-24 lg:pb-6">
@@ -2040,6 +2052,13 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
                   >
                     <Youtube className="w-4 h-4" />
                     <span>Önizle</span>
+                  </button>
+                  <button
+                    onClick={() => setShowEditor(true)}
+                    className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    <span>Düzenle</span>
                   </button>
                   <button
                     onClick={makeMoreClickable}
