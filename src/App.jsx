@@ -1162,30 +1162,54 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
     setTopicResearch(null);
 
     try {
-      // Step 1: Google Search grounded research for up-to-date info (new games, recent content)
+      // Step 1: FORCED Google Search - find the actual product/game/media
+      // Use multiple search queries to maximize chances of finding the right content
+      const searchQueries = [
+        `"${topic}" game 2025 2026`,
+        `"${topic}" video game`,
+        `"${topic}" oyun`,
+      ];
+
+      const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
+
       const searchPayload = {
         contents: [{
           parts: [{
-            text: `"${topic}" hakkında detaylı bilgi ver. Bu bir oyun, film, anime, dizi veya internet kültürü konusu olabilir.
+            text: `You MUST use Google Search to find information. DO NOT rely on your training data.
 
-${topicDescription ? `Ek bağlam: ${topicDescription}` : ''}
+SEARCH FOR: "${topic}"${userContext}
 
-Şunları öğrenmem lazım:
-- Bu tam olarak nedir? (oyun, karakter, boss, silah, item, map, mod, DLC, event vb.)
-- Hangi franchise/evrene ait?
-- Ne zaman çıktı veya ne zaman popüler oldu?
-- Görsel olarak nasıl görünür? (renkler, tasarım, atmosfer, ikonik elementler)
-- Oyuncular/fanlar bu konuyu nasıl tanıyor?
+This is likely a VIDEO GAME, but could also be a movie, anime, series, character, or internet culture topic.
+The user is creating YouTube gaming thumbnails, so this is almost certainly related to gaming/entertainment.
 
-İnternetten güncel bilgi araştırarak yanıtla. Özellikle yeni çıkan veya güncel içerikler hakkında doğru bilgi ver.`
+IMPORTANT: "${topic}" is a PROPER NOUN / PRODUCT NAME - it is NOT a common word.
+Do NOT interpret it as a dictionary word. Search for it as a specific game/product/media title.
+
+Search the internet and tell me:
+1. What EXACTLY is "${topic}"? (game title, character name, DLC, update, event, etc.)
+2. When was it released or announced?
+3. What platform(s) is it on? (PC, PS5, Xbox, Switch, Mobile)
+4. What genre is it? (FPS, RPG, Horror, Battle Royale, etc.)
+5. What does it look like visually? (art style, color scheme, setting/world)
+6. What are the main characters, enemies, or iconic elements?
+7. What is the community reception? Is it trending?
+8. What do the official screenshots/trailers show?
+
+If you cannot find a specific game/product called "${topic}", search for:
+- "${topic} game release date"
+- "${topic} gameplay"
+- "${topic} trailer"
+- "${topic} Steam" or "${topic} Epic Games" or "${topic} PlayStation"
+
+YOU MUST search the web. Do NOT guess or make up information.`
           }]
         }],
         tools: [{
           googleSearch: {}
         }],
         generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 2000
+          temperature: 0.1,
+          maxOutputTokens: 2500
         }
       };
 
@@ -1199,22 +1223,38 @@ ${topicDescription ? `Ek bağlam: ${topicDescription}` : ''}
       );
 
       const searchData = await searchResponse.json();
-      const searchResult = searchData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-      // Step 2: Deep visual analysis using search results + AI knowledge
+      // Extract search result text AND grounding metadata
+      const searchParts = searchData.candidates?.[0]?.content?.parts || [];
+      const searchResult = searchParts.map(p => p.text || '').join('\n');
+      const groundingMetadata = searchData.candidates?.[0]?.groundingMetadata;
+      const searchSuggestions = groundingMetadata?.searchEntryPoint?.renderedContent || '';
+      const groundingChunks = groundingMetadata?.groundingChunks || [];
+
+      // Build source info from grounding
+      const sourceInfo = groundingChunks
+        .filter(chunk => chunk.web)
+        .map(chunk => `${chunk.web.title}: ${chunk.web.uri}`)
+        .slice(0, 5)
+        .join('\n');
+
+      // Step 2: Deep visual analysis combining search results + AI creativity
       const analysisPayload = {
         contents: [{
           parts: [{
-            text: `Sen bir GAMER, OYUN KÜLTÜRÜ ve GÖRSEL TASARIM uzmanısın. "${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yap.
+            text: `Sen bir GAMER, OYUN KÜLTÜRÜ ve GÖRSEL TASARIM uzmanısın.
+"${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yapman gerekiyor.
 
 ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
 
-${searchResult ? `
-📡 GÜNCEL İNTERNET ARAŞTIRMASI SONUÇLARI:
+📡 İNTERNETTEN BULUNAN GÜNCEL BİLGİLER (BU BİLGİLERİ KULLAN!):
 ${searchResult}
 
-Yukarıdaki güncel bilgileri kullanarak aşağıdaki analizi yap:
-` : ''}
+${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
+
+⚠️ ÖNEMLİ: Yukarıdaki internet araştırması sonuçlarını TEMEL AL.
+"${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK ürün/oyun/medya bilgilerini kullan.
+Eğer internet araştırması bir oyun/film/karakter bulmuşsa, O bilgilere göre analiz yap.
 
 Lütfen Türkçe olarak çok detaylı yaz:
 
@@ -1225,7 +1265,7 @@ Lütfen Türkçe olarak çok detaylı yaz:
    - Eğer yeni bir içerikse: ne zaman duyuruldu/çıktı, topluluğun tepkisi
 
 2. **GÖRSEL KİMLİK** (ÇOK ÖNEMLİ - DETAYLI YAZILMALI):
-   - Karakteristik renk paleti (HEX kodlarıyla - örn: Ba'lakor = koyu mor #4a0080, siyah #1a1a2e, demon kırmızısı #8b0000)
+   - Karakteristik renk paleti (HEX kodlarıyla - örn: #4a0080, #1a1a2e, #8b0000)
    - İkonik görsel elementler (kanatlar, silahlar, zırh, auralar, semboller, logolar)
    - Ortam/atmosfer (karanlık, epik, korkunç, parlak, neon, doğa vb.)
    - Tipik arka plan elementleri (kale, orman, uzay, şehir, arena vb.)
@@ -1247,7 +1287,6 @@ Lütfen Türkçe olarak çok detaylı yaz:
 5. **REFERANS STİLİ**:
    - Bu konu için en uygun görsel stil (sinematik, çizgi roman, gerçekçi, anime, dark fantasy vb.)
    - Benzer başarılı YouTube thumbnail'ların özellikleri
-   - Popüler YouTube kanallarının bu konuyu nasıl işlediği
 
 Bir gamer ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
 Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.`
