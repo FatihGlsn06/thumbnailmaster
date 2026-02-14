@@ -1370,7 +1370,81 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
       const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (researchText) {
-        setTopicResearch(researchText);
+        // Step 3: Convert research into a CONCRETE visual scene description
+        // This is critical because image generation models tend to use "default" visuals
+        // for well-known places (e.g., modern Istanbul instead of Byzantine Constantinople)
+        const scenePayload = {
+          contents: [{
+            parts: [{
+              text: `Sen bir SAHNE YÖNETMENİSİN. Aşağıdaki araştırma sonuçlarını oku ve thumbnail için SOMUT bir sahne tarifi yaz.
+
+ARAŞTIRMA:
+${researchText}
+
+KONU: "${topic}"
+${topicDescription ? `EK BAĞLAM: ${topicDescription}` : ''}
+
+ŞİMDİ, bu araştırmayı bir AI görsel üretim modeline vereceğiz. Ama problem şu:
+AI modelleri tanınmış şehir/yer isimlerini duyunca MODERN hallerini çiziyor.
+Örneğin "İstanbul" dersen bugünkü minareli halini çizer, "Roma" dersen modern İtalya'yı çizer.
+
+BU YÜZDEN, araştırmadaki bilgileri kullanarak şehir/yer ismi KULLANMADAN somut bir sahne tarifi yaz.
+
+📐 SAHNE TARİFİ FORMATI (İngilizce yaz, kısa ve net):
+
+**SCENE_DESCRIPTION**: (Şehir/yer adı kullanmadan, sadece mimari ve görsel terimlerle sahneyi tanımla)
+Örnek: "A massive ancient walled city with Byzantine architecture - large domed basilica with golden crosses on top, thick stone fortification walls with towers, Greek fire installations, no minarets, no crescents visible on buildings"
+YANLIŞ: "Istanbul with Byzantine architecture" (model modern İstanbul çizer!)
+DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theodosian double walls, Byzantine eagle banners"
+
+**ATTACKER_DESCRIPTION**: (Saldıran taraf varsa - bayrak, zırh, silah detayları)
+Örnek: "Ottoman Janissary soldiers wearing white felt börk hats, chainmail armor, carrying yataghan swords, with red banners showing white crescent and 8-pointed star (NOT 5-pointed)"
+
+**DEFENDER_DESCRIPTION**: (Savunan taraf varsa)
+Örnek: "Byzantine defenders in lamellar armor, conical helmets, holding round shields with double-headed eagle emblem, purple and gold banners"
+
+**CAMERA_POSITION**: (Kamera nerede? Saldıranların arkasından mı, surların üstünden mi?)
+Örnek: "Camera behind the attacking army, looking TOWARD the city walls, siege scene"
+
+**PERSON_COSTUME**: (Thumbnail'daki kişi ne giymeli?)
+Örnek: "Ottoman commander armor - ornate chainmail with gold trim, fur-lined cape, decorated helmet with plume"
+
+**ABSOLUTELY_NOT**: (Kesinlikle gösterilmemesi gerekenler - İngilizce, net)
+Örnek: "NO minarets, NO modern flags, NO 5-pointed stars, NO mosques, NO modern buildings, NO concrete"
+
+⚠️ KURALLAR:
+- Modern şehir/ülke isimlerini KULLANMA (İstanbul, Turkey, Italy, France vb.)
+- Bunun yerine dönemin ismini veya sadece mimari açıklamaları kullan
+- Her şeyi çok SOMUT ve görsel olarak tanımla
+- Kısa tut, her bölüm 1-3 cümle
+- İngilizce yaz (AI görsel modeli İngilizce daha iyi anlıyor)
+- Eğer tarihsel içerik DEĞİLSE, sadece SCENE_DESCRIPTION ve PERSON_COSTUME yaz`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 1500
+          }
+        };
+
+        const sceneResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(scenePayload)
+          }
+        );
+
+        const sceneData = await sceneResponse.json();
+        const sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        // Combine research + scene description
+        const combinedResearch = sceneDescription
+          ? `${researchText}\n\n🎬 READY-TO-USE SCENE DIRECTION:\n${sceneDescription}`
+          : researchText;
+
+        setTopicResearch(combinedResearch);
       } else {
         setTopicResearch('Araştırma yapılamadı.');
       }
@@ -1429,46 +1503,33 @@ ${topicResearch}
 ⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
 This is not generic - it's specific to "${topic}" and must look authentic to fans of this content.
 
-🏛️ HISTORICAL ACCURACY RULES (CRITICAL FOR ANY HISTORICAL CONTENT):
-The research above contains a "TARİHSEL DOĞRULUK ANALİZİ" and "SAHNE MANTIĞI" section.
-If it indicates this is historical content, you MUST follow ALL of these rules:
+🏛️ HISTORICAL SCENE DIRECTION (CRITICAL - FOLLOW EXACTLY):
+The research above contains a "READY-TO-USE SCENE DIRECTION" section at the end.
+If present, this is the MOST IMPORTANT part to follow. It contains:
 
-1. SCENE LOGIC & EVENT CONTEXT (MOST IMPORTANT):
-   The research describes WHO is doing WHAT, WHERE, and WHEN. Follow this exactly!
-   - If it's a SIEGE/CONQUEST: the city must appear in its PRE-CONQUEST state!
-     * A city being besieged still belongs to the DEFENDERS - show THEIR architecture and symbols
-     * Example: Constantinople in 1453 = Byzantine churches with crosses, NOT mosques with minarets
-     * Example: Jerusalem during Crusades = show whoever controlled it at THAT moment
-   - Show the CORRECT perspective (attacker vs defender) as described in the research
-   - If two sides are fighting, their visual identities must be DISTINCT and CORRECT
-   - BEFORE conquest: old owner's buildings, symbols, religious structures
-   - DURING conquest: battle scene with BOTH sides visible
-   - AFTER conquest: new owner's modifications visible
+- **SCENE_DESCRIPTION**: Use this EXACT description for the background/environment.
+  ⚠️ Do NOT substitute your own idea of how a city/place looks!
+  The description deliberately avoids modern city names to prevent you from
+  drawing the modern version. Follow the architectural details AS WRITTEN.
 
-2. FLAGS & BANNERS: Use ONLY the period-correct flag/banner described in the research.
-   ⚠️ NEVER use any modern nation-state flag for a historical empire/kingdom/civilization!
-   Historical states had DIFFERENT flags than their modern successor countries.
-   If two sides are involved, show the CORRECT banner for each side.
+- **ATTACKER_DESCRIPTION / DEFENDER_DESCRIPTION**: If present, follow these for any
+  soldiers, armies, or faction elements in the scene. Each side has specific
+  banners, armor, and weapons - do NOT mix them up.
 
-3. ARMOR & CLOTHING: Dress characters in the period-correct outfit described in the research.
-   - Use the specific armor types, headgear, and garments listed
-   - Do NOT mix elements from different civilizations or time periods
-   - If two armies are shown, each must wear THEIR OWN historically accurate gear
+- **CAMERA_POSITION**: Follow this for the viewing angle and composition.
 
-4. WEAPONS: Only show weapons that existed in that specific time period.
-   - Check the research for whether gunpowder/firearms existed in this era
+- **PERSON_COSTUME**: Dress the person from the photo in THIS specific outfit.
+  Do NOT use modern clothes or wrong-era costumes.
 
-5. ARCHITECTURE: Buildings MUST match the civilization that CONTROLLED the location at that moment.
-   ⚠️ This is the #1 mistake in historical thumbnails!
-   - A location's architecture reflects its CURRENT owner, not its future owner
-   - Religious buildings must match the religion of whoever holds the city AT THAT TIME
-   - Do NOT show post-conquest modifications in a pre-conquest or siege scene
+- **ABSOLUTELY_NOT**: This lists things that MUST NOT appear in the image.
+  If it says "NO minarets" then there must be ZERO minarets.
+  If it says "NO modern flags" then there must be ZERO modern flags.
+  These are NON-NEGOTIABLE rules. Violating ANY of them means the task FAILED.
 
-6. ANACHRONISM CHECK: The research lists "KULLANILMAMASI GEREKENLER" (things NOT to use).
-   Follow this list strictly. Pay special attention to EVENT LOGIC errors.
-
-7. GAME VISUAL STYLE: If this is a historical game (AoE4, Total War, CK3, etc.),
-   respect the game's own art direction while maintaining historical accuracy.
+⚠️ CRITICAL RULE FOR HISTORICAL SCENES:
+Do NOT use modern city/country names in your internal thinking!
+Build the scene purely from the architectural and visual descriptions provided.
+A "walled city with domed basilica and crosses" is NOT the same as modern Istanbul.
 ` : ''}
 
 ${conceptAnalysis ? `
@@ -1677,16 +1738,12 @@ ${topicResearch ? `
 ${topicResearch}
 Apply the visual identity, colors, and atmosphere described above!
 
-🏛️ HISTORICAL ACCURACY (IF APPLICABLE):
-If the research above contains "TARİHSEL DOĞRULUK ANALİZİ", this is HISTORICAL content:
-- Follow the "SAHNE MANTIĞI" section: show the location in its CORRECT state for that moment in time
-  * A city being BESIEGED must show the DEFENDERS' architecture and symbols, NOT the attackers'
-  * Pre-conquest = old owner's buildings; Post-conquest = new owner's modifications
-- Use ONLY the period-correct flag/banner/armor/weapons described in the research
-- NEVER substitute a modern nation-state flag for a historical empire's banner
-- NEVER use anachronistic elements listed in "KULLANILMAMASI GEREKENLER"
-- Dress the person in period-correct costume as described in the research
-- Architecture and religious buildings must match whoever CONTROLLED the location at that time
+🏛️ HISTORICAL SCENE (IF APPLICABLE):
+If the research contains "READY-TO-USE SCENE DIRECTION", follow it EXACTLY:
+- Use SCENE_DESCRIPTION for background (do NOT substitute modern city visuals!)
+- Use PERSON_COSTUME for the person's outfit
+- Follow ABSOLUTELY_NOT list strictly - zero tolerance for listed items
+- Do NOT use modern city names internally - build scene from architectural descriptions only
 ` : ''}
 
 ${conceptAnalysis ? `
