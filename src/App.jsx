@@ -1272,24 +1272,47 @@ Lütfen Türkçe olarak çok detaylı yaz:
    - Işık tipi ve yönü (ateşli, soğuk, neon, gün batımı, ay ışığı vb.)
    - Parçacık/efekt önerileri (kıvılcım, sis, duman, yağmur, kar, enerji auraları)
 
-3. **DUYGUSAL TON ve ATMOSFER**:
+3. **TARİHSEL DOĞRULUK ANALİZİ** (TARİHİ İÇERİKLER İÇİN KRİTİK):
+   Eğer konu tarihsel bir dönem, imparatorluk, medeniyet, savaş veya tarihsel bir oyun (Age of Empires, Civilization, Total War, Crusader Kings, Europa Universalis vb.) ile ilgiliyse:
+   - **Dönem**: Bu konu hangi tarihsel döneme ait? (Örn: Osmanlı = 1299-1922, Roma = MÖ 753-MS 476)
+   - **BAYRAKLAR/SEMBOLLER**: O dönemin GERÇEK bayrakları ve sembolleri nelerdir?
+     * ⚠️ MODERN bayrakları KULLANMA! Örneğin:
+     * Osmanlı İmparatorluğu ≠ Modern Türkiye bayrağı. Osmanlı bayrağı: kırmızı zemin, beyaz hilal ve 8 köşeli yıldız (5 köşeli DEĞİL)
+     * Roma İmparatorluğu ≠ Modern İtalya bayrağı. Roma: SPQR kartalı, mor/altın labarum
+     * Kutsal Roma İmparatorluğu ≠ Modern Almanya bayrağı. HRE: çift başlı kartal
+     * İngiliz İmparatorluğu (1700s) ≠ Modern İngiliz bayrağı
+     * Moğol İmparatorluğu ≠ Modern Moğolistan bayrağı
+   - **ZIRHLAR/KIYAFETLER**: O dönemin doğru askeri kıyafetleri ve zırhları
+     * Osmanlı: Yeniçeri kavuğu, sipahi zırhı, sarık, kaftan
+     * Ortaçağ Avrupası: Zincir zırh, plaka zırh, surcoat
+     * Roma: Lorica segmentata, galea miğfer, gladius
+   - **MİMARİ**: Dönemine uygun binalar ve yapılar
+     * Osmanlı: Kubbeli camiler, minareler, saray avluları
+     * Ortaçağ: Gotik kaleler, katedraller, sur duvarları
+   - **SİLAHLAR**: Döneme uygun silahlar
+     * Osmanlı: Yatağan, kilij, kompozit yay, top
+     * Ortaçağ: Kılıç, mızrak, teber, arbalet
+   - **OYUN İÇİ GÖRSEL**: Eğer bu bir tarih oyunuysa (AoE4, Total War vb.), oyunun kendi görsel stilini tanımla
+
+4. **DUYGUSAL TON ve ATMOSFER**:
    - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem, merak, nostalji)
    - Oyuncu/izleyici bu konuyu görünce ne hissetmeli?
    - Renk psikolojisi önerileri
 
-4. **THUMBNAIL ÖNERİLERİ**:
+5. **THUMBNAIL ÖNERİLERİ**:
    - En iyi kompozisyon önerisi (kişi nerede durmalı, arka plan nasıl olmalı)
    - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare vb.)
    - Kostüm/kıyafet önerisi (kişi ne giymeli, zırh mı, pelerin mi vb.)
-   - Kaçınılması gereken hatalar (yanlış renk, yanlış karakter, çelişkili elementler)
+   - Kaçınılması gereken hatalar (yanlış bayrak, yanlış dönem kıyafeti, anakronizm, modern elementler)
    - Örnek yazı önerileri (2-3 kelime, Türkçe ve İngilizce seçenekler)
 
-5. **REFERANS STİLİ**:
+6. **REFERANS STİLİ**:
    - Bu konu için en uygun görsel stil (sinematik, çizgi roman, gerçekçi, anime, dark fantasy vb.)
    - Benzer başarılı YouTube thumbnail'ların özellikleri
 
 Bir gamer ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
-Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.`
+Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.
+⚠️ TARİHSEL İÇERİKLERDE MODERN SEMBOL KULLANMAK EN BÜYÜK HATADIR - buna özellikle dikkat et!`
           }]
         }],
         generationConfig: {
@@ -1369,6 +1392,19 @@ ${topicResearch}
 
 ⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
 This is not generic - it's specific to "${topic}" and must look authentic to fans of this content.
+
+🏛️ HISTORICAL ACCURACY RULES (IF THIS IS HISTORICAL CONTENT):
+If this topic involves a historical period, empire, civilization, or historical game:
+- NEVER use modern country flags for historical empires!
+  * Ottoman Empire → Use Ottoman banner (red with white crescent + 8-pointed star), NOT modern Turkish flag (5-pointed star)
+  * Roman Empire → Use SPQR eagle standards, NOT modern Italian flag
+  * Holy Roman Empire → Use double-headed eagle, NOT modern German flag
+  * Medieval England → Use period-appropriate heraldry, NOT modern Union Jack
+  * Ancient Greece → Use period shields/symbols, NOT modern Greek flag
+  * Mongol Empire → Use horsehair standards (tuğ), NOT modern Mongolian flag
+- Use PERIOD-CORRECT armor, weapons, clothing, and architecture
+- Follow the HISTORICAL ACCURACY section from the research above if provided
+- The game's own visual style should be respected (e.g., AoE4 has its own art direction)
 ` : ''}
 
 ${conceptAnalysis ? `
@@ -1576,6 +1612,10 @@ ${topicResearch ? `
 🎮 GAMER KNOWLEDGE (CRITICAL - USE THIS FOR AUTHENTICITY):
 ${topicResearch}
 Apply the visual identity, colors, and atmosphere described above!
+
+🏛️ HISTORICAL ACCURACY: If this is historical content, NEVER use modern country flags for historical empires!
+Ottoman Empire → Ottoman banner (crescent + 8-pointed star), NOT modern Turkish flag.
+Use period-correct armor, weapons, architecture. Follow the research above.
 ` : ''}
 
 ${conceptAnalysis ? `
