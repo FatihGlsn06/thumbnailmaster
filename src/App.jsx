@@ -1295,11 +1295,20 @@ Lütfen Türkçe olarak çok detaylı yaz:
        - OLAY ANI: Kuşatma/savaş devam ediyor, her iki tarafın elementleri görünür
        - SONRA: Yeni sahiplerin kontrolü ele geçirmiş hali
 
-   - **BAYRAKLAR ve SANCAKLAR**:
+   - **BAYRAKLAR ve SANCAKLAR** (ÇOK KRİTİK - EN SIK YAPILAN HATA!):
      * O dönemde kullanılan GERÇEK bayrak/sancak tasarımı nedir? (Renk, sembol, şekil, detay)
-     * ⚠️ KESİNLİKLE modern ülke bayrağı kullanılMAMALI. Tarihsel devletlerin bayrakları modern haleflerinden FARKLIDIR.
-     * O dönemin sancağını detaylı tanımla: zemin rengi, sembol şekli, ek detaylar
+     * ⚠️⚠️⚠️ KESİNLİKLE modern ülke bayrağı kullanılMAMALI! Bu EN SIK YAPILAN HATADIR!
+     * ⚠️ ÖZELLIKLE OSMANLI İÇİN: Osmanlı bayrağı/sancağı MODERN TÜRKİYE BAYRAĞI DEĞİLDİR!
+       - YANLIŞ: 🇹🇷 Kırmızı zemin + beyaz hilal + beyaz 5 köşeli yıldız (Bu MODERN Türkiye bayrağıdır, 1844 sonrası!)
+       - DOĞRU (Klasik Osmanlı): Kırmızı/bordo sancak üzerinde 3 hilal (üç hilalli sancak) VEYA altın/sarı hilal ve 8 köşeli yıldız
+       - DOĞRU (Erken Osmanlı): Düz kırmızı/bordo sancak, bazen Zülfikar kılıcı motifi, bazen tuğra
+       - DOĞRU (Fetih dönemi 1453): Kırmızı sancak, altın renkli hilal ve 8 köşeli yıldız (8-pointed, NOT 5-pointed!)
+       - ÖNEMLİ: Hilal ve yıldız varsa, yıldız MUTLAKA 8 KÖŞELI olmalı (5 köşeli MODERN semboldür!)
+       - Osmanlı sancağının rengi genelde KOYU KIRMIZI/BORDO, beyaz değil
+     * DİĞER TARİHSEL BAYRAKLAR İÇİN DE: Her devletin kendi dönemi için doğru bayrağını araştır
+     * O dönemin sancağını ÇOK detaylı tanımla: zemin rengi, sembol şekli, sembol rengi, yıldız köşe sayısı, ek detaylar
      * Eğer iki taraf varsa HER İKİ TARAFIN bayraklarını ayrı ayrı tanımla
+     * ⚠️ BAYRAK/SANCAK AÇIKLAMASINDA "Turkish flag", "Turkey flag" KELİMELERİNİ KULLANMA - bunlar AI modelinin modern bayrak çizmesine sebep olur!
 
    - **ZIRHLAR ve KIYAFETLER**:
      * O dönemin askeri sınıfları kimlerdi ve ne giyerlerdi?
@@ -1348,7 +1357,8 @@ Lütfen Türkçe olarak çok detaylı yaz:
 
 Bir gamer ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
 Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.
-⚠️ TARİHSEL İÇERİKLERDE: Modern bayrak/sembol kullanmak, yanlış dönem kıyafeti giydirmek veya anakronistik teknoloji göstermek EN BÜYÜK HATADIR!`
+⚠️ TARİHSEL İÇERİKLERDE: Modern bayrak/sembol kullanmak, yanlış dönem kıyafeti giydirmek veya anakronistik teknoloji göstermek EN BÜYÜK HATADIR!
+⚠️⚠️ BAYRAK ÖZELLİKLE KRİTİK: Osmanlı bayrağı/sancağı ≠ Modern Türkiye bayrağı! Osmanlı sancağı = koyu kırmızı/bordo + altın hilal + altın 8 köşeli yıldız. Modern Türkiye bayrağı (parlak kırmızı + beyaz hilal + beyaz 5 köşeli yıldız) 1844 SONRASI oluşmuştur!`
           }]
         }],
         generationConfig: {
@@ -1398,7 +1408,8 @@ YANLIŞ: "Istanbul with Byzantine architecture" (model modern İstanbul çizer!)
 DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theodosian double walls, Byzantine eagle banners"
 
 **ATTACKER_DESCRIPTION**: (Saldıran taraf varsa - bayrak, zırh, silah detayları)
-Örnek: "Ottoman Janissary soldiers wearing white felt börk hats, chainmail armor, carrying yataghan swords, with red banners showing white crescent and 8-pointed star (NOT 5-pointed)"
+Örnek: "Ottoman Janissary soldiers wearing white felt börk hats, chainmail armor, carrying yataghan swords, with dark crimson/burgundy war banners showing a GOLDEN crescent moon and GOLDEN 8-POINTED star (absolutely NOT the modern Turkish flag - NOT white crescent, NOT 5-pointed star, NOT bright red background)"
+⚠️ BAYRAK KURALI: Osmanlı sancağı = KOYU KIRMIZI/BORDO zemin + ALTIN/SARI renkli hilal + ALTIN/SARI 8 köşeli yıldız. Bu MODERN Türkiye bayrağından (parlak kırmızı + beyaz hilal + beyaz 5 köşeli yıldız) TAMAMEN FARKLIDIR! "Turkish flag" veya "flag of Turkey" kelimelerini ASLA kullanma!
 
 **DEFENDER_DESCRIPTION**: (Savunan taraf varsa)
 Örnek: "Byzantine defenders in lamellar armor, conical helmets, holding round shields with double-headed eagle emblem, purple and gold banners"
@@ -1410,7 +1421,8 @@ DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theo
 Örnek: "Ottoman commander armor - ornate chainmail with gold trim, fur-lined cape, decorated helmet with plume"
 
 **ABSOLUTELY_NOT**: (Kesinlikle gösterilmemesi gerekenler - İngilizce, net)
-Örnek: "NO minarets, NO modern flags, NO 5-pointed stars, NO mosques, NO modern buildings, NO concrete"
+Örnek: "NO minarets, NO modern flags, NO modern Turkish flag, NO white crescent on red (that is modern Turkey), NO 5-pointed stars (use 8-pointed instead), NO mosques, NO modern buildings, NO concrete"
+⚠️ Osmanlı sahnelerinde MUTLAKA ekle: "NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner (dark crimson+golden crescent+8-pointed golden star) instead"
 
 ⚠️ KURALLAR:
 - Modern şehir/ülke isimlerini KULLANMA (İstanbul, Turkey, Italy, France vb.)
@@ -1418,7 +1430,17 @@ DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theo
 - Her şeyi çok SOMUT ve görsel olarak tanımla
 - Kısa tut, her bölüm 1-3 cümle
 - İngilizce yaz (AI görsel modeli İngilizce daha iyi anlıyor)
-- Eğer tarihsel içerik DEĞİLSE, sadece SCENE_DESCRIPTION ve PERSON_COSTUME yaz`
+- Eğer tarihsel içerik DEĞİLSE, sadece SCENE_DESCRIPTION ve PERSON_COSTUME yaz
+
+⚠️⚠️ BAYRAK/SANCAK KRİTİK KURALI (EN SIK YAPILAN HATA!):
+- "Turkish flag" veya "flag of Turkey" kelimelerini ASLA KULLANMA! AI modeli bunu duyunca modern 🇹🇷 bayrağı çizer!
+- Osmanlı sahnelerinde şunu yaz: "dark crimson/burgundy war banner with GOLDEN crescent moon and GOLDEN 8-POINTED star"
+- YANLIŞ: "red flag with white crescent and star" (bu modern Türkiye bayrağı tanımıdır!)
+- YANLIŞ: "Turkish banner" veya "Ottoman flag similar to Turkish flag"
+- DOĞRU: "historical Ottoman war banner - dark burgundy/crimson fabric, golden crescent, golden 8-pointed star, NOT the modern flag"
+- Yıldız: Her zaman "8-pointed" belirt, yoksa AI otomatik 5 köşeli çizer
+- Hilal rengi: ALTIN/SARI (golden/gold), BEYAZ DEĞİL!
+- Zemin: KOYU KIRMIZI/BORDO (dark crimson/burgundy), parlak kırmızı DEĞİL!`
             }]
           }],
           generationConfig: {
@@ -1525,6 +1547,13 @@ If present, this is the MOST IMPORTANT part to follow. It contains:
   If it says "NO minarets" then there must be ZERO minarets.
   If it says "NO modern flags" then there must be ZERO modern flags.
   These are NON-NEGOTIABLE rules. Violating ANY of them means the task FAILED.
+
+⚠️⚠️⚠️ CRITICAL FLAG/BANNER RULE FOR OTTOMAN/TURKISH HISTORICAL SCENES:
+  - The MODERN Turkish flag (bright red + white crescent + white 5-pointed star) did NOT exist before 1844!
+  - For Ottoman scenes: Use DARK CRIMSON/BURGUNDY fabric with GOLDEN crescent and GOLDEN 8-POINTED star
+  - NEVER use: white crescent, white star, 5-pointed star, or bright red background for Ottoman banners
+  - The Ottoman historical banner looks COMPLETELY DIFFERENT from the modern Turkish flag
+  - If you draw the modern Turkish flag in a pre-1844 scene, the task has COMPLETELY FAILED
 
 ⚠️ CRITICAL RULE FOR HISTORICAL SCENES:
 Do NOT use modern city/country names in your internal thinking!
