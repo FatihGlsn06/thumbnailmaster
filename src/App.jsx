@@ -1205,7 +1205,7 @@ YOU MUST search the web. Do NOT guess or make up information.`
           }]
         }],
         tools: [{
-          googleSearch: {}
+          google_search: {}
         }],
         generationConfig: {
           temperature: 0.1,
