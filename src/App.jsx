@@ -1277,29 +1277,58 @@ Lütfen Türkçe olarak çok detaylı yaz:
    Tarihsel içerik DEĞİLSE "Bu konu tarihsel değildir" yaz ve geç.
 
    - **TARİHSEL DÖNEM**: Tam tarih aralığı (yıllar). Örn: "Osmanlı klasik dönemi: 1453-1600"
+
+   - **SAHNE MANTIĞI ve OLAY BAĞLAMI** (ÇOK KRİTİK!):
+     Bu bölüm thumbnail'ın ANLAMLI ve MANTIKLI olması için en önemli bölümdür.
+     * **Olay nedir?** Bu tarihsel an/savaş/fetih tam olarak neyi anlatıyor?
+     * **Kimin bakış açısı?** Thumbnail kimin perspektifinden? (Saldıran mı, savunan mı, izleyen mi?)
+     * **Sahne nerede geçiyor?** O an o mekan nasıl görünüyor?
+       - ÖNEMLİ: Bir şehrin FETHİNDEN/KUŞATMASINDAN bahsediliyorsa, o şehir HENÜZ fethedilmemiş haliyle gösterilmeli!
+       - Örnek: İstanbul'un Fethi 1453 → Şehirde Ayasofya bir BİZANS KİLİSESİ (kubbe + haç), CAMİ DEĞİL! Minareler YOK, hilal YOK. Çünkü henüz fethedilmedi.
+       - Örnek: Roma'nın yıkılışı → Roma tapınakları ve pagan sembolleri, Katolik katedralleri değil
+       - Örnek: Kudüs kuşatması (Haçlı Seferleri) → Kudüs o an kimin elinde? Ona göre semboller değişir
+     * **İki taraf kimler?** Savaş/çatışma varsa her iki tarafın görsel kimliğini ayrı ayrı tanımla:
+       - SALDIRAN taraf: bayrak, zırh, silah, renk paleti
+       - SAVUNAN taraf: bayrak, zırh, silah, renk paleti, savunma yapıları (surlar, kuleler)
+     * **Zamanlama detayı**: Olay öncesi mi, olay anı mı, sonrası mı?
+       - ÖNCE: Şehir/yer henüz eski sahiplerinin kontrolünde
+       - OLAY ANI: Kuşatma/savaş devam ediyor, her iki tarafın elementleri görünür
+       - SONRA: Yeni sahiplerin kontrolü ele geçirmiş hali
+
    - **BAYRAKLAR ve SANCAKLAR**:
      * O dönemde kullanılan GERÇEK bayrak/sancak tasarımı nedir? (Renk, sembol, şekil, detay)
      * ⚠️ KESİNLİKLE modern ülke bayrağı kullanılMAMALI. Tarihsel devletlerin bayrakları modern haleflerinden FARKLIDIR.
      * O dönemin sancağını detaylı tanımla: zemin rengi, sembol şekli, ek detaylar
+     * Eğer iki taraf varsa HER İKİ TARAFIN bayraklarını ayrı ayrı tanımla
+
    - **ZIRHLAR ve KIYAFETLER**:
      * O dönemin askeri sınıfları kimlerdi ve ne giyerlerdi?
      * Zırh tipi, başlık/miğfer, pelerin/kaftan, ayakkabı detayları
      * Komutanlar vs sıradan askerler arasındaki kıyafet farkları
-     * Sivil kıyafetler de gerekirse tanımla
+     * Eğer iki taraf varsa HER İKİ TARAFIN kıyafetlerini ayrı ayrı tanımla
+
    - **SİLAHLAR ve SAVAŞ TEKNOLOJİSİ**:
      * O dönemde kullanılan başlıca silahlar (yakın dövüş, uzak menzil, kuşatma)
      * Barut var mıydı? Topçuluk? Ok/yay mı arbalet mi tüfek mi?
+
    - **MİMARİ ve ÇEVRE**:
      * O dönemin ve medeniyetin mimari stili (kubbe, kemer, sütun, gotik, pagoda vb.)
-     * Şehir/köy/kale görünümü nasıl olmalı?
-     * Coğrafi ortam (çöl, step, orman, dağ, kıyı vb.)
+     * ⚠️ ÖNEMLİ: Bir mekan FETHEDILMEDEN/EL DEĞIŞTIRMEDEN ÖNCEKİ haliyle gösterilmeli!
+       - Fetih ÖNCESİ: Eski sahiplerin mimari stili, dini yapıları, sembolleri
+       - Fetih SONRASI: Yeni sahiplerin ekledikleri (minare, çan kulesi vb.)
+     * Coğrafi ortam (çöl, step, orman, dağ, kıyı, boğaz vb.)
+
    - **SEMBOLLER ve ARMALAR**:
      * İmparatorluk/krallık arması, mühür, tuğra veya amblem
-     * Dini/kültürel semboller (varsa)
-   - **KULLANILMAMASI GEREKENLER** (Anakronizm listesi):
+     * Dini/kültürel semboller (varsa) - ama DÖNEME UYGUN olanlar
+
+   - **KULLANILMAMASI GEREKENLER** (Anakronizm ve mantık hatası listesi):
      * Bu dönemde henüz var OLMAYAN şeylerin listesi
-     * Örn: "15. yy Osmanlı sahnesinde plastik, cam pencere, modern üniformalar OLMAZ"
      * Bu medeniyetle KARIŞTIRILMAMASI gereken başka medeniyetlerin elementleri
+     * OLAY MANTIĞINA AYKIRI şeyler:
+       - Örn: "İstanbul fethi sahnesinde CAMİ gösterilmez çünkü henüz kilise"
+       - Örn: "Romalılar Hristiyanlık öncesi dönemde haç taşımaz"
+       - Örn: "Vikinglerin fethetmediği bir İngiliz şehrinde Viking sembolleri olmaz"
 
 4. **DUYGUSAL TON ve ATMOSFER**:
    - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem, merak, nostalji)
@@ -1324,7 +1353,7 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 3000
+          maxOutputTokens: 4000
         }
       };
 
@@ -1401,30 +1430,44 @@ ${topicResearch}
 This is not generic - it's specific to "${topic}" and must look authentic to fans of this content.
 
 🏛️ HISTORICAL ACCURACY RULES (CRITICAL FOR ANY HISTORICAL CONTENT):
-The research above contains a "TARİHSEL DOĞRULUK ANALİZİ" section. If it indicates this is historical content, you MUST:
+The research above contains a "TARİHSEL DOĞRULUK ANALİZİ" and "SAHNE MANTIĞI" section.
+If it indicates this is historical content, you MUST follow ALL of these rules:
 
-1. FLAGS & BANNERS: Use ONLY the period-correct flag/banner described in the research.
+1. SCENE LOGIC & EVENT CONTEXT (MOST IMPORTANT):
+   The research describes WHO is doing WHAT, WHERE, and WHEN. Follow this exactly!
+   - If it's a SIEGE/CONQUEST: the city must appear in its PRE-CONQUEST state!
+     * A city being besieged still belongs to the DEFENDERS - show THEIR architecture and symbols
+     * Example: Constantinople in 1453 = Byzantine churches with crosses, NOT mosques with minarets
+     * Example: Jerusalem during Crusades = show whoever controlled it at THAT moment
+   - Show the CORRECT perspective (attacker vs defender) as described in the research
+   - If two sides are fighting, their visual identities must be DISTINCT and CORRECT
+   - BEFORE conquest: old owner's buildings, symbols, religious structures
+   - DURING conquest: battle scene with BOTH sides visible
+   - AFTER conquest: new owner's modifications visible
+
+2. FLAGS & BANNERS: Use ONLY the period-correct flag/banner described in the research.
    ⚠️ NEVER use any modern nation-state flag for a historical empire/kingdom/civilization!
    Historical states had DIFFERENT flags than their modern successor countries.
-   The research above describes the EXACT correct banner - follow it precisely.
+   If two sides are involved, show the CORRECT banner for each side.
 
-2. ARMOR & CLOTHING: Dress characters in the period-correct outfit described in the research.
+3. ARMOR & CLOTHING: Dress characters in the period-correct outfit described in the research.
    - Use the specific armor types, headgear, and garments listed
    - Do NOT mix elements from different civilizations or time periods
-   - A commander should look different from a common soldier (as described)
+   - If two armies are shown, each must wear THEIR OWN historically accurate gear
 
-3. WEAPONS: Only show weapons that existed in that specific time period.
+4. WEAPONS: Only show weapons that existed in that specific time period.
    - Check the research for whether gunpowder/firearms existed in this era
-   - Use the specific weapon types listed in the research
 
-4. ARCHITECTURE: Buildings and structures must match the civilization and era.
-   - Use the architectural style described (domes, arches, Gothic, pagoda, etc.)
-   - Do NOT show modern buildings, glass windows (if pre-modern), or anachronistic structures
+5. ARCHITECTURE: Buildings MUST match the civilization that CONTROLLED the location at that moment.
+   ⚠️ This is the #1 mistake in historical thumbnails!
+   - A location's architecture reflects its CURRENT owner, not its future owner
+   - Religious buildings must match the religion of whoever holds the city AT THAT TIME
+   - Do NOT show post-conquest modifications in a pre-conquest or siege scene
 
-5. ANACHRONISM CHECK: The research lists "KULLANILMAMASI GEREKENLER" (things NOT to use).
-   Follow this list strictly - these items did NOT exist in this period.
+6. ANACHRONISM CHECK: The research lists "KULLANILMAMASI GEREKENLER" (things NOT to use).
+   Follow this list strictly. Pay special attention to EVENT LOGIC errors.
 
-6. GAME VISUAL STYLE: If this is a historical game (AoE4, Total War, CK3, etc.),
+7. GAME VISUAL STYLE: If this is a historical game (AoE4, Total War, CK3, etc.),
    respect the game's own art direction while maintaining historical accuracy.
 ` : ''}
 
@@ -1636,11 +1679,14 @@ Apply the visual identity, colors, and atmosphere described above!
 
 🏛️ HISTORICAL ACCURACY (IF APPLICABLE):
 If the research above contains "TARİHSEL DOĞRULUK ANALİZİ", this is HISTORICAL content:
+- Follow the "SAHNE MANTIĞI" section: show the location in its CORRECT state for that moment in time
+  * A city being BESIEGED must show the DEFENDERS' architecture and symbols, NOT the attackers'
+  * Pre-conquest = old owner's buildings; Post-conquest = new owner's modifications
 - Use ONLY the period-correct flag/banner/armor/weapons described in the research
 - NEVER substitute a modern nation-state flag for a historical empire's banner
 - NEVER use anachronistic elements listed in "KULLANILMAMASI GEREKENLER"
 - Dress the person in period-correct costume as described in the research
-- Architecture and environment must match the historical period
+- Architecture and religious buildings must match whoever CONTROLLED the location at that time
 ` : ''}
 
 ${conceptAnalysis ? `
