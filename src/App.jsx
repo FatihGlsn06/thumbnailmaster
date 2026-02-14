@@ -1162,65 +1162,117 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
     setTopicResearch(null);
 
     try {
-      const payload = {
+      // Step 1: Google Search grounded research for up-to-date info (new games, recent content)
+      const searchPayload = {
         contents: [{
           parts: [{
-            text: `Sen bir GAMER ve OYUN KÜLTÜRÜ uzmanısın. "${topic}" hakkında YouTube thumbnail tasarımı için detaylı bilgi ver.
+            text: `"${topic}" hakkında detaylı bilgi ver. Bu bir oyun, film, anime, dizi veya internet kültürü konusu olabilir.
 
-${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
+${topicDescription ? `Ek bağlam: ${topicDescription}` : ''}
 
-Lütfen şunları araştır ve Türkçe olarak detaylı yaz:
+Şunları öğrenmem lazım:
+- Bu tam olarak nedir? (oyun, karakter, boss, silah, item, map, mod, DLC, event vb.)
+- Hangi franchise/evrene ait?
+- Ne zaman çıktı veya ne zaman popüler oldu?
+- Görsel olarak nasıl görünür? (renkler, tasarım, atmosfer, ikonik elementler)
+- Oyuncular/fanlar bu konuyu nasıl tanıyor?
 
-1. **KARAKTER/KONU KİMLİĞİ**:
-   - Bu kim/ne? (Oyun, film, karakter, boss, item vb.)
-   - Hangi evrene/franchise'a ait?
-   - Lore'daki önemi ve hikayesi
-
-2. **GÖRSEL KİMLİK** (ÇOK ÖNEMLİ):
-   - Karakteristik renk paleti (örn: Ba'lakor = koyu mor, siyah, demon kırmızısı)
-   - İkonik görsel elementler (kanatlar, silahlar, zırh, auralar)
-   - Ortam/atmosfer (karanlık, epik, korkunç, parlak vb.)
-   - Tipik arka plan elementleri
-
-3. **DUYGUSAL TON**:
-   - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem)
-   - Oyuncu bu konuyu görünce ne hissetmeli?
-
-4. **THUMBNAIL ÖNERİLERİ**:
-   - En iyi kompozisyon önerisi
-   - Kullanılması gereken efektler (ışık, parçacık, sis vb.)
-   - Kaçınılması gereken hatalar
-   - Örnek metin önerileri (2-3 kelime)
-
-5. **REFERANS STİLİ**:
-   - Bu konu için en uygun görsel stil (sinematik, çizgi roman, gerçekçi vb.)
-   - Benzer başarılı thumbnail'lar nasıl görünür?
-
-Bir gamer gibi düşün, detaylı ve tutkulu yaz. Bu bilgiler doğrudan thumbnail tasarımında kullanılacak.`
+İnternetten güncel bilgi araştırarak yanıtla. Özellikle yeni çıkan veya güncel içerikler hakkında doğru bilgi ver.`
           }]
         }],
+        tools: [{
+          googleSearch: {}
+        }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1500
+          temperature: 0.4,
+          maxOutputTokens: 2000
         }
       };
 
-      const response = await fetch(
+      const searchResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(searchPayload)
         }
       );
 
-      const data = await response.json();
-      const researchText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const searchData = await searchResponse.json();
+      const searchResult = searchData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      // Step 2: Deep visual analysis using search results + AI knowledge
+      const analysisPayload = {
+        contents: [{
+          parts: [{
+            text: `Sen bir GAMER, OYUN KÜLTÜRÜ ve GÖRSEL TASARIM uzmanısın. "${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yap.
+
+${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
+
+${searchResult ? `
+📡 GÜNCEL İNTERNET ARAŞTIRMASI SONUÇLARI:
+${searchResult}
+
+Yukarıdaki güncel bilgileri kullanarak aşağıdaki analizi yap:
+` : ''}
+
+Lütfen Türkçe olarak çok detaylı yaz:
+
+1. **KARAKTER/KONU KİMLİĞİ**:
+   - Bu kim/ne? Tam tanımı (Oyun, film, karakter, boss, item, event, DLC vb.)
+   - Hangi evrene/franchise'a ait? Hangi yılda çıktı?
+   - Lore'daki önemi, hikayesi ve fanlar için anlamı
+   - Eğer yeni bir içerikse: ne zaman duyuruldu/çıktı, topluluğun tepkisi
+
+2. **GÖRSEL KİMLİK** (ÇOK ÖNEMLİ - DETAYLI YAZILMALI):
+   - Karakteristik renk paleti (HEX kodlarıyla - örn: Ba'lakor = koyu mor #4a0080, siyah #1a1a2e, demon kırmızısı #8b0000)
+   - İkonik görsel elementler (kanatlar, silahlar, zırh, auralar, semboller, logolar)
+   - Ortam/atmosfer (karanlık, epik, korkunç, parlak, neon, doğa vb.)
+   - Tipik arka plan elementleri (kale, orman, uzay, şehir, arena vb.)
+   - Işık tipi ve yönü (ateşli, soğuk, neon, gün batımı, ay ışığı vb.)
+   - Parçacık/efekt önerileri (kıvılcım, sis, duman, yağmur, kar, enerji auraları)
+
+3. **DUYGUSAL TON ve ATMOSFER**:
+   - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem, merak, nostalji)
+   - Oyuncu/izleyici bu konuyu görünce ne hissetmeli?
+   - Renk psikolojisi önerileri
+
+4. **THUMBNAIL ÖNERİLERİ**:
+   - En iyi kompozisyon önerisi (kişi nerede durmalı, arka plan nasıl olmalı)
+   - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare vb.)
+   - Kostüm/kıyafet önerisi (kişi ne giymeli, zırh mı, pelerin mi vb.)
+   - Kaçınılması gereken hatalar (yanlış renk, yanlış karakter, çelişkili elementler)
+   - Örnek yazı önerileri (2-3 kelime, Türkçe ve İngilizce seçenekler)
+
+5. **REFERANS STİLİ**:
+   - Bu konu için en uygun görsel stil (sinematik, çizgi roman, gerçekçi, anime, dark fantasy vb.)
+   - Benzer başarılı YouTube thumbnail'ların özellikleri
+   - Popüler YouTube kanallarının bu konuyu nasıl işlediği
+
+Bir gamer ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
+Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 3000
+        }
+      };
+
+      const analysisResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(analysisPayload)
+        }
+      );
+
+      const analysisData = await analysisResponse.json();
+      const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (researchText) {
         setTopicResearch(researchText);
-        // Research is stored separately and used in generation prompt
-        // topicDescription remains available for user's additional notes
       } else {
         setTopicResearch('Araştırma yapılamadı.');
       }
@@ -1349,10 +1401,13 @@ The text color MUST harmonize with the scene. Follow these rules:
 6. Never use a text color that blends into the background
 7. Test: Would this text be readable at 120px thumbnail size?
 ` : `
-⚠️ NO TEXT OVERLAY - This thumbnail should have NO text on it.
-- Focus entirely on the visual composition
-- Let the person and scene tell the story
-- Clean, text-free thumbnail
+⚠️⚠️⚠️ ABSOLUTE ZERO TEXT RULE ⚠️⚠️⚠️
+- There must be ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO SYMBOLS anywhere on this image
+- Do NOT add any title, watermark, logo text, game name, channel name, or ANY written content
+- Do NOT add text even if you think it would look good - the user explicitly wants NO TEXT
+- The image must be 100% visual - only the person, scene, and effects
+- If you add ANY text to this image, the task has FAILED
+- This is a CLEAN thumbnail - the user will add their own text later in the editor
 `}
 
 VISUAL STYLE: ${selectedTypo.prompt}
@@ -1518,7 +1573,11 @@ TEXT: "${optimizedText}"
 4. Text GLOW must use a color FROM the scene
 5. Maximum contrast for 120px thumbnail readability
 ` : `
-⚠️ NO TEXT - Create a clean, text-free thumbnail.
+⚠️⚠️⚠️ ABSOLUTE ZERO TEXT RULE ⚠️⚠️⚠️
+- There must be ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS anywhere on this image
+- Do NOT add any title, watermark, logo text, game name, or ANY written content
+- The image must be 100% visual only - person, scene, and effects
+- If you add ANY text, the task has FAILED
 `}
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
@@ -1573,60 +1632,45 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
     }
   };
 
-  // Yazısız yeniden oluştur
+  // Yazısız yeniden oluştur - mevcut sahneyi koruyarak sadece yazıyı kaldır
   const regenerateWithoutText = async () => {
+    if (!apiKey || !resultImage) return;
+
     const savedText = overlayText;
-    setOverlayText(''); // Geçici olarak yazıyı kaldır
-
-    // State güncellemesi için kısa bir bekleme
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Mevcut generate fonksiyonunu çağırmak yerine, doğrudan API çağrısı yapıyoruz
-    if (!apiKey || !base64Image || !topic) {
-      setOverlayText(savedText); // Hata varsa geri al
-      return;
-    }
+    setOverlayText('');
 
     setLoading(true);
     setError(null);
 
     try {
-      const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
+      // Mevcut result image'ı base64'e çevir (sahneyi korumak için)
+      const currentImageBase64 = resultImage.replace(/^data:image\/\w+;base64,/, '');
 
-      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      const prompt = `This is an existing YouTube thumbnail. Your task is to REMOVE ALL TEXT from this image while keeping EVERYTHING ELSE exactly the same.
 
-⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
-- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
-- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
+⚠️ CRITICAL INSTRUCTIONS:
+- REMOVE every piece of text, letters, words, numbers, and written content from this image
+- KEEP the exact same scene, person, background, lighting, colors, effects, composition
+- KEEP the exact same person position, facial expression, costume, and pose
+- RECONSTRUCT the areas behind the text naturally - fill in with the surrounding background/scene
+- The result should look like the text was never there
+- Do NOT change the scene, do NOT change the person, do NOT change colors or lighting
+- Do NOT add new text - the result must be 100% text-free
+- MAINTAIN the same 1280x720 horizontal landscape orientation
+- The only difference should be: text removed, background filled in naturally
 
-🎯 ARCHETYPE: ${THUMBNAIL_ARCHETYPES[selectedArchetype]?.name || 'Power Fantasy'}
-${THUMBNAIL_ARCHETYPES[selectedArchetype]?.description || ''}
-
-${topicResearch ? `🎮 GAME INFO:\n${topicResearch}` : ''}
-${photoAnalysis ? `👤 PHOTO:\n${photoAnalysis}` : ''}
-
-REFERENCE PHOTO - The person must appear LARGE (face 40-50% height):
-- Transform to match theme
-- Dramatic lighting
-- Keep face recognizable
-
-⚠️ NO TEXT ON THE IMAGE - Create a completely clean, text-free thumbnail.
-The thumbnail should be designed so the user can add their own text later.
-
-VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors'}
-
-MAKE IT CLICK-WORTHY!`;
+Think of this as "inpainting" - remove text and fill with surrounding context.`;
 
       const payload = {
         contents: [{
           parts: [
             { text: prompt },
-            { inlineData: { mimeType: "image/png", data: base64Image } }
+            { inlineData: { mimeType: "image/png", data: currentImageBase64 } }
           ]
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.7
+          temperature: 0.3
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -1650,11 +1694,11 @@ MAKE IT CLICK-WORTHY!`;
       if (generatedBase64) {
         setResultImage(`data:image/png;base64,${generatedBase64}`);
       } else {
-        throw new Error('Yazısız thumbnail oluşturulamadı.');
+        throw new Error('Yazı kaldırma başarısız oldu.');
       }
     } catch (err) {
       setError(err.message);
-      setOverlayText(savedText); // Hata durumunda geri al
+      setOverlayText(savedText);
     } finally {
       setLoading(false);
     }
