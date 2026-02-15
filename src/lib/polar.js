@@ -8,10 +8,10 @@ export const POLAR_CONFIG = {
   // Polar.sh Organization slug
   organizationId: import.meta.env.VITE_POLAR_ORG_ID || 'YOUR_POLAR_ORG_ID',
 
-  // Product IDs - Polar Dashboard'dan oluşturulacak
+  // Product IDs
   products: {
-    pro_monthly: import.meta.env.VITE_POLAR_PRO_MONTHLY_ID || '',
-    pro_yearly: import.meta.env.VITE_POLAR_PRO_YEARLY_ID || '',
+    pro_monthly: import.meta.env.VITE_POLAR_PRO_MONTHLY_ID || 'da6e1211-cd0c-48fc-afd7-7b27a0b8def6',
+    pro_yearly: import.meta.env.VITE_POLAR_PRO_YEARLY_ID || '53cad33a-69df-48d6-9233-264a04af9f70',
   },
 
   // Checkout base URL
