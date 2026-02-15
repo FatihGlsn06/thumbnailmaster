@@ -14,8 +14,8 @@ export const POLAR_CONFIG = {
     pro_yearly: import.meta.env.VITE_POLAR_PRO_YEARLY_ID || '53cad33a-69df-48d6-9233-264a04af9f70',
   },
 
-  // Checkout base URL
-  checkoutBaseUrl: 'https://polar.sh/checkout',
+  // Checkout Link URL (Polar Dashboard'dan oluşturulan)
+  checkoutUrl: import.meta.env.VITE_POLAR_CHECKOUT_URL || 'https://buy.polar.sh/polar_cl_uFAhxcbQm4stiIQsycezaMwdw4k7CPaUNgsYA1GBqYe',
 
   // Environment: 'production' or 'sandbox'
   environment: import.meta.env.VITE_POLAR_ENV || 'sandbox',
@@ -295,39 +295,22 @@ export function getRemainingGenerations(plan) {
 // =============================================================================
 
 /**
- * Polar.sh checkout URL'i oluştur
+ * Polar.sh checkout URL'i döndür
  */
-export function getCheckoutUrl(productId, options = {}) {
-  if (!productId) {
-    console.warn('Polar product ID not configured');
-    return '#';
-  }
-
-  const params = new URLSearchParams();
-
-  if (options.customerEmail) {
-    params.set('customer_email', options.customerEmail);
-  }
-  if (options.successUrl) {
-    params.set('success_url', options.successUrl);
-  }
-
-  const baseUrl = `${POLAR_CONFIG.checkoutBaseUrl}/${productId}`;
-  const queryString = params.toString();
-
-  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+export function getCheckoutUrl() {
+  return POLAR_CONFIG.checkoutUrl;
 }
 
 /**
  * Aylık Pro checkout URL
  */
-export function getProMonthlyCheckoutUrl(options = {}) {
-  return getCheckoutUrl(POLAR_CONFIG.products.pro_monthly, options);
+export function getProMonthlyCheckoutUrl() {
+  return POLAR_CONFIG.checkoutUrl;
 }
 
 /**
  * Yıllık Pro checkout URL
  */
-export function getProYearlyCheckoutUrl(options = {}) {
-  return getCheckoutUrl(POLAR_CONFIG.products.pro_yearly, options);
+export function getProYearlyCheckoutUrl() {
+  return POLAR_CONFIG.checkoutUrl;
 }
