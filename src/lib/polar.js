@@ -6,7 +6,7 @@
 // =============================================================================
 export const POLAR_CONFIG = {
   // Polar.sh Organization slug
-  organizationId: import.meta.env.VITE_POLAR_ORG_ID || 'YOUR_POLAR_ORG_ID',
+  organizationId: import.meta.env.VITE_POLAR_ORG_ID || '873bbae8-d218-4673-a435-ff4162853de3',
 
   // Product IDs
   products: {
