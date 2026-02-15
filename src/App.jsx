@@ -13,6 +13,14 @@ import { WebGLShader } from '@/components/ui/web-gl-shader';
 import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
 import { Logo, LogoIcon, LogoMinimal } from '@/components/ui/logo';
 import ThumbnailEditor from '@/components/ThumbnailEditor';
+import PricingSection from '@/components/PricingSection';
+import LicenseKeyModal from '@/components/LicenseKeyModal';
+import { ProBadge, ProLockOverlay, UsageBadge } from '@/components/ProBadge';
+import {
+  getCurrentPlan, canGenerate, getRemainingGenerations,
+  incrementDailyUsage, getLicenseKey, validateLicenseKey,
+  PLANS,
+} from '@/lib/polar';
 
 // HIGH-CTR THUMBNAIL ARCHETYPES
 const CTR_ARCHETYPES = [
@@ -747,6 +755,31 @@ const App = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isOptimized, setIsOptimized] = useState(false);
   const [previousImage, setPreviousImage] = useState(null);
+
+  // Polar.sh - Plan & License states
+  const [currentPlan, setCurrentPlan] = useState(() => getCurrentPlan());
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const isPro = currentPlan.id === 'pro';
+
+  // Uygulama açılışında lisans durumunu kontrol et
+  useEffect(() => {
+    const checkLicense = async () => {
+      const key = getLicenseKey();
+      if (key) {
+        const result = await validateLicenseKey(key);
+        if (result.valid) {
+          setCurrentPlan(PLANS.pro);
+        } else {
+          setCurrentPlan(PLANS.free);
+        }
+      }
+    };
+    checkLicense();
+  }, []);
+
+  const handleLicenseActivated = (planId) => {
+    setCurrentPlan(planId === 'pro' ? PLANS.pro : PLANS.free);
+  };
 
   // Mobile UI states
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -1487,6 +1520,13 @@ DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theo
       return;
     }
 
+    // Günlük kullanım limiti kontrolü
+    if (!canGenerate(currentPlan)) {
+      const remaining = getRemainingGenerations(currentPlan);
+      setError(`Günlük ücretsiz kullanım limitinize ulaştınız (${currentPlan.limits.dailyGenerations}/${currentPlan.limits.dailyGenerations}). Pro'ya yükselterek sınırsız oluşturma yapabilirsiniz.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     // Reset optimization state for fresh generation
@@ -1683,6 +1723,7 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
       if (generatedBase64) {
         setResultImage(`data:image/png;base64,${generatedBase64}`);
+        incrementDailyUsage(); // Günlük kullanım sayacını artır
       } else {
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
@@ -1980,12 +2021,24 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               <div className="bg-black/40 backdrop-blur-xl border border-[#27272a] rounded-xl sm:rounded-2xl px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
                 <Logo size="sm" className="sm:hidden" />
                 <Logo size="md" className="hidden sm:flex" />
-                <button
-                  onClick={() => setCurrentSection('app')}
-                  className="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg sm:rounded-full transition-all border border-white/10"
-                >
-                  Başla
-                </button>
+                <div className="flex items-center gap-2">
+                  {isPro ? (
+                    <ProBadge size="md" />
+                  ) : (
+                    <button
+                      onClick={() => setShowLicenseModal(true)}
+                      className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 text-purple-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-all border border-purple-500/20"
+                    >
+                      Pro
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setCurrentSection('app')}
+                    className="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg sm:rounded-full transition-all border border-white/10"
+                  >
+                    Başla
+                  </button>
+                </div>
               </div>
             </div>
           </nav>
@@ -2089,6 +2142,16 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
             </div>
           </section>
 
+          {/* Pricing Section - Polar.sh */}
+          <PricingSection onActivateLicense={() => setShowLicenseModal(true)} />
+
+          {/* License Key Modal */}
+          <LicenseKeyModal
+            isOpen={showLicenseModal}
+            onClose={() => setShowLicenseModal(false)}
+            onActivated={handleLicenseActivated}
+          />
+
           {/* CTA Section - Mobile Optimized */}
           <section className="py-12 sm:py-20 px-3 sm:px-4 pb-24 sm:pb-32">
             <div className="max-w-3xl mx-auto">
@@ -2103,7 +2166,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     Hemen Başlamaya Hazır mısın?
                   </h2>
                   <p className="text-white/60 mb-6 sm:mb-8 text-xs sm:text-sm md:text-base max-w-md mx-auto">
-                    Kendi Gemini API Key'inle sınırsız thumbnail oluştur. Tamamen ücretsiz.
+                    Kendi Gemini API Key'inle thumbnail oluşturmaya hemen başla. Ücretsiz plan ile dene, Pro ile sınırları kaldır.
                   </p>
                   <button
                     onClick={() => setCurrentSection('app')}
@@ -2159,6 +2222,13 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
         )}
       </AnimatePresence>
 
+      {/* License Key Modal - App Section */}
+      <LicenseKeyModal
+        isOpen={showLicenseModal}
+        onClose={() => setShowLicenseModal(false)}
+        onActivated={handleLicenseActivated}
+      />
+
       <div className="min-h-screen bg-[#08080a] text-slate-200 font-sans pb-24 lg:pb-6">
         {/* Header - Mobile Optimized */}
         <header className="sticky top-0 z-50 bg-[#08080a]/90 backdrop-blur-xl border-b border-white/5">
@@ -2172,6 +2242,18 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
             </button>
 
             <div className="flex items-center gap-2">
+              {/* Plan Badge */}
+              {isPro ? (
+                <ProBadge size="sm" />
+              ) : (
+                <button
+                  onClick={() => setShowLicenseModal(true)}
+                  className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 hover:border-purple-500/40 transition-colors"
+                >
+                  <span className="text-[10px] sm:text-xs font-bold text-purple-400">Pro</span>
+                </button>
+              )}
+
               {/* API Status - Compact on mobile */}
               {apiKey ? (
                 <div className="bg-green-500/10 border border-green-500/20 px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5">
@@ -2291,29 +2373,35 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                       <BrainCircuit className="w-3 h-3" /> AI Modeli
                     </label>
                     <div className="space-y-2">
-                      {availableModels.map((model) => (
-                        <button
-                          key={model.id}
-                          onClick={() => setSelectedModel(model.id)}
-                          className={`w-full p-3 rounded-lg border text-left transition-all ${
-                            selectedModel === model.id
-                              ? 'bg-purple-600 border-purple-500 text-white'
-                              : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs font-bold">{model.name}</p>
-                            {model.badge && (
-                              <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold">
-                                {model.badge}
-                              </span>
-                            )}
-                          </div>
-                          <p className={`text-[10px] ${selectedModel === model.id ? 'text-purple-200' : 'text-slate-600'}`}>
-                            {model.desc}
-                          </p>
-                        </button>
-                      ))}
+                      {availableModels.map((model) => {
+                        const isModelAllowed = currentPlan.limits.allowedModels.includes(model.id);
+                        return (
+                          <button
+                            key={model.id}
+                            onClick={() => isModelAllowed ? setSelectedModel(model.id) : setShowLicenseModal(true)}
+                            className={`w-full p-3 rounded-lg border text-left transition-all relative ${
+                              !isModelAllowed
+                                ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
+                                : selectedModel === model.id
+                                ? 'bg-purple-600 border-purple-500 text-white'
+                                : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-bold">{model.name}</p>
+                              {model.badge && (
+                                <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold">
+                                  {model.badge}
+                                </span>
+                              )}
+                              {!isModelAllowed && <ProBadge size="xs" />}
+                            </div>
+                            <p className={`text-[10px] ${selectedModel === model.id ? 'text-purple-200' : 'text-slate-600'}`}>
+                              {model.desc}
+                            </p>
+                          </button>
+                        );
+                      })}
                     </div>
                     <p className="text-[10px] text-slate-600">
                       Deneysel model daha iyi sonuç verebilir ama yavaş olabilir
@@ -2596,25 +2684,31 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500">CTR Arketipi</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {CTR_ARCHETYPES.map((arch) => (
-                    <button
-                      key={arch.id}
-                      onClick={() => setSelectedArchetype(arch.id)}
-                      className={`p-3 rounded-xl border transition-all text-left ${
-                        selectedArchetype === arch.id
-                          ? 'bg-orange-600 border-orange-500 text-white'
-                          : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{arch.icon}</span>
-                        <span className="text-xs font-bold truncate">{arch.name}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
-                        +{arch.ctrBoost}% CTR
-                      </span>
-                    </button>
-                  ))}
+                  {CTR_ARCHETYPES.map((arch) => {
+                    const isArchAllowed = currentPlan.limits.allowedArchetypes.includes(arch.id);
+                    return (
+                      <button
+                        key={arch.id}
+                        onClick={() => isArchAllowed ? setSelectedArchetype(arch.id) : setShowLicenseModal(true)}
+                        className={`p-3 rounded-xl border transition-all text-left relative ${
+                          !isArchAllowed
+                            ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
+                            : selectedArchetype === arch.id
+                            ? 'bg-orange-600 border-orange-500 text-white'
+                            : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">{arch.icon}</span>
+                          <span className="text-xs font-bold truncate">{arch.name}</span>
+                          {!isArchAllowed && <ProBadge size="xs" />}
+                        </div>
+                        <span className={`text-[10px] font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
+                          +{arch.ctrBoost}% CTR
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -2622,22 +2716,30 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500">Yazı Stili</label>
                 <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-visible">
-                  {typographyOptions.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => setTypoStyle(opt.id)}
-                      className={`flex-shrink-0 w-40 sm:w-auto p-3 rounded-xl border transition-all text-left ${
-                        typoStyle === opt.id
-                          ? 'bg-blue-600 border-blue-500 text-white'
-                          : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
-                      }`}
-                    >
-                      <p className="text-xs font-bold truncate">{opt.name}</p>
-                      <p className={`text-[10px] mt-0.5 line-clamp-1 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>
-                        {opt.desc}
-                      </p>
-                    </button>
-                  ))}
+                  {typographyOptions.map((opt) => {
+                    const isTypoAllowed = currentPlan.limits.allowedTypoStyles.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => isTypoAllowed ? setTypoStyle(opt.id) : setShowLicenseModal(true)}
+                        className={`flex-shrink-0 w-40 sm:w-auto p-3 rounded-xl border transition-all text-left ${
+                          !isTypoAllowed
+                            ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
+                            : typoStyle === opt.id
+                            ? 'bg-blue-600 border-blue-500 text-white'
+                            : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold truncate">{opt.name}</p>
+                          {!isTypoAllowed && <ProBadge size="xs" />}
+                        </div>
+                        <p className={`text-[10px] mt-0.5 line-clamp-1 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>
+                          {opt.desc}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </CollapsibleSection>
@@ -2723,6 +2825,17 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
                 {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
               </button>
+              {!isPro && (
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <UsageBadge remaining={getRemainingGenerations(currentPlan)} total={currentPlan.limits.dailyGenerations} />
+                  <button
+                    onClick={() => setShowLicenseModal(true)}
+                    className="text-purple-400 hover:text-purple-300 text-[10px] font-medium transition-colors"
+                  >
+                    Sınırsız için Pro
+                  </button>
+                </div>
+              )}
             </div>
 
             {error && <p className="text-sm text-red-500 font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl p-3">{error}</p>}
@@ -2742,6 +2855,17 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
 
         {/* Mobile Floating Action Button */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#08080a] via-[#08080a] to-transparent lg:hidden">
+          {!isPro && (
+            <div className="flex items-center justify-between mb-2 px-1">
+              <UsageBadge remaining={getRemainingGenerations(currentPlan)} total={currentPlan.limits.dailyGenerations} />
+              <button
+                onClick={() => setShowLicenseModal(true)}
+                className="text-purple-400 hover:text-purple-300 text-[10px] font-medium transition-colors"
+              >
+                Sınırsız icin Pro
+              </button>
+            </div>
+          )}
           <button
             onClick={generateThumbnail}
             disabled={loading || !image || !topic || !apiKey}
