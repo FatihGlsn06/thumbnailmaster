@@ -1628,71 +1628,73 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
 
       if (researchText) {
         // Step 3: Convert research into a CONCRETE visual scene description
-        // This is critical because image generation models tend to use "default" visuals
-        // for well-known places (e.g., modern Istanbul instead of Byzantine Constantinople)
+        // Use a shorter prompt for non-historical content, detailed for historical
+        const historicalKeywords = ['tarih', 'history', 'historical', 'savaş', 'war', 'battle', 'empire', 'imparatorluk', 'osmanlı', 'ottoman', 'byzantine', 'bizans', 'medieval', 'ortaçağ', 'antik', 'ancient', 'roma', 'roman', 'kingdom', 'krallık', 'sultan', 'fetih', 'conquest', 'dynasty', 'hanedan'];
+        const topicLower = `${topic} ${topicDescription || ''}`.toLowerCase();
+        const isHistorical = historicalKeywords.some(kw => topicLower.includes(kw));
+
+        const scenePromptBase = `You are a SCENE DIRECTOR. Read the research below and write a CONCRETE, DETAILED scene description for a YouTube thumbnail.
+
+RESEARCH:
+${researchText}
+
+TOPIC: "${topic}"
+${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
+
+Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
+
+        const scenePromptGeneral = `${scenePromptBase}
+
+FORMAT (write each section completely):
+
+**SCENE_DESCRIPTION**: Describe the background environment in vivid detail. Include: setting, lighting, colors, atmosphere, key objects, mood. Be very specific - e.g. "A dark, rain-soaked cyberpunk alley with neon signs reflecting off wet pavement, holographic advertisements flickering overhead, steam rising from grates" NOT just "a city street".
+
+**COLOR_PALETTE**: List 3-5 dominant colors for the scene (e.g., "deep crimson, electric blue, dark charcoal, golden amber")
+
+**PERSON_COSTUME**: What should the person in the thumbnail wear? Match the theme. (e.g., "futuristic tactical suit with glowing blue accents" or "casual gaming hoodie with headphones around neck")
+
+**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at subject, dramatic perspective, wide-angle lens feel")
+
+**KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
+
+Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
+
+        const scenePromptHistorical = `${scenePromptBase}
+
+CRITICAL: AI image models draw MODERN versions of well-known cities when they hear city names.
+e.g., "Istanbul" → draws modern minarets. "Rome" → draws modern Italy.
+DO NOT use modern city/country names! Describe architecture and visuals directly instead.
+
+FORMAT (write each section completely, in English):
+
+**SCENE_DESCRIPTION**: Describe the scene using ONLY architectural and visual terms, NO modern city names.
+WRONG: "Istanbul with Byzantine architecture" (model draws modern Istanbul!)
+RIGHT: "Ancient walled city, massive domed basilica with Christian crosses, Theodosian double walls, Byzantine eagle banners"
+
+**ATTACKER_DESCRIPTION**: (If attackers present) Describe banners, armor, weapons in detail.
+⚠️ Ottoman banner = DARK CRIMSON/BURGUNDY + GOLDEN crescent + GOLDEN 8-POINTED star
+NEVER use: "Turkish flag", "flag of Turkey", white crescent, 5-pointed star, bright red
+
+**DEFENDER_DESCRIPTION**: (If defenders present) Describe their armor, shields, banners.
+
+**CAMERA_POSITION**: Where is the camera? What angle?
+
+**PERSON_COSTUME**: What should the thumbnail person wear? Match the era.
+
+**ABSOLUTELY_NOT**: Things that MUST NOT appear. For Ottoman scenes ALWAYS include:
+"NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
+
+Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
+
         const scenePayload = {
           contents: [{
             parts: [{
-              text: `Sen bir SAHNE YÖNETMENİSİN. Aşağıdaki araştırma sonuçlarını oku ve thumbnail için SOMUT bir sahne tarifi yaz.
-
-ARAŞTIRMA:
-${researchText}
-
-KONU: "${topic}"
-${topicDescription ? `EK BAĞLAM: ${topicDescription}` : ''}
-
-ŞİMDİ, bu araştırmayı bir AI görsel üretim modeline vereceğiz. Ama problem şu:
-AI modelleri tanınmış şehir/yer isimlerini duyunca MODERN hallerini çiziyor.
-Örneğin "İstanbul" dersen bugünkü minareli halini çizer, "Roma" dersen modern İtalya'yı çizer.
-
-BU YÜZDEN, araştırmadaki bilgileri kullanarak şehir/yer ismi KULLANMADAN somut bir sahne tarifi yaz.
-
-📐 SAHNE TARİFİ FORMATI (İngilizce yaz, kısa ve net):
-
-**SCENE_DESCRIPTION**: (Şehir/yer adı kullanmadan, sadece mimari ve görsel terimlerle sahneyi tanımla)
-Örnek: "A massive ancient walled city with Byzantine architecture - large domed basilica with golden crosses on top, thick stone fortification walls with towers, Greek fire installations, no minarets, no crescents visible on buildings"
-YANLIŞ: "Istanbul with Byzantine architecture" (model modern İstanbul çizer!)
-DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theodosian double walls, Byzantine eagle banners"
-
-**ATTACKER_DESCRIPTION**: (Saldıran taraf varsa - bayrak, zırh, silah detayları)
-Örnek: "Ottoman Janissary soldiers wearing white felt börk hats, chainmail armor, carrying yataghan swords, with dark crimson/burgundy war banners showing a GOLDEN crescent moon and GOLDEN 8-POINTED star (absolutely NOT the modern Turkish flag - NOT white crescent, NOT 5-pointed star, NOT bright red background)"
-⚠️ BAYRAK KURALI: Osmanlı sancağı = KOYU KIRMIZI/BORDO zemin + ALTIN/SARI renkli hilal + ALTIN/SARI 8 köşeli yıldız. Bu MODERN Türkiye bayrağından (parlak kırmızı + beyaz hilal + beyaz 5 köşeli yıldız) TAMAMEN FARKLIDIR! "Turkish flag" veya "flag of Turkey" kelimelerini ASLA kullanma!
-
-**DEFENDER_DESCRIPTION**: (Savunan taraf varsa)
-Örnek: "Byzantine defenders in lamellar armor, conical helmets, holding round shields with double-headed eagle emblem, purple and gold banners"
-
-**CAMERA_POSITION**: (Kamera nerede? Saldıranların arkasından mı, surların üstünden mi?)
-Örnek: "Camera behind the attacking army, looking TOWARD the city walls, siege scene"
-
-**PERSON_COSTUME**: (Thumbnail'daki kişi ne giymeli?)
-Örnek: "Ottoman commander armor - ornate chainmail with gold trim, fur-lined cape, decorated helmet with plume"
-
-**ABSOLUTELY_NOT**: (Kesinlikle gösterilmemesi gerekenler - İngilizce, net)
-Örnek: "NO minarets, NO modern flags, NO modern Turkish flag, NO white crescent on red (that is modern Turkey), NO 5-pointed stars (use 8-pointed instead), NO mosques, NO modern buildings, NO concrete"
-⚠️ Osmanlı sahnelerinde MUTLAKA ekle: "NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner (dark crimson+golden crescent+8-pointed golden star) instead"
-
-⚠️ KURALLAR:
-- Modern şehir/ülke isimlerini KULLANMA (İstanbul, Turkey, Italy, France vb.)
-- Bunun yerine dönemin ismini veya sadece mimari açıklamaları kullan
-- Her şeyi çok SOMUT ve görsel olarak tanımla
-- Kısa tut, her bölüm 1-3 cümle
-- İngilizce yaz (AI görsel modeli İngilizce daha iyi anlıyor)
-- Eğer tarihsel içerik DEĞİLSE, sadece SCENE_DESCRIPTION ve PERSON_COSTUME yaz
-
-⚠️⚠️ BAYRAK/SANCAK KRİTİK KURALI (EN SIK YAPILAN HATA!):
-- "Turkish flag" veya "flag of Turkey" kelimelerini ASLA KULLANMA! AI modeli bunu duyunca modern 🇹🇷 bayrağı çizer!
-- Osmanlı sahnelerinde şunu yaz: "dark crimson/burgundy war banner with GOLDEN crescent moon and GOLDEN 8-POINTED star"
-- YANLIŞ: "red flag with white crescent and star" (bu modern Türkiye bayrağı tanımıdır!)
-- YANLIŞ: "Turkish banner" veya "Ottoman flag similar to Turkish flag"
-- DOĞRU: "historical Ottoman war banner - dark burgundy/crimson fabric, golden crescent, golden 8-pointed star, NOT the modern flag"
-- Yıldız: Her zaman "8-pointed" belirt, yoksa AI otomatik 5 köşeli çizer
-- Hilal rengi: ALTIN/SARI (golden/gold), BEYAZ DEĞİL!
-- Zemin: KOYU KIRMIZI/BORDO (dark crimson/burgundy), parlak kırmızı DEĞİL!`
+              text: isHistorical ? scenePromptHistorical : scenePromptGeneral
             }]
           }],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 4000
+            maxOutputTokens: 8192
           }
         };
 
@@ -1706,7 +1708,13 @@ DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theo
         );
 
         const sceneData = await sceneResponse.json();
-        const sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
+        let sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
+        const finishReason = sceneData.candidates?.[0]?.finishReason;
+
+        // If output was truncated (MAX_TOKENS), log warning but still use what we got
+        if (finishReason === 'MAX_TOKENS' && sceneDescription) {
+          console.warn('Scene direction was truncated. Using partial result.');
+        }
 
         // Combine research + scene description
         const combinedResearch = sceneDescription
@@ -1782,40 +1790,21 @@ ${topicResearch}
 ⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
 This is not generic - it's specific to "${topic}" and must look authentic to fans/followers of this content.
 
-🏛️ HISTORICAL SCENE DIRECTION (CRITICAL - FOLLOW EXACTLY):
-The research above contains a "READY-TO-USE SCENE DIRECTION" section at the end.
-If present, this is the MOST IMPORTANT part to follow. It contains:
+🎬 SCENE DIRECTION (CRITICAL - FOLLOW EXACTLY):
+The research above contains a "READY-TO-USE SCENE DIRECTION" section.
+If present, this is the MOST IMPORTANT part to follow:
 
-- **SCENE_DESCRIPTION**: Use this EXACT description for the background/environment.
-  ⚠️ Do NOT substitute your own idea of how a city/place looks!
-  The description deliberately avoids modern city names to prevent you from
-  drawing the modern version. Follow the architectural details AS WRITTEN.
+- **SCENE_DESCRIPTION**: Use this EXACT description for the background/environment. Do NOT substitute your own idea!
+- **COLOR_PALETTE**: Use these exact colors for the scene.
+- **PERSON_COSTUME**: Dress the person in THIS specific outfit.
+- **CAMERA_ANGLE / CAMERA_POSITION**: Follow for viewing angle and composition.
+- **KEY_EFFECTS**: Apply these visual effects.
+- **ATTACKER/DEFENDER_DESCRIPTION**: If present, follow for armies/factions.
+- **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance.
 
-- **ATTACKER_DESCRIPTION / DEFENDER_DESCRIPTION**: If present, follow these for any
-  soldiers, armies, or faction elements in the scene. Each side has specific
-  banners, armor, and weapons - do NOT mix them up.
-
-- **CAMERA_POSITION**: Follow this for the viewing angle and composition.
-
-- **PERSON_COSTUME**: Dress the person from the photo in THIS specific outfit.
-  Do NOT use modern clothes or wrong-era costumes.
-
-- **ABSOLUTELY_NOT**: This lists things that MUST NOT appear in the image.
-  If it says "NO minarets" then there must be ZERO minarets.
-  If it says "NO modern flags" then there must be ZERO modern flags.
-  These are NON-NEGOTIABLE rules. Violating ANY of them means the task FAILED.
-
-⚠️⚠️⚠️ CRITICAL FLAG/BANNER RULE FOR OTTOMAN/TURKISH HISTORICAL SCENES:
-  - The MODERN Turkish flag (bright red + white crescent + white 5-pointed star) did NOT exist before 1844!
-  - For Ottoman scenes: Use DARK CRIMSON/BURGUNDY fabric with GOLDEN crescent and GOLDEN 8-POINTED star
-  - NEVER use: white crescent, white star, 5-pointed star, or bright red background for Ottoman banners
-  - The Ottoman historical banner looks COMPLETELY DIFFERENT from the modern Turkish flag
-  - If you draw the modern Turkish flag in a pre-1844 scene, the task has COMPLETELY FAILED
-
-⚠️ CRITICAL RULE FOR HISTORICAL SCENES:
-Do NOT use modern city/country names in your internal thinking!
-Build the scene purely from the architectural and visual descriptions provided.
-A "walled city with domed basilica and crosses" is NOT the same as modern Istanbul.
+For HISTORICAL scenes: Do NOT use modern city names (e.g., "Istanbul" draws modern city).
+Build the scene from architectural descriptions only.
+For Ottoman scenes: Use DARK CRIMSON banner + GOLDEN crescent + GOLDEN 8-pointed star (NOT modern Turkish flag).
 ` : ''}
 
 ${conceptAnalysis ? `
