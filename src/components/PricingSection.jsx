@@ -6,11 +6,14 @@ import {
 } from 'lucide-react';
 import {
   PLANS,
+  TEST_MODE,
   getProMonthlyCheckoutUrl,
   getProYearlyCheckoutUrl,
 } from '@/lib/polar';
 
 const PricingSection = ({ onActivateLicense }) => {
+  // Test modunda pricing section gizle
+  if (TEST_MODE) return null;
   const [billingPeriod, setBillingPeriod] = useState('yearly'); // 'monthly' | 'yearly'
 
   const yearlyDiscount = Math.round(

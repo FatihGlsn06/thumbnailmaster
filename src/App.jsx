@@ -22,14 +22,114 @@ import {
   PLANS,
 } from '@/lib/polar';
 
-// HIGH-CTR THUMBNAIL ARCHETYPES
+// =============================================================================
+// SMART CONTENT DETECTION - İçerik tipine göre otomatik parametre ayarı
+// =============================================================================
+const CONTENT_CATEGORIES = {
+  gaming: {
+    id: 'gaming',
+    keywords: ['game', 'oyun', 'gaming', 'fps', 'rpg', 'mmorpg', 'battle royale', 'boss', 'raid', 'pvp', 'speedrun', 'mod', 'dlc', 'steam', 'playstation', 'xbox', 'nintendo', 'valorant', 'fortnite', 'minecraft', 'gta', 'elden ring', 'dark souls', 'league of legends', 'counter-strike', 'cs2', 'dota', 'overwatch', 'apex', 'pubg', 'warzone', 'diablo', 'world of warcraft', 'wow', 'zelda', 'pokemon', 'resident evil', 'silent hill', 'god of war', 'cyberpunk', 'witcher', 'assassins creed', 'call of duty', 'cod', 'halo', 'destiny', 'final fantasy', 'monster hunter', 'horizon', 'spider-man', 'hogwarts', 'starfield', 'baldurs gate', 'palworld', 'lethal company', 'helldivers', 'manor lords', 'level', 'damage', 'build', 'loot', 'quest', 'dungeon', 'arena'],
+    temperature: 0.7,
+    defaultArchetypes: ['shocked_threat', 'power_fantasy', 'scale_contrast', 'almost_fail'],
+    promptStyle: 'epic',
+    visualMood: 'Cinematic, epic, high-energy, dramatic lighting with vibrant color accents',
+  },
+  education: {
+    id: 'education',
+    keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'bilim', 'science', 'matematik', 'tarih', 'history', 'fizik', 'kimya', 'biyoloji', 'edebiyat', 'felsefe', 'psikoloji', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'documentary', 'belgesel', 'araştırma', 'research'],
+    temperature: 0.5,
+    defaultArchetypes: ['expert_authority', 'mystery_reveal', 'reaction_face'],
+    promptStyle: 'clean',
+    visualMood: 'Professional, clean, trustworthy, soft lighting with clear focal points',
+  },
+  vlog: {
+    id: 'vlog',
+    keywords: ['vlog', 'günlük', 'daily', 'storytime', 'story time', 'hayatım', 'life', 'reaction', 'tepki', 'challenge', 'denedim', 'tried', 'podcast', 'sohbet', 'chat', 'q&a', 'soru cevap', 'mukbang', 'unboxing', 'kutu açılımı', 'haul', 'alışveriş', 'shopping', 'day in my life', 'routine', 'rutin', 'grwm', 'get ready', 'hazırlan', 'tag', 'trend', 'tiktok'],
+    temperature: 0.6,
+    defaultArchetypes: ['reaction_face', 'challenge_fun', 'breaking_news'],
+    promptStyle: 'energetic',
+    visualMood: 'Bright, energetic, authentic, natural lighting with bold pops of color',
+  },
+  food: {
+    id: 'food',
+    keywords: ['yemek', 'food', 'tarif', 'recipe', 'cooking', 'pişir', 'mutfak', 'kitchen', 'chef', 'şef', 'restoran', 'restaurant', 'lezzet', 'taste', 'yedim', 'ate', 'eat', 'burger', 'pizza', 'pasta', 'tatlı', 'dessert', 'cake', 'kahvaltı', 'breakfast', 'dinner', 'lunch', 'street food', 'sokak lezzeti', 'mukbang', 'asmr food'],
+    temperature: 0.6,
+    defaultArchetypes: ['food_desire', 'reaction_face', 'transformation'],
+    promptStyle: 'warm',
+    visualMood: 'Warm tones, appetizing, close-up detail, golden-hour style lighting, steam and texture',
+  },
+  travel: {
+    id: 'travel',
+    keywords: ['seyahat', 'travel', 'gezi', 'trip', 'tur', 'tour', 'otel', 'hotel', 'havalimanı', 'airport', 'uçak', 'flight', 'ülke', 'country', 'şehir', 'city', 'plaj', 'beach', 'dağ', 'mountain', 'doğa', 'nature', 'kamp', 'camp', 'hiking', 'yürüyüş', 'backpack', 'manzara', 'landscape', 'keşfet', 'explore', 'adventure', 'macera'],
+    temperature: 0.7,
+    defaultArchetypes: ['travel_wonder', 'reaction_face', 'scale_contrast'],
+    promptStyle: 'cinematic',
+    visualMood: 'Breathtaking, wide-angle, golden hour, vivid natural colors, sense of awe and scale',
+  },
+  tech: {
+    id: 'tech',
+    keywords: ['teknoloji', 'tech', 'technology', 'telefon', 'phone', 'iphone', 'samsung', 'android', 'ios', 'apple', 'google', 'ai', 'yapay zeka', 'artificial intelligence', 'robot', 'software', 'yazılım', 'code', 'coding', 'programlama', 'programming', 'app', 'uygulama', 'review', 'inceleme', 'laptop', 'pc', 'bilgisayar', 'computer', 'gadget', 'gpu', 'cpu', 'setup', 'unboxing', 'comparison', 'karşılaştırma', 'benchmark', 'test'],
+    temperature: 0.5,
+    defaultArchetypes: ['expert_authority', 'reaction_face', 'mystery_reveal'],
+    promptStyle: 'futuristic',
+    visualMood: 'Sleek, modern, minimalist with neon accents, clean product showcase lighting',
+  },
+  music: {
+    id: 'music',
+    keywords: ['müzik', 'music', 'şarkı', 'song', 'albüm', 'album', 'konser', 'concert', 'rap', 'hip hop', 'pop', 'rock', 'metal', 'edm', 'dj', 'beat', 'cover', 'remix', 'karaoke', 'enstrüman', 'instrument', 'gitar', 'guitar', 'piyano', 'piano', 'davul', 'drums', 'dans', 'dance', 'choreography', 'koreografi', 'performans', 'performance', 'spotify', 'clip', 'klip'],
+    temperature: 0.8,
+    defaultArchetypes: ['music_energy', 'reaction_face', 'challenge_fun'],
+    promptStyle: 'neon',
+    visualMood: 'Neon-lit, high energy, sound wave visuals, concert atmosphere, vibrant and pulsing',
+  },
+  fitness: {
+    id: 'fitness',
+    keywords: ['fitness', 'spor', 'sport', 'gym', 'egzersiz', 'exercise', 'workout', 'antrenman', 'training', 'kas', 'muscle', 'diyet', 'diet', 'kilo', 'weight', 'zayıfla', 'bulk', 'protein', 'supplement', 'koşu', 'run', 'yoga', 'pilates', 'bodybuilding', 'crossfit', 'martial arts', 'dövüş', 'boks', 'boxing', 'mma', 'transformation', 'dönüşüm', 'before after', 'öncesi sonrası', 'motivation', 'motivasyon'],
+    temperature: 0.6,
+    defaultArchetypes: ['transformation', 'power_fantasy', 'expert_authority'],
+    promptStyle: 'bold',
+    visualMood: 'High contrast, motivational, powerful poses, dramatic side lighting, gritty texture',
+  },
+};
+
+/**
+ * Akıllı İçerik Algılama - topic ve description'dan otomatik kategori belirle
+ */
+function detectContentCategory(topic, description = '') {
+  const text = `${topic} ${description}`.toLowerCase();
+  const scores = {};
+
+  for (const [catId, cat] of Object.entries(CONTENT_CATEGORIES)) {
+    scores[catId] = 0;
+    for (const keyword of cat.keywords) {
+      if (text.includes(keyword.toLowerCase())) {
+        // Longer keywords get higher weight (more specific)
+        scores[catId] += keyword.length > 5 ? 3 : keyword.length > 3 ? 2 : 1;
+      }
+    }
+  }
+
+  // Find the category with the highest score
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+
+  // If top score is 0 or very low, default to 'gaming' (original behavior)
+  if (sorted[0][1] < 2) {
+    return CONTENT_CATEGORIES.gaming;
+  }
+
+  return CONTENT_CATEGORIES[sorted[0][0]];
+}
+
+// HIGH-CTR THUMBNAIL ARCHETYPES - Gaming + Universal
 const CTR_ARCHETYPES = [
+  // --- GAMING ARCHETYPES ---
   {
     id: 'shocked_threat',
     name: 'Şok Yüz + Tehdit',
     desc: 'Büyük yüz ifadesi + arkada tehlike',
     icon: '😱',
     ctrBoost: 25,
+    category: 'gaming',
     prompt: 'SHOCKED FACE + THREAT COMPOSITION: The person\'s face must be LARGE - taking up 40-50% of the frame height. Face should be centered or slightly below center. Shocked/scared expression with wide eyes and open mouth. Threatening creatures or elements surrounding the person from all sides. The threats should frame the face but not cover it. Dramatic colored lighting (green, red, blue glow) illuminating the face. Text overlay at the BOTTOM of the image, large and bold.',
     bestFor: ['Horror', 'FPS', 'Boss fights', 'Jump scares']
   },
@@ -39,6 +139,7 @@ const CTR_ARCHETYPES = [
     desc: 'Dominant poz, aura efekti',
     icon: '⚔️',
     ctrBoost: 22,
+    category: 'gaming',
     prompt: 'POWER FANTASY COMPOSITION: The person should be prominent - taking up 40-50% of the frame. Centered or slightly off-center positioning. Confident, powerful expression. Glowing aura or energy effect around the subject. Epic background but blurred/subdued to make person pop. Heroic lighting with rim light. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['RPG', 'ARPG', 'Progression', 'Build showcases']
   },
@@ -48,6 +149,7 @@ const CTR_ARCHETYPES = [
     desc: 'Tek ilginç obje, merak uyandırıcı',
     icon: '❓',
     ctrBoost: 20,
+    category: 'gaming',
     prompt: 'MYSTERY OBJECT COMPOSITION: Person\'s face large (35-45% of frame) showing curious/intrigued expression. A strange glowing object near them drawing attention. The person should be looking at or reacting to the mysterious object. Spotlight effect on the object. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Indie games', 'Mods', 'Weird mechanics', 'Easter eggs']
   },
@@ -57,6 +159,7 @@ const CTR_ARCHETYPES = [
     desc: 'HP düşük, kritik an donmuş',
     icon: '💀',
     ctrBoost: 23,
+    category: 'gaming',
     prompt: 'ALMOST-FAIL COMPOSITION: Person\'s face large (40-50% of frame) showing panic/stress expression. Critical moment frozen - danger approaching. Red warning tints or indicators visible. The person should look like they\'re about to lose. Tension should be palpable. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Clutch moments', 'Speedruns', 'Challenge runs', 'PvP']
   },
@@ -66,6 +169,7 @@ const CTR_ARCHETYPES = [
     desc: 'Küçük oyuncu vs DEV düşman',
     icon: '🐜',
     ctrBoost: 21,
+    category: 'gaming',
     prompt: 'SCALE CONTRAST COMPOSITION: Show extreme size contrast. Either the person is small facing a MASSIVE threat that fills the background, OR the person\'s face is large (40-50%) with tiny enemies swarming around them. The scale difference must be immediately obvious and dramatic. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Boss fights', 'Mods', 'Glitches', 'Size comparison']
   },
@@ -75,9 +179,101 @@ const CTR_ARCHETYPES = [
     desc: 'İlerleme karşılaştırması',
     icon: '📊',
     ctrBoost: 18,
+    category: 'gaming',
     prompt: 'BEFORE/AFTER COMPOSITION: Clear left/right split showing transformation. Person can appear on both sides or just one side (40-50% of frame). Left side should look weak/poor/struggling. Right side should look powerful/rich/successful. Clear visual arrow or divider between sides. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Builds', 'Economy', 'Strategy', 'Tutorials']
-  }
+  },
+  // --- UNIVERSAL ARCHETYPES ---
+  {
+    id: 'reaction_face',
+    name: 'Tepki Yüzü',
+    desc: 'Büyük yüz + şaşkın/heyecanlı ifade',
+    icon: '🤯',
+    ctrBoost: 24,
+    category: 'universal',
+    prompt: 'REACTION FACE COMPOSITION: The person\'s face must be EXTREMELY LARGE - taking up 50-60% of the frame height. Face front-and-center. EXAGGERATED expression: eyes wide open, mouth open in shock/excitement/disbelief. The background should support the reaction - showing whatever they are reacting TO. Use bright, contrasting colors. The expression is the STAR of this thumbnail. The viewer should instantly feel the emotion. Add a subtle colored glow/rim light on the face edges.',
+    bestFor: ['Vlog', 'Reaction', 'Unboxing', 'Challenge', 'News']
+  },
+  {
+    id: 'expert_authority',
+    name: 'Uzman Otoritesi',
+    desc: 'Profesyonel poz, bilgi odaklı',
+    icon: '🎓',
+    ctrBoost: 20,
+    category: 'universal',
+    prompt: 'EXPERT AUTHORITY COMPOSITION: The person positioned on one side (left or right third), taking up 40-45% of frame height. Confident, knowing expression - slight smile or serious expert look. Clean, professional background with subtle relevant visual elements (icons, diagrams, product shots) on the opposite side. Key information or the subject matter should be visually represented beside the person. Soft, professional lighting. The person should look TRUSTWORTHY and KNOWLEDGEABLE. Clean color palette - blues, whites, and one accent color.',
+    bestFor: ['Tutorial', 'Education', 'Tech review', 'How-to', 'Tips']
+  },
+  {
+    id: 'food_desire',
+    name: 'Yemek Arzusu',
+    desc: 'Yakın çekim yemek + mutlu yüz',
+    icon: '🍕',
+    ctrBoost: 21,
+    category: 'universal',
+    prompt: 'FOOD DESIRE COMPOSITION: Split focus between APPETIZING food close-up and the person. The food should look IRRESISTIBLE - glistening, steaming, perfectly lit with warm golden tones. The person (30-40% of frame) should show DESIRE or DELIGHT expression - eyes wide, mouth watering, reaching toward food. Use warm color temperature (golden, amber, rich browns). Shallow depth of field on food details. Steam, melting cheese, dripping sauce - make it MOUTHWATERING. The viewer must feel HUNGRY looking at this.',
+    bestFor: ['Food', 'Recipe', 'Restaurant', 'Mukbang', 'Cooking']
+  },
+  {
+    id: 'travel_wonder',
+    name: 'Seyahat Hayranlığı',
+    desc: 'Epik manzara + hayret ifadesi',
+    icon: '🌍',
+    ctrBoost: 22,
+    category: 'universal',
+    prompt: 'TRAVEL WONDER COMPOSITION: BREATHTAKING landscape or location filling most of the frame. The person positioned in the lower third (25-35% of frame), looking UP or OUT at the magnificent view with an expression of AWE and WONDER. Arms may be spread or pointing. The location should look SPECTACULAR - vivid colors, dramatic lighting (golden hour, blue hour, dramatic clouds). Use leading lines in the landscape pointing to the person. The scale contrast between the tiny person and VAST environment creates visual impact. The viewer should think "I WANT TO GO THERE!"',
+    bestFor: ['Travel', 'Nature', 'Adventure', 'Exploration', 'City tour']
+  },
+  {
+    id: 'transformation',
+    name: 'Dönüşüm',
+    desc: 'Dramatik önce/sonra karşılaştırması',
+    icon: '✨',
+    ctrBoost: 23,
+    category: 'universal',
+    prompt: 'TRANSFORMATION COMPOSITION: Clear LEFT/RIGHT or BEFORE/AFTER split. Use a diagonal or lightning-bolt divider line. LEFT side (before): Dull, muted colors, tired/sad expression, lower quality appearance. RIGHT side (after): Vibrant, glowing, confident expression, dramatically improved appearance. The person appears on BOTH sides showing the contrast. Add directional arrows or flow from left to right. The transformation should be DRAMATIC and immediately obvious. Color grading: desaturated left, vivid right. The viewer should think "HOW did they do that?!"',
+    bestFor: ['Fitness', 'Makeover', 'DIY', 'Before/After', 'Progress']
+  },
+  {
+    id: 'breaking_news',
+    name: 'Son Dakika',
+    desc: 'Acil haber estetiği, kırmızı vurgu',
+    icon: '🚨',
+    ctrBoost: 24,
+    category: 'universal',
+    prompt: 'BREAKING NEWS COMPOSITION: URGENT, NEWS-STYLE layout. Person\'s face large (40-50% of frame) with a serious/shocked/concerned expression. RED accent elements: red glow, red highlights, red banner areas. The background should show the SUBJECT of the news/drama - slightly blurred but recognizable. High contrast, slightly desaturated except for RED accents. Create a sense of URGENCY and IMPORTANCE. The viewer must feel "I need to know what happened!" Use dramatic shadows on the face with one strong light source.',
+    bestFor: ['News', 'Drama', 'Controversy', 'Updates', 'Announcements']
+  },
+  {
+    id: 'music_energy',
+    name: 'Müzik Enerjisi',
+    desc: 'Neon, ses dalgaları, performans',
+    icon: '🎵',
+    ctrBoost: 21,
+    category: 'universal',
+    prompt: 'MUSIC ENERGY COMPOSITION: The person (40-50% of frame) in a PERFORMANCE pose - singing, playing instrument, dancing, or feeling the music with closed eyes. NEON and VIBRANT color palette - electric blue, hot pink, purple, cyan. Add visual SOUND ELEMENTS: equalizer bars, sound waves, music notes, light beams that pulse outward. Background should feel like a CONCERT or STUDIO with colored lights. Add lens flares and light leaks. The energy should be PALPABLE - the viewer should almost HEAR the music. Dynamic, motion-blur effects on edges.',
+    bestFor: ['Music', 'Dance', 'Concert', 'Cover', 'Performance']
+  },
+  {
+    id: 'challenge_fun',
+    name: 'Challenge Eğlence',
+    desc: 'Renkli, eğlenceli, dinamik',
+    icon: '🎉',
+    ctrBoost: 22,
+    category: 'universal',
+    prompt: 'CHALLENGE FUN COMPOSITION: The person (40-50% of frame) with an EXAGGERATED fun expression - laughing, screaming with joy, silly face. BRIGHT, COLORFUL, PLAYFUL background with relevant props or challenge elements. Use BOLD primary colors (red, yellow, blue, green). Add dynamic elements: confetti, splashes, flying objects, action lines. The composition should feel CHAOTIC but FUN. Multiple focal points creating visual excitement. The viewer should think "This looks HILARIOUS, I have to watch!" High energy, high saturation, comic-book style impact.',
+    bestFor: ['Challenge', 'Comedy', 'Entertainment', 'Prank', 'Fun']
+  },
+  {
+    id: 'mystery_reveal',
+    name: 'Gizem Açığa Çıkıyor',
+    desc: 'Merak uyandırıcı, yarı gizli',
+    icon: '🔍',
+    ctrBoost: 23,
+    category: 'universal',
+    prompt: 'MYSTERY REVEAL COMPOSITION: Create a CURIOSITY GAP. The person (35-45% of frame) with an intrigued/shocked expression, looking at or pointing to something partially hidden/blurred/censored. Use a spotlight or reveal effect - darkness surrounding a bright focal point. One element should be intentionally OBSCURED (blurred, pixelated, behind a shadow, partially cropped) to create mystery. Use cool, mysterious color palette (deep blues, purples, dark teals) with one bright accent. Add question mark elements or red circles/arrows pointing to the mystery. The viewer MUST feel "What IS that?!"',
+    bestFor: ['Mystery', 'Theory', 'Secret', 'Investigation', 'Reveal']
+  },
 ];
 
 // CTR Score Calculator
@@ -808,6 +1004,9 @@ const App = () => {
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
 
+  // Smart Content Detection - otomatik kategori algılama
+  const [detectedCategory, setDetectedCategory] = useState(null);
+
   // Calculate CTR score whenever settings change
   useEffect(() => {
     const settings = {
@@ -1194,16 +1393,25 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
     setIsResearchingTopic(true);
     setTopicResearch(null);
 
-    try {
-      // Step 1: FORCED Google Search - find the actual product/game/media
-      // Use multiple search queries to maximize chances of finding the right content
-      const searchQueries = [
-        `"${topic}" game 2025 2026`,
-        `"${topic}" video game`,
-        `"${topic}" oyun`,
-      ];
+    // Smart content detection
+    const category = detectContentCategory(topic, topicDescription);
+    setDetectedCategory(category);
 
+    try {
       const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
+
+      // Build search queries based on detected category
+      const categorySearchHints = {
+        gaming: 'game video game gameplay',
+        education: 'tutorial guide explained',
+        vlog: 'YouTube vlog video',
+        food: 'recipe food cooking',
+        travel: 'travel destination guide',
+        tech: 'technology review tech',
+        music: 'music song artist',
+        fitness: 'fitness workout training',
+      };
+      const searchHint = categorySearchHints[category.id] || '';
 
       const searchPayload = {
         contents: [{
@@ -1212,27 +1420,26 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
 SEARCH FOR: "${topic}"${userContext}
 
-This is likely a VIDEO GAME, but could also be a movie, anime, series, character, or internet culture topic.
-The user is creating YouTube gaming thumbnails, so this is almost certainly related to gaming/entertainment.
+The user is creating a YouTube thumbnail about "${topic}".
+This could be about ANYTHING - a video game, movie, educational topic, food, travel destination, tech product, music, fitness, or any other YouTube content category.
 
-IMPORTANT: "${topic}" is a PROPER NOUN / PRODUCT NAME - it is NOT a common word.
-Do NOT interpret it as a dictionary word. Search for it as a specific game/product/media title.
+IMPORTANT: "${topic}" is a specific topic/product/subject - treat it as a PROPER NOUN first.
+Do NOT interpret it as a generic dictionary word. Search for it as a specific title/brand/concept.
 
 Search the internet and tell me:
-1. What EXACTLY is "${topic}"? (game title, character name, DLC, update, event, etc.)
-2. When was it released or announced?
-3. What platform(s) is it on? (PC, PS5, Xbox, Switch, Mobile)
-4. What genre is it? (FPS, RPG, Horror, Battle Royale, etc.)
-5. What does it look like visually? (art style, color scheme, setting/world)
-6. What are the main characters, enemies, or iconic elements?
-7. What is the community reception? Is it trending?
-8. What do the official screenshots/trailers show?
+1. What EXACTLY is "${topic}"? (game, product, concept, place, person, event, technique, etc.)
+2. When was it created/released/announced? Is it trending now?
+3. What does it look like visually? (colors, style, aesthetics, setting, environment)
+4. What are the iconic visual elements associated with "${topic}"?
+5. What emotions/feelings does "${topic}" evoke?
+6. What is the audience/community saying about it?
+7. What do official images/videos/promotional materials show?
+8. What makes "${topic}" visually distinctive and recognizable?
 
-If you cannot find a specific game/product called "${topic}", search for:
-- "${topic} game release date"
-- "${topic} gameplay"
-- "${topic} trailer"
-- "${topic} Steam" or "${topic} Epic Games" or "${topic} PlayStation"
+Search terms to try:
+- "${topic} ${searchHint}"
+- "${topic} YouTube"
+- "${topic} 2025 2026"
 
 YOU MUST search the web. Do NOT guess or make up information.`
           }]
@@ -1275,8 +1482,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
       const analysisPayload = {
         contents: [{
           parts: [{
-            text: `Sen bir GAMER, OYUN KÜLTÜRÜ ve GÖRSEL TASARIM uzmanısın.
+            text: `Sen bir GÖRSEL TASARIM, İÇERİK ve YOUTUBE uzmanısın.
 "${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yapman gerekiyor.
+
+ALGILANAN İÇERİK KATEGORİSİ: ${category.id.toUpperCase()}
+GÖRSEL RUHHAL: ${category.visualMood}
 
 ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
 
@@ -1286,24 +1496,23 @@ ${searchResult}
 ${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
 
 ⚠️ ÖNEMLİ: Yukarıdaki internet araştırması sonuçlarını TEMEL AL.
-"${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK ürün/oyun/medya bilgilerini kullan.
-Eğer internet araştırması bir oyun/film/karakter bulmuşsa, O bilgilere göre analiz yap.
+"${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
 
 Lütfen Türkçe olarak çok detaylı yaz:
 
-1. **KARAKTER/KONU KİMLİĞİ**:
-   - Bu kim/ne? Tam tanımı (Oyun, film, karakter, boss, item, event, DLC vb.)
-   - Hangi evrene/franchise'a ait? Hangi yılda çıktı?
-   - Lore'daki önemi, hikayesi ve fanlar için anlamı
-   - Eğer yeni bir içerikse: ne zaman duyuruldu/çıktı, topluluğun tepkisi
+1. **KONU KİMLİĞİ**:
+   - Bu ne? Tam tanımı (Oyun, ürün, kavram, mekan, kişi, olay, teknik, yemek, müzik vb.)
+   - Hangi alana/sektöre ait? Popülerliği ne durumda?
+   - Hedef kitle kimler? Fanlar/takipçiler için anlamı
+   - Güncellik: Trend mi? Yeni mi çıktı? Tartışmalı mı?
 
 2. **GÖRSEL KİMLİK** (ÇOK ÖNEMLİ - DETAYLI YAZILMALI):
    - Karakteristik renk paleti (HEX kodlarıyla - örn: #4a0080, #1a1a2e, #8b0000)
-   - İkonik görsel elementler (kanatlar, silahlar, zırh, auralar, semboller, logolar)
-   - Ortam/atmosfer (karanlık, epik, korkunç, parlak, neon, doğa vb.)
-   - Tipik arka plan elementleri (kale, orman, uzay, şehir, arena vb.)
-   - Işık tipi ve yönü (ateşli, soğuk, neon, gün batımı, ay ışığı vb.)
-   - Parçacık/efekt önerileri (kıvılcım, sis, duman, yağmur, kar, enerji auraları)
+   - İkonik görsel elementler (logolar, semboller, ürünler, mekanlar, kıyafetler)
+   - Ortam/atmosfer (karanlık, epik, sıcak, profesyonel, enerjik, huzurlu, neon vb.)
+   - Tipik arka plan elementleri (stüdyo, doğa, şehir, mutfak, sahne, gym vb.)
+   - Işık tipi ve yönü (doğal, stüdyo, neon, altın saat, dramatik, yumuşak vb.)
+   - Parçacık/efekt önerileri (bokeh, lens flare, duman, konfeti, ışık sızması vb.)
 
 3. **TARİHSEL DOĞRULUK ANALİZİ** (BU BÖLÜM HER ZAMAN DOLDURULMALI):
    Bu konu tarihsel bir dönem, imparatorluk, medeniyet, savaş veya tarihsel bir oyunla (Age of Empires, Civilization, Total War, Crusader Kings, Europa Universalis, Mount & Blade, Kingdom Come, Assassin's Creed, Ghost of Tsushima, For Honor vb.) İLGİLİYSE aşağıdakileri DETAYLI doldur.
@@ -1373,22 +1582,23 @@ Lütfen Türkçe olarak çok detaylı yaz:
        - Örn: "Vikinglerin fethetmediği bir İngiliz şehrinde Viking sembolleri olmaz"
 
 4. **DUYGUSAL TON ve ATMOSFER**:
-   - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem, merak, nostalji)
-   - Oyuncu/izleyici bu konuyu görünce ne hissetmeli?
-   - Renk psikolojisi önerileri
+   - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem, merak, nostalji, güven, iştah, hayranlık, eğlence)
+   - İzleyici bu thumbnail'ı görünce ne hissetmeli?
+   - Renk psikolojisi önerileri (sıcak=güven/iştah, soğuk=profesyonellik, neon=enerji, vs.)
 
 5. **THUMBNAIL ÖNERİLERİ**:
    - En iyi kompozisyon önerisi (kişi nerede durmalı, arka plan nasıl olmalı)
-   - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare vb.)
-   - Kostüm/kıyafet önerisi (kişi ne giymeli - DÖNEMSEL olarak doğru olmalı!)
-   - Kaçınılması gereken hatalar (anakronizm, yanlış medeniyet karışımı, modern elementler)
+   - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare, bokeh, duman vb.)
+   - Kostüm/kıyafet önerisi (kişi ne giymeli - İÇERİĞE UYGUN olmalı!)
+   - Kaçınılması gereken hatalar
    - Örnek yazı önerileri (2-3 kelime, Türkçe ve İngilizce seçenekler)
 
 6. **REFERANS STİLİ**:
-   - Bu konu için en uygun görsel stil (sinematik, çizgi roman, gerçekçi, anime, dark fantasy vb.)
+   - Bu konu için en uygun görsel stil (sinematik, profesyonel, enerjik, sıcak, minimalist, neon, dark fantasy vb.)
    - Benzer başarılı YouTube thumbnail'ların özellikleri
+   - ÖNERİLEN ARCHETYPE: Bu konu için en uygun 2-3 archetype ID'si öner (reaction_face, expert_authority, food_desire, travel_wonder, transformation, breaking_news, music_energy, challenge_fun, mystery_reveal, shocked_threat, power_fantasy, scale_contrast, almost_fail, mystery_object, before_after)
 
-Bir gamer ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
+Bir YouTube uzmanı ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
 Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.
 ⚠️ TARİHSEL İÇERİKLERDE: Modern bayrak/sembol kullanmak, yanlış dönem kıyafeti giydirmek veya anakronistik teknoloji göstermek EN BÜYÜK HATADIR!
 ⚠️⚠️ BAYRAK ÖZELLİKLE KRİTİK: Osmanlı bayrağı/sancağı ≠ Modern Türkiye bayrağı! Osmanlı sancağı = koyu kırmızı/bordo + altın hilal + altın 8 köşeli yıldız. Modern Türkiye bayrağı (parlak kırmızı + beyaz hilal + beyaz 5 köşeli yıldız) 1844 SONRASI oluşmuştur!`
@@ -1537,7 +1747,10 @@ DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theo
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
     try {
-      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      // Smart content detection for parameter tuning
+      const contentCategory = detectedCategory || detectContentCategory(topic, topicDescription);
+
+      const prompt = `You are a world-class YouTube thumbnail designer with expertise in ${contentCategory.id === 'gaming' ? 'gaming and entertainment' : contentCategory.id === 'food' ? 'food photography and culinary content' : contentCategory.id === 'travel' ? 'travel and landscape photography' : contentCategory.id === 'tech' ? 'technology and product showcase' : contentCategory.id === 'music' ? 'music and performance visuals' : contentCategory.id === 'fitness' ? 'fitness and motivational content' : contentCategory.id === 'education' ? 'educational and professional content' : 'YouTube content creation'}. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
 
 ⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
 - THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
@@ -1556,14 +1769,14 @@ Use this information to accurately represent the game/topic's visual style, atmo
 ` : ''}
 
 ${topicResearch ? `
-🎮 GAMER KNOWLEDGE - DETAILED RESEARCH (VERY IMPORTANT - FOLLOW THIS):
-An expert gamer has researched "${topic}" and provided the following detailed information.
-YOU MUST USE THIS INFORMATION to create an authentic, lore-accurate thumbnail:
+📋 EXPERT RESEARCH & VISUAL DIRECTION (VERY IMPORTANT - FOLLOW THIS):
+A visual design expert has researched "${topic}" and provided the following detailed information.
+YOU MUST USE THIS INFORMATION to create an authentic, visually accurate thumbnail:
 
 ${topicResearch}
 
 ⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
-This is not generic - it's specific to "${topic}" and must look authentic to fans of this content.
+This is not generic - it's specific to "${topic}" and must look authentic to fans/followers of this content.
 
 🏛️ HISTORICAL SCENE DIRECTION (CRITICAL - FOLLOW EXACTLY):
 The research above contains a "READY-TO-USE SCENE DIRECTION" section at the end.
@@ -1681,12 +1894,17 @@ The text color MUST harmonize with the scene. Follow these rules:
 
 VISUAL STYLE: ${selectedTypo.prompt}
 
-SCENE COMPOSITION:
-- Build an epic, atmospheric world for "${topic}"
-- Use volumetric lighting, particles, fog/mist
-- High contrast, vibrant colors that pop at small sizes
-- Cinematic quality, NOT "AI plastic" look
-- Shot on 35mm film aesthetic with slight grain
+VISUAL MOOD FOR THIS CONTENT: ${contentCategory.visualMood}
+
+CINEMATIC QUALITY DIRECTIVES (CRITICAL - THIS IS WHAT SEPARATES AMATEUR FROM PRO):
+- LIGHTING: Use 3-point lighting setup. Strong key light from one side creating dramatic shadows. Soft fill light on the opposite side. Rim/back light creating a glowing edge separation from background. The lighting should feel INTENTIONAL and PROFESSIONAL, not flat.
+- DEPTH: Shallow depth of field with natural bokeh on background elements. The person should be TACK SHARP while background has gentle blur.
+- COLOR GRADING: Apply professional LUT-style color grading. Crushed blacks (shadows slightly lifted to dark gray, not pure black). Highlights should have warmth or cool tint based on mood. Consistent color temperature throughout.
+- TEXTURE & DETAIL: Micro-detail on skin pores, fabric weave, metal reflections. NO smooth/plastic/waxy AI look. Skin should have natural subsurface scattering. Materials should look REAL - rough surfaces scatter light, smooth surfaces reflect it.
+- ATMOSPHERE: Volumetric god rays, dust particles caught in light beams, subtle haze/fog for depth separation. These atmospheric elements add CINEMATIC REALISM.
+- FILM LOOK: Subtle organic film grain (ISO 400-800 aesthetic). Very slight chromatic aberration on edges. Natural vignette drawing eye to center. The image should feel like it was SHOT, not generated.
+- CONTRAST: High dynamic range feel - deep shadows with detail, bright highlights with controlled bloom. The overall image should POP when viewed at thumbnail size (120px).
+- COMPOSITION: Rule of thirds, leading lines toward the subject, visual hierarchy that guides the eye. Negative space used intentionally. Background elements should FRAME the subject, not compete with it.
 
 ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
@@ -1699,7 +1917,7 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.6,
+          temperature: contentCategory.temperature || 0.6,
           topP: 0.95
         },
         safetySettings: [
@@ -1742,20 +1960,12 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
     setPreviousImage(resultImage);
     setPreviousCtrScore(ctrScore); // Save current score for comparison
 
-    // Auto-select best archetype if none selected
+    // Auto-select best archetype based on detected content category
     let optimizedArchetype = selectedArchetype;
     if (!optimizedArchetype) {
-      // Pick based on topic keywords
-      const topicLower = (topic + ' ' + topicDescription).toLowerCase();
-      if (topicLower.includes('horror') || topicLower.includes('korku') || topicLower.includes('scary')) {
-        optimizedArchetype = 'shocked_threat';
-      } else if (topicLower.includes('rpg') || topicLower.includes('build') || topicLower.includes('güçlü')) {
-        optimizedArchetype = 'power_fantasy';
-      } else if (topicLower.includes('boss') || topicLower.includes('dev') || topicLower.includes('huge')) {
-        optimizedArchetype = 'scale_contrast';
-      } else {
-        optimizedArchetype = 'power_fantasy'; // Default to power fantasy
-      }
+      const category = detectedCategory || detectContentCategory(topic, topicDescription);
+      // Pick the first recommended archetype for this category
+      optimizedArchetype = category.defaultArchetypes?.[0] || 'reaction_face';
       setSelectedArchetype(optimizedArchetype);
     }
 
@@ -1775,7 +1985,9 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
     const selectedTypo = typographyOptions.find(t => t.id === 'auto_harmony');
 
     try {
-      const optimizedPrompt = `You are an elite YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      const optimizeCategory = detectedCategory || detectContentCategory(topic, topicDescription);
+
+      const optimizedPrompt = `You are a world-class YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
 
 ⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
 - THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
@@ -1804,7 +2016,7 @@ MAXIMUM CLICK-THROUGH PRINCIPLES:
 ${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
 
 ${topicResearch ? `
-🎮 GAMER KNOWLEDGE (CRITICAL - USE THIS FOR AUTHENTICITY):
+📋 EXPERT RESEARCH (CRITICAL - USE THIS FOR AUTHENTICITY):
 ${topicResearch}
 Apply the visual identity, colors, and atmosphere described above!
 
@@ -1859,6 +2071,15 @@ TEXT: "${optimizedText}"
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
 
+CINEMATIC QUALITY (NON-NEGOTIABLE):
+- 3-point dramatic lighting with strong rim light separation
+- Shallow depth of field, background bokeh, subject tack sharp
+- Professional color grading - crushed blacks, controlled highlights
+- Real skin texture with subsurface scattering, NO plastic/waxy AI look
+- Volumetric atmosphere (god rays, particles, haze)
+- Film grain aesthetic (ISO 400-800), subtle chromatic aberration on edges
+- High dynamic range contrast that POPS at 120px thumbnail size
+
 ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
 
 MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
@@ -1872,7 +2093,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.7,
+          temperature: Math.min((optimizeCategory.temperature || 0.6) + 0.1, 0.9),
           topP: 0.95
         },
         safetySettings: [

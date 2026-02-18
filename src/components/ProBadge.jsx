@@ -1,10 +1,12 @@
 import React from 'react';
 import { Crown, Lock } from 'lucide-react';
+import { TEST_MODE } from '@/lib/polar';
 
 /**
  * Pro badge - özelliğin Pro gerektirdiğini gösterir
  */
 export const ProBadge = ({ size = 'sm', className = '' }) => {
+  if (TEST_MODE) return null;
   const sizes = {
     xs: 'text-[8px] px-1 py-0.5 gap-0.5',
     sm: 'text-[10px] px-1.5 py-0.5 gap-1',
@@ -22,16 +24,19 @@ export const ProBadge = ({ size = 'sm', className = '' }) => {
 /**
  * Pro lock overlay - kilitli özellikler üzerine
  */
-export const ProLockOverlay = ({ onClick, message = 'Pro özelliği' }) => (
-  <div
-    onClick={onClick}
-    className="absolute inset-0 bg-black/60 backdrop-blur-[2px] rounded-lg sm:rounded-xl flex flex-col items-center justify-center cursor-pointer z-10 group hover:bg-black/70 transition-all"
-  >
-    <Lock className="w-4 h-4 text-purple-400 mb-1 group-hover:scale-110 transition-transform" />
-    <span className="text-purple-400 text-[10px] font-medium">{message}</span>
-    <ProBadge size="xs" className="mt-1" />
-  </div>
-);
+export const ProLockOverlay = ({ onClick, message = 'Pro özelliği' }) => {
+  if (TEST_MODE) return null;
+  return (
+    <div
+      onClick={onClick}
+      className="absolute inset-0 bg-black/60 backdrop-blur-[2px] rounded-lg sm:rounded-xl flex flex-col items-center justify-center cursor-pointer z-10 group hover:bg-black/70 transition-all"
+    >
+      <Lock className="w-4 h-4 text-purple-400 mb-1 group-hover:scale-110 transition-transform" />
+      <span className="text-purple-400 text-[10px] font-medium">{message}</span>
+      <ProBadge size="xs" className="mt-1" />
+    </div>
+  );
+};
 
 /**
  * Günlük kullanım limiti göstergesi
