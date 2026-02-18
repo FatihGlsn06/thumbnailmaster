@@ -36,7 +36,7 @@ const CONTENT_CATEGORIES = {
   },
   education: {
     id: 'education',
-    keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'bilim', 'science', 'matematik', 'tarih', 'history', 'fizik', 'kimya', 'biyoloji', 'edebiyat', 'felsefe', 'psikoloji', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'documentary', 'belgesel', 'araştırma', 'research'],
+    keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'bilim', 'science', 'matematik', 'tarih', 'history', 'fizik', 'kimya', 'biyoloji', 'edebiyat', 'felsefe', 'psikoloji', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'documentary', 'belgesel', 'araştırma', 'research', 'ramazan', 'namaz', 'ibadet', 'oruç', 'dua', 'kuran', 'quran', 'din', 'islam', 'hristiyanlık', 'budizm', 'meditasyon', 'meditation', 'spirituality', 'maneviyat', 'felsefe', 'philosophy', 'hadis', 'sünnet', 'cami', 'kilise', 'sinagog', 'bayram', 'iftar', 'sahur', 'teravih', 'zekat', 'hac', 'umre', 'mevlid', 'kandil', 'cuma', 'hutbe', 'vaaz', 'ilmihal', 'fıkıh', 'tefsir', 'siyer', 'peygamber', 'sahabe', 'kitap', 'book', 'okuma', 'reading', 'özet', 'summary', 'inceleme', 'review', 'motivasyon', 'motivation', 'kişisel gelişim', 'self improvement', 'psychology', 'mindset'],
     temperature: 0.5,
     defaultArchetypes: ['expert_authority', 'mystery_reveal', 'reaction_face'],
     promptStyle: 'clean',
@@ -92,6 +92,16 @@ const CONTENT_CATEGORIES = {
   },
 };
 
+// Genel/Varsayılan kategori - hiçbir kategoriye uymayan konular için
+const GENERAL_CATEGORY = {
+  id: 'general',
+  keywords: [],
+  temperature: 0.6,
+  defaultArchetypes: ['reaction_face', 'expert_authority', 'mystery_reveal'],
+  promptStyle: 'balanced',
+  visualMood: 'Professional, balanced, visually engaging, clean composition with purposeful lighting and natural color palette',
+};
+
 /**
  * Akıllı İçerik Algılama - topic ve description'dan otomatik kategori belirle
  */
@@ -112,9 +122,9 @@ function detectContentCategory(topic, description = '') {
   // Find the category with the highest score
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
 
-  // If top score is 0 or very low, default to 'gaming' (original behavior)
+  // If top score is 0 or very low, use general/neutral category (NOT gaming!)
   if (sorted[0][1] < 2) {
-    return CONTENT_CATEGORIES.gaming;
+    return GENERAL_CATEGORY;
   }
 
   return CONTENT_CATEGORIES[sorted[0][0]];

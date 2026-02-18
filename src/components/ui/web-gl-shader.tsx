@@ -60,8 +60,13 @@ export function WebGLShader() {
     `
 
     const initScene = () => {
-      refs.scene = new THREE.Scene()
-      refs.renderer = new THREE.WebGLRenderer({ canvas })
+      try {
+        refs.scene = new THREE.Scene()
+        refs.renderer = new THREE.WebGLRenderer({ canvas })
+      } catch {
+        // WebGL not supported - silently fail, show nothing
+        return false
+      }
       refs.renderer.setPixelRatio(window.devicePixelRatio)
       refs.renderer.setClearColor(new THREE.Color(0x000000))
 
@@ -99,6 +104,7 @@ export function WebGLShader() {
       refs.scene.add(refs.mesh)
 
       handleResize()
+      return true
     }
 
     const animate = () => {
@@ -117,7 +123,8 @@ export function WebGLShader() {
       refs.uniforms.resolution.value = [width, height]
     }
 
-    initScene()
+    const success = initScene()
+    if (!success) return
     animate()
     window.addEventListener("resize", handleResize)
 
