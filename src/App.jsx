@@ -337,10 +337,10 @@ const calculateCTRScore = (settings) => {
     boosts.push({ text: 'Kaliteli tipografi stili', value: '+6' });
   }
 
-  // Face/photo bonus
+  // Photo/visual bonus
   if (settings.hasPhoto) {
-    score += 12;
-    boosts.push({ text: 'İnsan yüzü içeriyor', value: '+12' });
+    score += 8;
+    boosts.push({ text: 'Referans görsel yüklendi', value: '+8' });
   }
 
   // Optimization bonus - when "Make it more clickable" was used
@@ -1331,16 +1331,27 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
         contents: [{
           parts: [
             {
-              text: `Bu fotoğrafı analiz et ve YouTube thumbnail için kullanılacak şekilde Türkçe özetle:
+              text: `Analyze this image for YouTube thumbnail creation. Respond in English.
 
-1. **Kişi**: Cinsiyet, tahmini yaş, genel görünüm
-2. **Yüz İfadesi**: Mevcut duygu/ifade
-3. **Giyim**: Kıyafet tipi ve renkleri
-4. **Poz**: Duruş ve açı
-5. **Aydınlatma**: Işık yönü ve kalitesi
-6. **Öneri**: Hangi thumbnail stili/arketipi uygun olur
+First determine: Does this image contain a PERSON/FACE or is it a non-person image (game screenshot, product, landscape, food, object, etc.)?
 
-Kısa ve öz ol. Her madde 1-2 cümle olsun.`
+IF IT CONTAINS A PERSON:
+1. **Subject**: Gender, approximate age, general appearance
+2. **Expression**: Current emotion/expression
+3. **Clothing**: Outfit type and colors
+4. **Pose**: Stance and angle
+5. **Lighting**: Light direction and quality
+6. **Recommendation**: Which thumbnail style/archetype would work best
+
+IF IT'S A NON-PERSON IMAGE:
+1. **Content**: What is shown (game screenshot, product, food, landscape, etc.)
+2. **Colors**: Dominant color palette
+3. **Composition**: Key visual elements and their arrangement
+4. **Mood**: Overall atmosphere (dark, bright, warm, cold, energetic, calm)
+5. **Quality**: Resolution and detail level
+6. **Recommendation**: How to best use this as a thumbnail base
+
+Be concise. 1-2 sentences per point.`
             },
             { inlineData: { mimeType: "image/png", data: base64Image } }
           ]
@@ -1714,8 +1725,8 @@ DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theo
       setError("Lütfen Gemini API Key'inizi girin.");
       return;
     }
-    if (!base64Image || !topic) {
-      setError("Lütfen bir fotoğraf yükleyin ve video konusunu belirtin.");
+    if (!topic) {
+      setError("Lütfen video konusunu belirtin.");
       return;
     }
 
@@ -1813,11 +1824,10 @@ But you MUST include the person from the provided photo - the reference is only 
 ` : ''}
 
 ${photoAnalysis ? `
-👤 PHOTO SUBJECT ANALYSIS:
-Here's the AI analysis of the person's photo:
+👤 IMAGE ANALYSIS:
 ${photoAnalysis}
 
-Use this information to better integrate the person into the scene and choose appropriate expressions/poses.
+Use this analysis to understand what the uploaded image contains and integrate it properly into the thumbnail.
 ` : ''}
 
 ${selectedArchetype ? `
@@ -1826,31 +1836,38 @@ ${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
 This archetype is proven to increase click-through rates. Apply this pattern to the thumbnail composition.
 ` : ''}
 
-⚠️ CRITICAL - PERSON SIZE AND POSITIONING (LIKE PROFESSIONAL YOUTUBE THUMBNAILS):
-The provided photo shows the person who must appear LARGE in the thumbnail.
+${base64Image ? `⚠️ CRITICAL - UPLOADED IMAGE INTEGRATION:
+The user has uploaded an image. First determine what it contains:
+
+IF THE IMAGE CONTAINS A PERSON/FACE:
 - THE FACE MUST BE BIG: The person's face should take up 40-50% of the frame HEIGHT
 - Position the person CENTERED or slightly below center in the frame
 - The face is the MAIN FOCAL POINT - everything else is secondary
 - SEAMLESSLY BLEND the person into the scene with matching lighting and color grading
 - Add dramatic colored rim lighting/glow on the person (green, red, blue, orange based on theme)
 - The person should look like they BELONG in this world
-
-IMPORTANT - COSTUME/CLOTHING TRANSFORMATION:
 - TRANSFORM the person's clothing to match the scene's theme and universe
-- Do NOT keep their original casual clothes (jeans, t-shirt, etc.) in fantasy/sci-fi scenes
-- Examples of costume adaptation:
-  * Fantasy theme → Medieval armor, robes, cloaks, warrior gear
-  * Sci-fi/Space → Futuristic suit, space armor, tech gear
-  * Horror → Torn/dirty clothes, blood stains, survival gear
-  * Gaming → Character-appropriate outfit matching the game's aesthetic
+- Do NOT keep their original casual clothes in themed scenes (use armor, suits, gear as appropriate)
 - Face and facial features must remain unchanged, only transform the body/clothing
-
-⚠️ CRITICAL - PERSON FRAMING:
 - The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
 - Show from chest-up or shoulders-up so the face is LARGE
 - Leave adequate space above the head (headroom)
-- The face should fill a significant portion of the frame
-- Do NOT make the person too small - they should DOMINATE the thumbnail
+
+IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
+- Use the image as a REFERENCE or BASE for the thumbnail composition
+- Integrate the visual elements, colors, and style from the image into the thumbnail
+- The uploaded image content should be the PRIMARY VISUAL ELEMENT of the thumbnail
+- Enhance it with professional lighting, color grading, and atmospheric effects
+- Add dramatic visual elements that make it thumbnail-worthy (glow, contrast, depth)
+- You may rearrange or enhance elements but keep the subject matter recognizable
+` : `⚠️ NO REFERENCE IMAGE PROVIDED - CREATE FROM SCRATCH:
+Create a thumbnail purely from the topic description. Design original visuals that represent "${topic}" in the most compelling way.
+- Create an eye-catching, professional composition for a YouTube thumbnail
+- Use dramatic lighting, vibrant colors, and cinematic atmosphere
+- The thumbnail must look like a real YouTube thumbnail, not generic AI art
+- Include relevant visual elements that represent the topic
+- Make the composition compelling enough to make viewers want to click
+`}
 
 ${overlayText ? `
 TEXT OVERLAY: "${overlayText}"
@@ -1897,12 +1914,15 @@ CINEMATIC QUALITY DIRECTIVES (CRITICAL - THIS IS WHAT SEPARATES AMATEUR FROM PRO
 
 ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
+      // Build parts - image is optional
+      const promptParts = [{ text: prompt }];
+      if (base64Image) {
+        promptParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
+      }
+
       const payload = {
         contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: "image/png", data: base64Image } }
-          ]
+          parts: promptParts
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -2020,20 +2040,24 @@ If the research contains "READY-TO-USE SCENE DIRECTION", follow it EXACTLY:
 ${conceptAnalysis ? `
 🎨 STYLE REFERENCE (from user's concept image):
 ${conceptAnalysis}
-Apply this style but ALWAYS include the person from the photo.
+Apply this style to the thumbnail.
 ` : ''}
 
 ${photoAnalysis ? `
-👤 PHOTO ANALYSIS:
+👤 IMAGE ANALYSIS:
 ${photoAnalysis}
 ` : ''}
 
-REFERENCE PHOTO - The person in this photo must appear LARGE in the thumbnail:
+UPLOADED IMAGE INTEGRATION:
+If the image contains a person:
 - Face should take up 40-50% of the frame HEIGHT - make it BIG
 - Transform clothing to match theme
 - Add dramatic colored lighting matching the scene
 - Keep face unchanged and recognizable
 - NEVER crop the head - leave headroom above
+If the image is not a person (screenshot, product, etc.):
+- Use it as the primary visual element, enhanced with professional effects
+- Integrate its colors, style, and elements into a compelling thumbnail
 
 ${optimizedText ? `
 TEXT: "${optimizedText}"
@@ -2814,19 +2838,17 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 ) : (
                   <div className="text-center py-6">
                     <Upload className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-                    <p className="text-sm font-bold text-slate-400">Fotoğrafınızı Yükleyin</p>
-                    <p className="text-xs text-slate-600 mt-1">Thumbnail'da görünecek yüz</p>
+                    <p className="text-sm font-bold text-slate-400">Görsel Yükleyin</p>
+                    <p className="text-xs text-slate-600 mt-1">Fotoğraf, ekran görüntüsü veya referans görsel</p>
                   </div>
                 )}
               </div>
 
-              {/* Photo Analysis Result */}
+              {/* Photo Analysis Result - sadece tamamlandı göstergesi */}
               {photoAnalysis && (
-                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
-                  <p className="text-xs font-bold text-purple-400 mb-2 flex items-center gap-1">
-                    <BrainCircuit className="w-3 h-3" /> AI Analizi
-                  </p>
-                  <p className="text-xs text-slate-300 line-clamp-3">{photoAnalysis}</p>
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                  <BrainCircuit className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-xs font-bold text-purple-400">Görsel analiz tamamlandı ✓</span>
                 </div>
               )}
 
@@ -3012,9 +3034,9 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 </div>
 
                 {conceptAnalysis && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                    <p className="text-xs font-bold text-emerald-400 mb-1">AI Analizi</p>
-                    <p className="text-xs text-slate-300 line-clamp-3">{conceptAnalysis}</p>
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                    <BrainCircuit className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs font-bold text-emerald-400">Referans analizi tamamlandı ✓</span>
                   </div>
                 )}
               </div>
