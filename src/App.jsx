@@ -20,7 +20,7 @@ import { useI18n } from '@/lib/i18n';
 import {
   getCurrentPlan, canGenerate, getRemainingGenerations,
   incrementDailyUsage, getLicenseKey, validateLicenseKey,
-  PLANS,
+  PLANS, TEST_MODE,
 } from '@/lib/polar';
 
 // =============================================================================
@@ -2719,7 +2719,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     </label>
                     <div className="space-y-2">
                       {availableModels.map((model) => {
-                        const isModelAllowed = currentPlan.limits.allowedModels.includes(model.id);
+                        const isModelAllowed = TEST_MODE || currentPlan.limits.allowedModels.includes(model.id);
                         return (
                           <button
                             key={model.id}
@@ -3112,7 +3112,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                   {CTR_ARCHETYPES
                     .filter(arch => archetypeTab === 'all' || arch.category === archetypeTab)
                     .map((arch) => {
-                    const isArchAllowed = currentPlan.limits.allowedArchetypes.includes(arch.id);
+                    const isArchAllowed = TEST_MODE || currentPlan.limits.allowedArchetypes.includes(arch.id);
                     return (
                       <button
                         key={arch.id}
@@ -3144,7 +3144,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                 <label className="text-xs font-bold text-slate-500">{t('textStyle')}</label>
                 <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-visible">
                   {typographyOptions.map((opt) => {
-                    const isTypoAllowed = currentPlan.limits.allowedTypoStyles.includes(opt.id);
+                    const isTypoAllowed = TEST_MODE || currentPlan.limits.allowedTypoStyles.includes(opt.id);
                     return (
                       <button
                         key={opt.id}
