@@ -956,6 +956,7 @@ const App = () => {
   const [showEditor, setShowEditor] = useState(false);
   const [thumbnailPosition, setThumbnailPosition] = useState('top');
   const [selectedArchetype, setSelectedArchetype] = useState('');
+  const [archetypeTab, setArchetypeTab] = useState('all');
   const [ctrScore, setCtrScore] = useState(null);
   const [previousCtrScore, setPreviousCtrScore] = useState(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -1277,23 +1278,26 @@ VIBE: Professional, clean, gaming channel style`
         contents: [{
           parts: [
             {
-              text: `Bu bir YouTube thumbnail referans/konsept görseli. Lütfen şunları analiz et ve Türkçe olarak özetle:
+              text: `This is a YouTube thumbnail reference/concept image. The user wants their generated thumbnail to MATCH THIS STYLE. Analyze in detail (in English):
 
-1. **Stil**: Görsel stili (sinematik, çizgi film, gerçekçi, vb.)
-2. **Renk Paleti**: Baskın renkler ve ton
-3. **Kompozisyon**: Öğelerin yerleşimi
-4. **Metin Stili**: Varsa yazı tipi ve efektleri
-5. **Atmosfer**: Genel hava ve duygu
-6. **CTR Elementleri**: Dikkat çeken unsurlar
+1. **Visual Style**: Art style (cinematic, cartoon, realistic, photographic, illustrated, etc.)
+2. **Color Palette**: Dominant colors, color temperature, saturation level, specific hex-like descriptions
+3. **Composition**: Layout of elements, where the subject is, how space is used
+4. **Text Style**: If present - font style, effects (glow, shadow, 3D, stroke), placement, colors
+5. **Lighting**: Light direction, quality, color of light, shadows
+6. **Atmosphere & Mood**: Overall feeling, energy level, emotional tone
+7. **Special Effects**: Any glow, particles, blur, vignette, gradients, overlays
+8. **What Makes It Click-worthy**: CTR elements, visual hooks, attention grabbers
 
-Kısa ve öz ol. Her madde 1-2 cümle olsun.`
+Be SPECIFIC and DETAILED. Describe colors precisely (e.g., "neon cyan #00FFFF glow" not just "blue").
+The AI image generator will use your analysis to replicate this exact style.`
             },
             { inlineData: { mimeType: "image/png", data: conceptBase64 } }
           ]
         }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 500
+          maxOutputTokens: 1500
         }
       };
 
@@ -1688,7 +1692,7 @@ DOĞRU: "Ancient walled city, massive dome basilica with Christian crosses, Theo
           }],
           generationConfig: {
             temperature: 0.3,
-            maxOutputTokens: 1500
+            maxOutputTokens: 4000
           }
         };
 
@@ -1815,12 +1819,24 @@ A "walled city with domed basilica and crosses" is NOT the same as modern Istanb
 ` : ''}
 
 ${conceptAnalysis ? `
-🎨 REFERENCE STYLE ANALYSIS (Apply this style to the thumbnail):
-The user provided a reference/concept image. Here's the AI analysis of that reference:
+🎨🎨🎨 REFERENCE IMAGE STYLE (CRITICAL - YOU MUST MATCH THIS STYLE):
+The user has provided a REFERENCE/CONCEPT image that you can SEE in the attached images.
+Your generated thumbnail MUST closely match the visual style of this reference.
+
+AI Analysis of the reference image:
 ${conceptAnalysis}
 
-IMPORTANT: Use this style analysis to match the visual style, colors, composition, and atmosphere of the reference image.
-But you MUST include the person from the provided photo - the reference is only for STYLE, not for replacing the person.
+⚠️ MANDATORY STYLE MATCHING RULES:
+1. MATCH the color palette of the reference image EXACTLY
+2. MATCH the lighting style and direction
+3. MATCH the composition approach and element placement
+4. MATCH the overall atmosphere, mood, and energy level
+5. MATCH any special effects (glow, particles, gradients, etc.)
+6. If the reference has text, MATCH that text style for overlay text
+7. The reference image is attached - LOOK AT IT and replicate its visual DNA
+
+The reference image defines the TARGET STYLE. Your output should look like it belongs to the SAME series/channel as the reference.
+If a person photo is also provided, include that person but in the STYLE of the reference.
 ` : ''}
 
 ${photoAnalysis ? `
@@ -1919,6 +1935,10 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       if (base64Image) {
         promptParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
       }
+      // Send concept/reference image to the model so it can SEE the reference style
+      if (conceptBase64) {
+        promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
 
       const payload = {
         contents: [{
@@ -1963,7 +1983,7 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
   // Make it more clickable - regenerate with optimized settings
   const makeMoreClickable = async () => {
-    if (!resultImage || !base64Image) return;
+    if (!resultImage) return;
 
     setIsOptimizing(true);
     setPreviousImage(resultImage);
@@ -2038,9 +2058,10 @@ If the research contains "READY-TO-USE SCENE DIRECTION", follow it EXACTLY:
 ` : ''}
 
 ${conceptAnalysis ? `
-🎨 STYLE REFERENCE (from user's concept image):
+🎨 STYLE REFERENCE (CRITICAL - Match this style from user's reference image):
 ${conceptAnalysis}
-Apply this style to the thumbnail.
+You MUST apply this exact visual style, color palette, lighting, and atmosphere to the thumbnail.
+The reference image is attached - LOOK AT IT and replicate its visual DNA.
 ` : ''}
 
 ${photoAnalysis ? `
@@ -2097,12 +2118,19 @@ ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
 
 MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
 
+      const optimizeParts = [
+        { text: optimizedPrompt },
+      ];
+      if (base64Image) {
+        optimizeParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
+      }
+      if (conceptBase64) {
+        optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+
       const payload = {
         contents: [{
-          parts: [
-            { text: optimizedPrompt },
-            { inlineData: { mimeType: "image/png", data: base64Image } }
-          ]
+          parts: optimizeParts
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -2918,11 +2946,34 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               icon={<Palette className="w-4 h-4" />}
               badge={selectedArchetype ? CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.icon : null}
             >
-              {/* CTR Archetypes - Compact Grid */}
+              {/* CTR Archetypes - Categorized Grid */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500">CTR Arketipi</label>
+                {/* Category Tabs */}
+                <div className="flex gap-1 bg-black/30 rounded-lg p-1">
+                  {[
+                    { id: 'all', label: 'Tümü', icon: '🎯' },
+                    { id: 'universal', label: 'Genel', icon: '🌐' },
+                    { id: 'gaming', label: 'Gaming', icon: '🎮' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setArchetypeTab(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-bold transition-all ${
+                        archetypeTab === tab.id
+                          ? 'bg-white/10 text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {CTR_ARCHETYPES.map((arch) => {
+                  {CTR_ARCHETYPES
+                    .filter(arch => archetypeTab === 'all' || arch.category === archetypeTab)
+                    .map((arch) => {
                     const isArchAllowed = currentPlan.limits.allowedArchetypes.includes(arch.id);
                     return (
                       <button
@@ -3057,7 +3108,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
             <div className="hidden lg:block">
               <button
                 onClick={generateThumbnail}
-                disabled={loading || !image || !topic || !apiKey}
+                disabled={loading || !topic || !apiKey}
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3"
               >
                 {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
@@ -3106,7 +3157,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
           )}
           <button
             onClick={generateThumbnail}
-            disabled={loading || !image || !topic || !apiKey}
+            disabled={loading || !topic || !apiKey}
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20"
           >
             {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
