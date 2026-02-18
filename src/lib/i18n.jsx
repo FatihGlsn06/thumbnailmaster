@@ -153,6 +153,15 @@ const translations = {
     createWithoutText: 'Yazısız Oluştur',
     aiDesigningThumbnail: 'AI thumbnail tasarlıyor',
 
+    // --- REVISION ---
+    reviseTitle: 'Revize Et',
+    revisePlaceholder: 'Değişiklik talimatı yazın... (örn: arka planı daha karanlık yap, yazıyı büyüt)',
+    reviseSend: 'Revize Et',
+    revising: 'Revize ediliyor...',
+    revisionError: 'Revizyon başarısız oldu.',
+    revisionBeforeLabel: 'Önceki',
+    revisionAfterLabel: 'Revize Edilmiş',
+
     // --- ERRORS ---
     analysisError: 'Analiz hatası',
     researchError: 'Araştırma hatası',
@@ -469,6 +478,15 @@ const translations = {
     aiAddedTextHint: '💡 Did AI add text? Create a text-free version and add your own text in the editor.',
     createWithoutText: 'Create Without Text',
     aiDesigningThumbnail: 'AI is designing thumbnail',
+
+    // --- REVISION ---
+    reviseTitle: 'Revise',
+    revisePlaceholder: 'Describe changes... (e.g., make background darker, enlarge text)',
+    reviseSend: 'Revise',
+    revising: 'Revising...',
+    revisionError: 'Revision failed.',
+    revisionBeforeLabel: 'Previous',
+    revisionAfterLabel: 'Revised',
 
     // --- ERRORS ---
     analysisError: 'Analysis error',

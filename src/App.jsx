@@ -7,7 +7,7 @@ import {
   ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
   Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
   Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3,
-  TrendingUp, Target, MousePointer, BarChart3
+  TrendingUp, Target, MousePointer, BarChart3, Send, MessageSquare
 } from 'lucide-react';
 import { WebGLShader } from '@/components/ui/web-gl-shader';
 import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
@@ -1021,6 +1021,11 @@ const App = () => {
 
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
+
+  // Revision
+  const [revisionText, setRevisionText] = useState('');
+  const [isRevising, setIsRevising] = useState(false);
+  const [preRevisionImage, setPreRevisionImage] = useState(null);
 
   // Calculate CTR score whenever settings change
   useEffect(() => {
@@ -2238,6 +2243,81 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
     }
   };
 
+  // Revise image - kullanıcının talimatıyla mevcut görseli revize et
+  const reviseImage = async () => {
+    if (!apiKey || !resultImage || !revisionText.trim()) return;
+
+    setIsRevising(true);
+    setPreRevisionImage(resultImage);
+    setError(null);
+
+    try {
+      const currentImageBase64 = resultImage.replace(/^data:image\/\w+;base64,/, '');
+
+      const revisionPrompt = `You are a professional YouTube thumbnail designer. You have created the attached thumbnail and the user wants specific changes.
+
+⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
+- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
+- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
+
+🎯 USER'S REVISION REQUEST:
+"${revisionText.trim()}"
+
+📋 CRITICAL RULES:
+- KEEP the same overall scene, composition, and subject
+- ONLY modify what the user specifically asked for
+- Maintain the same person (if present) with identical face, pose, and expression
+- Keep the same general color scheme unless the user asks to change it
+- Preserve all elements the user did NOT mention
+- The result should feel like a refined version of the same thumbnail, NOT a completely new one
+- Apply the requested changes naturally and professionally
+
+Think of this as "editing" the existing thumbnail based on the user's feedback.`;
+
+      const payload = {
+        contents: [{
+          parts: [
+            { text: revisionPrompt },
+            { inlineData: { mimeType: "image/png", data: currentImageBase64 } }
+          ]
+        }],
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          temperature: 0.4
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      };
+
+      const result = await fetchWithRetry(
+        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+      if (generatedBase64) {
+        setResultImage(`data:image/png;base64,${generatedBase64}`);
+        setRevisionText('');
+      } else {
+        throw new Error(t('revisionError'));
+      }
+    } catch (err) {
+      setError(err.message || t('revisionError'));
+      setPreRevisionImage(null);
+    } finally {
+      setIsRevising(false);
+    }
+  };
+
   const features = [
     {
       icon: <BrainCircuit className="w-6 h-6" />,
@@ -2687,8 +2767,8 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               className="mb-6"
             >
               <div className="bg-[#101014] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/5">
-                {/* Before/After Comparison */}
-                {previousImage && !isOptimizing && (
+                {/* Before/After Comparison - Optimize */}
+                {previousImage && !isOptimizing && !preRevisionImage && (
                   <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/10 mb-4">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
@@ -2722,14 +2802,42 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                   </div>
                 )}
 
+                {/* Before/After Comparison - Revision */}
+                {preRevisionImage && !isRevising && (
+                  <div className="bg-gradient-to-br from-[#1a1a2e] to-[#0f3460] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-cyan-500/20 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-cyan-400" />
+                        {t('beforeAfter')}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      <div>
+                        <p className="text-[10px] text-slate-400 text-center mb-1">{t('revisionBeforeLabel')}</p>
+                        <img src={preRevisionImage} alt="Before revision" className="w-full rounded-lg opacity-70" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-cyan-400 text-center mb-1 font-bold">{t('revisionAfterLabel')}</p>
+                        <img src={resultImage} alt="After revision" className="w-full rounded-lg border border-cyan-500/30" />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setPreRevisionImage(null)}
+                      className="mt-2 text-xs text-slate-500 hover:text-white flex items-center gap-1 mx-auto"
+                    >
+                      <X className="w-3 h-3" /> {t('close')}
+                    </button>
+                  </div>
+                )}
+
                 {/* Main Result */}
-                {(!previousImage || isOptimizing) && (
+                {(!previousImage || isOptimizing) && !preRevisionImage && (
                   <div className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 bg-black mb-4">
-                    <img src={resultImage} alt="Result" className={`w-full h-auto ${isOptimizing ? 'opacity-40' : ''}`} />
-                    {isOptimizing && (
+                    <img src={resultImage} alt="Result" className={`w-full h-auto ${isOptimizing || isRevising ? 'opacity-40' : ''}`} />
+                    {(isOptimizing || isRevising) && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="w-10 h-10 border-3 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-3" />
-                        <span className="text-white/80 text-sm font-medium">{t('optimizing')}</span>
+                        <div className={`w-10 h-10 border-3 ${isRevising ? 'border-cyan-500/30 border-t-cyan-500' : 'border-purple-500/30 border-t-purple-500'} rounded-full animate-spin mb-3`} />
+                        <span className="text-white/80 text-sm font-medium">{isRevising ? t('revising') : t('optimizing')}</span>
                       </div>
                     )}
                   </div>
@@ -2794,6 +2902,33 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     {isOptimizing ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                     <span className="hidden sm:inline">{t('optimize')}</span>
                   </button>
+                </div>
+
+                {/* Revision Input */}
+                <div className="mt-3 p-3 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-cyan-300">{t('reviseTitle')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={revisionText}
+                      onChange={(e) => setRevisionText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && revisionText.trim()) reviseImage(); }}
+                      placeholder={t('revisePlaceholder')}
+                      disabled={isRevising}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 disabled:opacity-50"
+                    />
+                    <button
+                      onClick={reviseImage}
+                      disabled={isRevising || !revisionText.trim()}
+                      className="shrink-0 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/30 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                    >
+                      {isRevising ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      <span className="hidden sm:inline">{t('reviseSend')}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Yazısız Yeniden Oluştur - İpucu */}
