@@ -998,8 +998,6 @@ const App = () => {
   // Photo analysis states
   const [photoAnalysis, setPhotoAnalysis] = useState(null);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
-  const [autoGenerateAfterAnalysis, setAutoGenerateAfterAnalysis] = useState(false);
-
   // Topic/Concept research states
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
@@ -1021,18 +1019,7 @@ const App = () => {
     setCtrScore(score);
   }, [selectedArchetype, topicDescription, overlayText, typoStyle, base64Image, isOptimized]);
 
-  // Auto-generate thumbnail after analysis completes
-  useEffect(() => {
-    if (autoGenerateAfterAnalysis && photoAnalysis && !isAnalyzingPhoto && !isAnalyzingConcept && !loading) {
-      setAutoGenerateAfterAnalysis(false);
-      // Small delay to ensure state is fully updated
-      setTimeout(() => {
-        if (base64Image && topic && apiKey) {
-          generateThumbnail();
-        }
-      }, 100);
-    }
-  }, [autoGenerateAfterAnalysis, photoAnalysis, isAnalyzingPhoto, isAnalyzingConcept, loading]);
+  // Auto-generate removed - kullanıcı "Oluştur" butonuna basarak tetikler
 
   const handleSaveApiKey = (value) => {
     setApiKey(value);
@@ -1314,10 +1301,6 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
       if (analysisText) {
         setConceptAnalysis(analysisText);
-        // Trigger auto-generate if photo and topic are set
-        if (base64Image && topic) {
-          setAutoGenerateAfterAnalysis(true);
-        }
       } else {
         setConceptAnalysis('Analiz yapılamadı.');
       }
@@ -1372,10 +1355,6 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
       if (analysisText) {
         setPhotoAnalysis(analysisText);
-        // Trigger auto-generate if topic is set
-        if (topic) {
-          setAutoGenerateAfterAnalysis(true);
-        }
       } else {
         setPhotoAnalysis('Analiz yapılamadı.');
       }
@@ -2644,7 +2623,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
             >
               <div className="bg-[#101014] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/5">
                 {/* Before/After Comparison */}
-                {previousImage && (
+                {previousImage && !isOptimizing && (
                   <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/10 mb-4">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
@@ -2679,9 +2658,15 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 )}
 
                 {/* Main Result */}
-                {!previousImage && (
-                  <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 bg-black mb-4">
-                    <img src={resultImage} alt="Result" className="w-full h-auto" />
+                {(!previousImage || isOptimizing) && (
+                  <div className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 bg-black mb-4">
+                    <img src={resultImage} alt="Result" className={`w-full h-auto ${isOptimizing ? 'opacity-40' : ''}`} />
+                    {isOptimizing && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="w-10 h-10 border-3 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-3" />
+                        <span className="text-white/80 text-sm font-medium">Optimize ediliyor...</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
