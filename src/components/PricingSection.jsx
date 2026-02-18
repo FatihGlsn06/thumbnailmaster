@@ -10,15 +10,41 @@ import {
   getProMonthlyCheckoutUrl,
   getProYearlyCheckoutUrl,
 } from '@/lib/polar';
+import { useI18n } from '@/lib/i18n';
 
 const PricingSection = ({ onActivateLicense }) => {
   // Test modunda pricing section gizle
   if (TEST_MODE) return null;
+  const { t } = useI18n();
   const [billingPeriod, setBillingPeriod] = useState('yearly'); // 'monthly' | 'yearly'
 
   const yearlyDiscount = Math.round(
     (1 - PLANS.pro.yearlyPrice / (PLANS.pro.monthlyPrice * 12)) * 100
   );
+
+  // Translated plan features
+  const freePlanFeatures = [
+    t('planFree5Daily'),
+    t('planFreeModel'),
+    t('planFree3Arch'),
+    t('planFree2Typo'),
+    t('planFreeQuality'),
+    t('planFreeWatermark'),
+  ];
+
+  const proPlanFeatures = [
+    t('planProUnlimited'),
+    t('planProAllModels'),
+    t('planProAllArch'),
+    t('planProAllTypo'),
+    t('planPro4K'),
+    t('planProNoWatermark'),
+    t('planProConcept'),
+    t('planProResearch'),
+    t('planProTextRemoval'),
+    t('planProEditor'),
+    t('planProSupport'),
+  ];
 
   return (
     <section className="py-12 sm:py-20 px-3 sm:px-4">
@@ -34,19 +60,19 @@ const PricingSection = ({ onActivateLicense }) => {
             <div className="text-center mb-8 sm:mb-12">
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-full px-4 py-1.5 mb-4">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-xs text-amber-400 font-medium">Polar.sh ile Güvenli Ödeme</span>
+                <span className="text-xs text-amber-400 font-medium">{t('securePolarPayment')}</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2 sm:mb-3">
-                Planını Seç
+                {t('choosePlan')}
               </h2>
               <p className="text-white/50 text-xs sm:text-sm max-w-md mx-auto">
-                Ücretsiz başla, Pro ile sınırları kaldır
+                {t('freeStartProUnlimit')}
               </p>
 
               {/* Billing Toggle */}
               <div className="flex items-center justify-center gap-3 mt-6">
                 <span className={`text-sm font-medium transition-colors ${billingPeriod === 'monthly' ? 'text-white' : 'text-white/40'}`}>
-                  Aylık
+                  {t('monthly')}
                 </span>
                 <button
                   onClick={() => setBillingPeriod(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
@@ -59,7 +85,7 @@ const PricingSection = ({ onActivateLicense }) => {
                   />
                 </button>
                 <span className={`text-sm font-medium transition-colors ${billingPeriod === 'yearly' ? 'text-white' : 'text-white/40'}`}>
-                  Yıllık
+                  {t('yearly')}
                 </span>
                 {billingPeriod === 'yearly' && (
                   <motion.span
@@ -67,7 +93,7 @@ const PricingSection = ({ onActivateLicense }) => {
                     animate={{ opacity: 1, scale: 1 }}
                     className="bg-green-500/20 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-500/30"
                   >
-                    %{yearlyDiscount} Tasarruf
+                    %{yearlyDiscount} {t('savingsPercent')}
                   </motion.span>
                 )}
               </div>
@@ -86,19 +112,19 @@ const PricingSection = ({ onActivateLicense }) => {
                   <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
                     <Zap className="w-4 h-4 text-white/60" />
                   </div>
-                  <h3 className="text-white font-bold text-lg">Ücretsiz</h3>
+                  <h3 className="text-white font-bold text-lg">{t('free')}</h3>
                 </div>
 
                 <div className="mb-6">
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl sm:text-4xl font-black text-white">$0</span>
-                    <span className="text-white/40 text-sm">/sonsuza dek</span>
+                    <span className="text-white/40 text-sm">{t('forever')}</span>
                   </div>
-                  <p className="text-white/40 text-xs mt-1">Kredi kartı gerektirmez</p>
+                  <p className="text-white/40 text-xs mt-1">{t('noCreditCard')}</p>
                 </div>
 
                 <ul className="space-y-2.5 mb-6">
-                  {PLANS.free.features.map((feature, i) => (
+                  {freePlanFeatures.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check className="w-4 h-4 text-white/30 mt-0.5 flex-shrink-0" />
                       <span className="text-white/60 text-xs sm:text-sm">{feature}</span>
@@ -110,7 +136,7 @@ const PricingSection = ({ onActivateLicense }) => {
                   disabled
                   className="w-full bg-white/5 text-white/40 font-medium text-sm py-3 rounded-xl border border-white/5 cursor-default"
                 >
-                  Mevcut Plan
+                  {t('currentPlan')}
                 </button>
               </motion.div>
 
@@ -125,7 +151,7 @@ const PricingSection = ({ onActivateLicense }) => {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1">
                     <Star className="w-3 h-3" />
-                    EN POPÜLER
+                    {t('mostPopular')}
                   </div>
                 </div>
 
@@ -141,22 +167,22 @@ const PricingSection = ({ onActivateLicense }) => {
                     <span className="text-3xl sm:text-4xl font-black text-white">
                       ${billingPeriod === 'monthly' ? PLANS.pro.monthlyPrice : (PLANS.pro.yearlyPrice / 12).toFixed(2)}
                     </span>
-                    <span className="text-white/40 text-sm">/ay</span>
+                    <span className="text-white/40 text-sm">{t('perMonth')}</span>
                   </div>
                   {billingPeriod === 'yearly' && (
                     <p className="text-purple-400 text-xs mt-1">
-                      Yılda ${PLANS.pro.yearlyPrice} faturalanır
+                      {t('billedYearly')} (${PLANS.pro.yearlyPrice})
                     </p>
                   )}
                   {billingPeriod === 'monthly' && (
                     <p className="text-white/40 text-xs mt-1">
-                      Aylık faturalanır
+                      {t('billedMonthly')}
                     </p>
                   )}
                 </div>
 
                 <ul className="space-y-2.5 mb-6">
-                  {PLANS.pro.features.map((feature, i) => (
+                  {proPlanFeatures.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <Check className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
                       <span className="text-white/80 text-xs sm:text-sm">{feature}</span>
@@ -170,26 +196,26 @@ const PricingSection = ({ onActivateLicense }) => {
                   rel="noopener noreferrer"
                   className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-bold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
                 >
-                  Pro'ya Yükselt
+                  {t('upgradeToPro')}
                   <ArrowRight className="w-4 h-4" />
                 </a>
 
                 {/* Security Note */}
                 <div className="flex items-center justify-center gap-1.5 mt-3">
                   <Shield className="w-3 h-3 text-white/30" />
-                  <span className="text-white/30 text-[10px]">256-bit SSL ile güvenli ödeme</span>
+                  <span className="text-white/30 text-[10px]">{t('secureSSL')}</span>
                 </div>
               </motion.div>
             </div>
 
             {/* License Key Activation */}
             <div className="mt-8 text-center">
-              <p className="text-white/30 text-xs mb-2">Zaten bir lisans anahtarınız var mı?</p>
+              <p className="text-white/30 text-xs mb-2">{t('alreadyHaveLicense')}</p>
               <button
                 onClick={onActivateLicense}
                 className="text-purple-400 hover:text-purple-300 text-xs font-medium underline underline-offset-2 transition-colors"
               >
-                Lisans Anahtarını Etkinleştir
+                {t('activateLicenseKey')}
               </button>
             </div>
 
@@ -197,15 +223,15 @@ const PricingSection = ({ onActivateLicense }) => {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-6">
               <div className="flex items-center gap-1.5 text-white/20">
                 <Shield className="w-3.5 h-3.5" />
-                <span className="text-[10px] sm:text-xs">Güvenli Ödeme</span>
+                <span className="text-[10px] sm:text-xs">{t('securePayment')}</span>
               </div>
               <div className="flex items-center gap-1.5 text-white/20">
                 <X className="w-3.5 h-3.5" />
-                <span className="text-[10px] sm:text-xs">İstediğin Zaman İptal</span>
+                <span className="text-[10px] sm:text-xs">{t('cancelAnytime')}</span>
               </div>
               <div className="flex items-center gap-1.5 text-white/20">
                 <Star className="w-3.5 h-3.5" />
-                <span className="text-[10px] sm:text-xs">7 Gün Para İade</span>
+                <span className="text-[10px] sm:text-xs">{t('moneyBackGuarantee')}</span>
               </div>
             </div>
           </div>

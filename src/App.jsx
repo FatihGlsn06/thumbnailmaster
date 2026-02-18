@@ -16,6 +16,7 @@ import ThumbnailEditor from '@/components/ThumbnailEditor';
 import PricingSection from '@/components/PricingSection';
 import LicenseKeyModal from '@/components/LicenseKeyModal';
 import { ProBadge, ProLockOverlay, UsageBadge } from '@/components/ProBadge';
+import { useI18n } from '@/lib/i18n';
 import {
   getCurrentPlan, canGenerate, getRemainingGenerations,
   incrementDailyUsage, getLicenseKey, validateLicenseKey,
@@ -135,8 +136,8 @@ const CTR_ARCHETYPES = [
   // --- GAMING ARCHETYPES ---
   {
     id: 'shocked_threat',
-    name: 'Şok Yüz + Tehdit',
-    desc: 'Büyük yüz ifadesi + arkada tehlike',
+    nameKey: 'arch_shocked_threat',
+    descKey: 'arch_shocked_threat_desc',
     icon: '😱',
     ctrBoost: 25,
     category: 'gaming',
@@ -145,8 +146,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'power_fantasy',
-    name: 'Güç Fantezisi',
-    desc: 'Dominant poz, aura efekti',
+    nameKey: 'arch_power_fantasy',
+    descKey: 'arch_power_fantasy_desc',
     icon: '⚔️',
     ctrBoost: 22,
     category: 'gaming',
@@ -155,8 +156,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'mystery_object',
-    name: 'Gizemli Nesne',
-    desc: 'Tek ilginç obje, merak uyandırıcı',
+    nameKey: 'arch_mystery_object',
+    descKey: 'arch_mystery_object_desc',
     icon: '❓',
     ctrBoost: 20,
     category: 'gaming',
@@ -165,8 +166,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'almost_fail',
-    name: 'Neredeyse Başarısız',
-    desc: 'HP düşük, kritik an donmuş',
+    nameKey: 'arch_almost_fail',
+    descKey: 'arch_almost_fail_desc',
     icon: '💀',
     ctrBoost: 23,
     category: 'gaming',
@@ -175,8 +176,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'scale_contrast',
-    name: 'Ölçek Kontrasti',
-    desc: 'Küçük oyuncu vs DEV düşman',
+    nameKey: 'arch_scale_contrast',
+    descKey: 'arch_scale_contrast_desc',
     icon: '🐜',
     ctrBoost: 21,
     category: 'gaming',
@@ -185,8 +186,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'before_after',
-    name: 'Önce / Sonra',
-    desc: 'İlerleme karşılaştırması',
+    nameKey: 'arch_before_after',
+    descKey: 'arch_before_after_desc',
     icon: '📊',
     ctrBoost: 18,
     category: 'gaming',
@@ -196,8 +197,8 @@ const CTR_ARCHETYPES = [
   // --- UNIVERSAL ARCHETYPES ---
   {
     id: 'reaction_face',
-    name: 'Tepki Yüzü',
-    desc: 'Büyük yüz + şaşkın/heyecanlı ifade',
+    nameKey: 'arch_reaction_face',
+    descKey: 'arch_reaction_face_desc',
     icon: '🤯',
     ctrBoost: 24,
     category: 'universal',
@@ -206,8 +207,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'expert_authority',
-    name: 'Uzman Otoritesi',
-    desc: 'Profesyonel poz, bilgi odaklı',
+    nameKey: 'arch_expert_authority',
+    descKey: 'arch_expert_authority_desc',
     icon: '🎓',
     ctrBoost: 20,
     category: 'universal',
@@ -216,8 +217,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'food_desire',
-    name: 'Yemek Arzusu',
-    desc: 'Yakın çekim yemek + mutlu yüz',
+    nameKey: 'arch_food_desire',
+    descKey: 'arch_food_desire_desc',
     icon: '🍕',
     ctrBoost: 21,
     category: 'universal',
@@ -226,8 +227,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'travel_wonder',
-    name: 'Seyahat Hayranlığı',
-    desc: 'Epik manzara + hayret ifadesi',
+    nameKey: 'arch_travel_wonder',
+    descKey: 'arch_travel_wonder_desc',
     icon: '🌍',
     ctrBoost: 22,
     category: 'universal',
@@ -236,8 +237,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'transformation',
-    name: 'Dönüşüm',
-    desc: 'Dramatik önce/sonra karşılaştırması',
+    nameKey: 'arch_transformation',
+    descKey: 'arch_transformation_desc',
     icon: '✨',
     ctrBoost: 23,
     category: 'universal',
@@ -246,8 +247,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'breaking_news',
-    name: 'Son Dakika',
-    desc: 'Acil haber estetiği, kırmızı vurgu',
+    nameKey: 'arch_breaking_news',
+    descKey: 'arch_breaking_news_desc',
     icon: '🚨',
     ctrBoost: 24,
     category: 'universal',
@@ -256,8 +257,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'music_energy',
-    name: 'Müzik Enerjisi',
-    desc: 'Neon, ses dalgaları, performans',
+    nameKey: 'arch_music_energy',
+    descKey: 'arch_music_energy_desc',
     icon: '🎵',
     ctrBoost: 21,
     category: 'universal',
@@ -266,8 +267,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'challenge_fun',
-    name: 'Challenge Eğlence',
-    desc: 'Renkli, eğlenceli, dinamik',
+    nameKey: 'arch_challenge_fun',
+    descKey: 'arch_challenge_fun_desc',
     icon: '🎉',
     ctrBoost: 22,
     category: 'universal',
@@ -276,8 +277,8 @@ const CTR_ARCHETYPES = [
   },
   {
     id: 'mystery_reveal',
-    name: 'Gizem Açığa Çıkıyor',
-    desc: 'Merak uyandırıcı, yarı gizli',
+    nameKey: 'arch_mystery_reveal',
+    descKey: 'arch_mystery_reveal_desc',
     icon: '🔍',
     ctrBoost: 23,
     category: 'universal',
@@ -287,7 +288,7 @@ const CTR_ARCHETYPES = [
 ];
 
 // CTR Score Calculator
-const calculateCTRScore = (settings) => {
+const calculateCTRScore = (settings, t) => {
   let score = 50; // Base score
   const issues = [];
   const boosts = [];
@@ -297,17 +298,17 @@ const calculateCTRScore = (settings) => {
     const arch = CTR_ARCHETYPES.find(a => a.id === settings.archetype);
     if (arch) {
       score += arch.ctrBoost;
-      boosts.push({ text: `${arch.name} arketipi`, value: `+${arch.ctrBoost}` });
+      boosts.push({ text: `${t(arch.nameKey)} ${t('archetypeBoost')}`, value: `+${arch.ctrBoost}` });
     }
   }
 
   // Topic description bonus
   if (settings.topicDescription && settings.topicDescription.length > 50) {
     score += 10;
-    boosts.push({ text: 'Detaylı konsept açıklaması', value: '+10' });
+    boosts.push({ text: t('detailedDescription'), value: '+10' });
   } else if (!settings.topicDescription) {
     score -= 5;
-    issues.push({ text: 'Konsept açıklaması eksik', fix: 'Konsept açıklaması ekleyin', impact: 5 });
+    issues.push({ text: t('missingDescription'), fix: t('addDescription'), impact: 5 });
   }
 
   // Overlay text check
@@ -315,14 +316,14 @@ const calculateCTRScore = (settings) => {
     const words = settings.overlayText.trim().split(/\s+/).length;
     if (words <= 3) {
       score += 8;
-      boosts.push({ text: 'Kısa ve etkili yazı', value: '+8' });
+      boosts.push({ text: t('shortText'), value: '+8' });
     } else if (words > 5) {
       score -= 10;
-      issues.push({ text: 'Yazı çok uzun', fix: 'Yazıyı 3 kelimeye indirin', impact: 10 });
+      issues.push({ text: t('textTooLong'), fix: t('shortenText'), impact: 10 });
     }
   } else {
     score -= 5;
-    issues.push({ text: 'Thumbnail yazısı yok', fix: 'Dikkat çekici bir yazı ekleyin', impact: 5 });
+    issues.push({ text: t('noThumbnailText'), fix: t('addAttentionText'), impact: 5 });
   }
 
   // Typography style bonus (2026 - color harmony focused)
@@ -331,38 +332,38 @@ const calculateCTRScore = (settings) => {
 
   if (highCtrTypoStyles.includes(settings.typoStyle)) {
     score += 10;
-    boosts.push({ text: 'Renk uyumlu yüksek CTR stili', value: '+10' });
+    boosts.push({ text: t('colorMatchedStyle'), value: '+10' });
   } else if (goodTypoStyles.includes(settings.typoStyle)) {
     score += 6;
-    boosts.push({ text: 'Kaliteli tipografi stili', value: '+6' });
+    boosts.push({ text: t('qualityTypo'), value: '+6' });
   }
 
   // Photo/visual bonus
   if (settings.hasPhoto) {
     score += 8;
-    boosts.push({ text: 'Referans görsel yüklendi', value: '+8' });
+    boosts.push({ text: t('containsFace'), value: '+8' });
   }
 
   // Optimization bonus - when "Make it more clickable" was used
   if (settings.isOptimized) {
     score += 15;
-    boosts.push({ text: 'AI optimizasyonu uygulandı', value: '+15' });
+    boosts.push({ text: t('aiOptimizationApplied'), value: '+15' });
   }
 
   // Clamp score
   score = Math.max(0, Math.min(100, score));
 
   // Determine CTR likelihood
-  let likelihood = 'Düşük';
+  let likelihood = t('ctrLow');
   let likelihoodColor = 'text-red-400';
   if (score >= 80) {
-    likelihood = 'Çok Yüksek';
+    likelihood = t('ctrVeryHigh');
     likelihoodColor = 'text-green-400';
   } else if (score >= 65) {
-    likelihood = 'Yüksek';
+    likelihood = t('ctrHigh');
     likelihoodColor = 'text-emerald-400';
   } else if (score >= 50) {
-    likelihood = 'Orta';
+    likelihood = t('ctrMedium');
     likelihoodColor = 'text-yellow-400';
   }
 
@@ -370,12 +371,12 @@ const calculateCTRScore = (settings) => {
 };
 
 // CTR Score Display Component
-const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMakeClickable, isLoading }) => (
+const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMakeClickable, isLoading, t }) => (
   <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-4 border border-white/10">
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
         <Target className="w-5 h-5 text-blue-400" />
-        <span className="text-sm font-bold text-white">CTR Tahmini</span>
+        <span className="text-sm font-bold text-white">{t('ctrEstimate')}</span>
       </div>
       <div className="flex items-center gap-2">
         <span className={`text-2xl font-black ${likelihoodColor}`}>{score}</span>
@@ -396,13 +397,13 @@ const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMa
     </div>
 
     <p className={`text-sm font-bold mb-4 ${likelihoodColor}`}>
-      CTR Olasılığı: {likelihood}
+      {t('ctrLikelihood')}: {likelihood}
     </p>
 
     {/* Boosts */}
     {boosts.length > 0 && (
       <div className="mb-3">
-        <p className="text-[10px] text-slate-500 uppercase mb-1">Artılar</p>
+        <p className="text-[10px] text-slate-500 uppercase mb-1">{t('boosts')}</p>
         <div className="space-y-1">
           {boosts.slice(0, 3).map((b, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
@@ -417,7 +418,7 @@ const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMa
     {/* Issues */}
     {issues.length > 0 && (
       <div className="mb-4">
-        <p className="text-[10px] text-slate-500 uppercase mb-1">Düzeltilecekler</p>
+        <p className="text-[10px] text-slate-500 uppercase mb-1">{t('issuesToFix')}</p>
         <div className="space-y-1">
           {issues.slice(0, 3).map((issue, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
@@ -440,7 +441,7 @@ const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMa
       ) : (
         <MousePointer className="w-4 h-4" />
       )}
-      Daha Tıklanabilir Yap
+      {t('makeMoreClickable')}
     </button>
   </div>
 );
@@ -513,7 +514,9 @@ const FakeThumbnail = ({ text, bg, color }) => (
 );
 
 // YouTube Video Card Component
-const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted, thumbText, thumbBg }) => (
+const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted, thumbText, thumbBg }) => {
+  const { t } = useI18n();
+  return (
   <div className={`group cursor-pointer ${isHighlighted ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-[#0f0f0f] rounded-xl' : ''}`}>
     {/* Thumbnail */}
     <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-black">
@@ -531,7 +534,7 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
       </div>
       {isHighlighted && (
         <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
-          SENİN VİDEON
+          {t('yourVideo')}
         </div>
       )}
     </div>
@@ -555,10 +558,12 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
       </button>
     </div>
   </div>
-);
+  );
+};
 
 // Full YouTube Mockup Modal with Multiple Views
 const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top' }) => {
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState('desktop'); // 'desktop', 'mobile', 'search'
 
   // ESC key to close
@@ -572,8 +577,8 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
 
   const userVideo = {
     thumbnail,
-    title: title || 'Yeni Videom - İZLEMELİSİNİZ!',
-    channel: channelName || 'Benim Kanalım',
+    title: title || t('myNewVideo'),
+    channel: channelName || t('myChannel'),
     views: '1.2M views',
     time: '2 hours ago',
     duration: '12:34',
@@ -610,7 +615,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
         </div>
         {video.isHighlighted && (
           <div className="absolute top-1 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-bold shadow-lg">
-            SENİN VİDEON
+            {t('yourVideo')}
           </div>
         )}
       </div>
@@ -638,7 +643,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
         </div>
         {video.isHighlighted && (
           <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
-            SENİN VİDEON
+            {t('yourVideo')}
           </div>
         )}
       </div>
@@ -659,21 +664,21 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
   );
 
   const sidebarItems = [
-    { icon: <Home className="w-5 h-5" />, label: 'Ana Sayfa', active: true },
-    { icon: <Compass className="w-5 h-5" />, label: 'Keşfet' },
-    { icon: <PlaySquare className="w-5 h-5" />, label: 'Shorts' },
-    { icon: <Film className="w-5 h-5" />, label: 'Abonelikler' },
+    { icon: <Home className="w-5 h-5" />, label: t('home'), active: true },
+    { icon: <Compass className="w-5 h-5" />, label: t('explore') },
+    { icon: <PlaySquare className="w-5 h-5" />, label: t('shorts') },
+    { icon: <Film className="w-5 h-5" />, label: t('subscriptions') },
     { divider: true },
-    { icon: <Clock className="w-5 h-5" />, label: 'Geçmiş' },
-    { icon: <ThumbsUp className="w-5 h-5" />, label: 'Beğenilenler' },
+    { icon: <Clock className="w-5 h-5" />, label: t('history') },
+    { icon: <ThumbsUp className="w-5 h-5" />, label: t('liked') },
     { divider: true },
-    { label: 'Keşfet', header: true },
-    { icon: <Gamepad2 className="w-5 h-5" />, label: 'Oyun' },
-    { icon: <Music className="w-5 h-5" />, label: 'Müzik' },
-    { icon: <Trophy className="w-5 h-5" />, label: 'Spor' },
+    { label: t('explore'), header: true },
+    { icon: <Gamepad2 className="w-5 h-5" />, label: t('gaming') },
+    { icon: <Music className="w-5 h-5" />, label: t('music') },
+    { icon: <Trophy className="w-5 h-5" />, label: t('sports') },
   ];
 
-  const categories = ['Tümü', 'Oyun', 'Canlı', 'Müzik', 'Strateji oyunları', 'Aksiyon-macera', 'Yeni', 'Son yüklenenler'];
+  const categories = [t('all'), t('gaming'), t('live'), t('music'), t('strategyGames'), t('actionAdventure'), t('new'), t('recentUploads')];
 
   return (
     <motion.div
@@ -703,7 +708,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           }`}
         >
           <Monitor className="w-4 h-4" />
-          Masaüstü
+          {t('desktop')}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); setViewMode('mobile'); }}
@@ -712,7 +717,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           }`}
         >
           <Smartphone className="w-4 h-4" />
-          Mobil
+          {t('mobile')}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); setViewMode('search'); }}
@@ -721,7 +726,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           }`}
         >
           <Search className="w-4 h-4" />
-          Arama
+          {t('search')}
         </button>
       </div>
 
@@ -751,7 +756,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
             <div className="flex-1 max-w-xl mx-4 hidden md:block">
               <div className="flex">
                 <div className="flex-1 flex items-center bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2">
-                  <input type="text" placeholder="Ara" className="bg-transparent text-white w-full outline-none text-sm" />
+                  <input type="text" placeholder={t('searchPlaceholder')} className="bg-transparent text-white w-full outline-none text-sm" />
                 </div>
                 <button className="bg-[#222] border border-l-0 border-[#303030] rounded-r-full px-5">
                   <Search className="w-5 h-5 text-white" />
@@ -851,7 +856,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
             </button>
             <button className="flex flex-col items-center text-white/50">
               <User className="w-5 h-5" />
-              <span className="text-[10px]">Sen</span>
+              <span className="text-[10px]">{t('you')}</span>
             </button>
           </div>
         </motion.div>
@@ -882,7 +887,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           </header>
 
           <div className="p-4 text-white/60 text-sm border-b border-white/5">
-            Yaklaşık {Math.floor(Math.random() * 900000 + 100000).toLocaleString()} sonuç bulundu
+            ~{Math.floor(Math.random() * 900000 + 100000).toLocaleString()} {t('resultsFound')}
           </div>
 
           {/* Search Results */}
@@ -937,6 +942,7 @@ const CollapsibleSection = ({ title, icon, children, defaultOpen = false, badge 
 };
 
 const App = () => {
+  const { t, lang, toggleLang } = useI18n();
   const [currentSection, setCurrentSection] = useState('landing');
   const [image, setImage] = useState(null);
   const [base64Image, setBase64Image] = useState(null);
@@ -994,9 +1000,9 @@ const App = () => {
   // AI Model selection - Gemini 3 is the latest (2026)
   const [selectedModel, setSelectedModel] = useState('gemini-3-pro-image-preview');
   const availableModels = [
-    { id: 'gemini-3-pro-image-preview', name: 'Gemini 3 Pro Image', desc: 'En yeni! 4K görsel, gelişmiş metin, düşünme modu', badge: 'ÖNERİLEN' },
-    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', desc: 'Hızlı, iyi görsel anlama' },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Stable)', desc: 'Stabil ve dengeli' },
+    { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
+    { id: 'gemini-2.0-flash-exp', name: t('modelGemini2Name'), desc: t('modelGemini2Desc') },
+    { id: 'gemini-2.0-flash', name: t('modelGemini2StableName'), desc: t('modelGemini2StableDesc') },
   ];
 
   // Concept/Reference image states
@@ -1026,7 +1032,7 @@ const App = () => {
       hasPhoto: !!base64Image,
       isOptimized
     };
-    const score = calculateCTRScore(settings);
+    const score = calculateCTRScore(settings, t);
     setCtrScore(score);
   }, [selectedArchetype, topicDescription, overlayText, typoStyle, base64Image, isOptimized]);
 
@@ -1046,8 +1052,8 @@ const App = () => {
   const typographyOptions = [
     {
       id: 'auto_harmony',
-      name: 'Otomatik Renk Uyumu',
-      desc: 'AI sahneyi analiz eder, en uyumlu rengi seçer',
+      name: t('typo_auto_harmony'),
+      desc: t('typo_auto_harmony_desc'),
       prompt: `AUTOMATIC COLOR HARMONY TYPOGRAPHY (BEST FOR CTR):
 
 ⚠️ CRITICAL - ANALYZE THE SCENE FIRST:
@@ -1073,8 +1079,8 @@ POSITION: Bottom area, never covering the face`
     },
     {
       id: 'cinematic_epic',
-      name: 'Sinematik Epik',
-      desc: 'Film posteri kalitesi, metalik/taş doku, sahne ışığıyla uyumlu',
+      name: t('typo_cinematic_epic'),
+      desc: t('typo_cinematic_epic_desc'),
       prompt: `CINEMATIC EPIC TYPOGRAPHY (MOVIE POSTER QUALITY):
 
 ⚠️ COLOR MATCHING - CRITICAL:
@@ -1096,8 +1102,8 @@ SHADOW: Dramatic shadow matching scene lighting angle`
     },
     {
       id: 'gaming_neon',
-      name: 'Gaming Neon',
-      desc: 'Oyun/teknoloji teması, parlak neon, sahne rengiyle uyumlu glow',
+      name: t('typo_gaming_neon'),
+      desc: t('typo_gaming_neon_desc'),
       prompt: `GAMING NEON TYPOGRAPHY (SCENE-MATCHED):
 
 ⚠️ NEON COLOR SELECTION:
@@ -1119,8 +1125,8 @@ VIBE: High-tech, energetic, electric`
     },
     {
       id: 'bold_impact',
-      name: 'Maksimum Etki',
-      desc: 'En yüksek okunabilirlik, kontrast renk seçimi',
+      name: t('typo_maximum_impact'),
+      desc: t('typo_maximum_impact_desc'),
       prompt: `MAXIMUM IMPACT TYPOGRAPHY (HIGHEST READABILITY):
 
 ⚠️ CONTRAST-FIRST COLOR SELECTION:
@@ -1140,8 +1146,8 @@ POSITION: Bottom center, commanding presence`
     },
     {
       id: 'elegant_modern',
-      name: 'Elegant Modern',
-      desc: 'Premium görünüm, sofistike renk paleti',
+      name: t('typo_elegant_modern'),
+      desc: t('typo_elegant_modern_desc'),
       prompt: `ELEGANT MODERN TYPOGRAPHY (PREMIUM LOOK):
 
 ⚠️ SOPHISTICATED COLOR PALETTE:
@@ -1160,8 +1166,8 @@ POSITION: Strategic placement with breathing room`
     },
     {
       id: 'comic_action',
-      name: 'Comic Action',
-      desc: 'Çizgi roman tarzı, dinamik, sahne rengiyle uyumlu aksiyon efekti',
+      name: t('typo_comic_action'),
+      desc: t('typo_comic_action_desc'),
       prompt: `COMIC ACTION TYPOGRAPHY (DYNAMIC & FUN):
 
 ⚠️ COLOR MATCHING FOR COMICS:
@@ -1183,8 +1189,8 @@ VIBE: Fun, exciting, eye-catching`
     },
     {
       id: 'simple_brush',
-      name: 'Sade Fırça',
-      desc: 'El yazısı tarzı, sade, sahneyle uyumlu koyu renk',
+      name: t('typo_simple_brush'),
+      desc: t('typo_simple_brush_desc'),
       prompt: `SIMPLE BRUSH TYPOGRAPHY (CLEAN & NATURAL):
 
 ⚠️ THIS IS A SUBTLE, CLEAN STYLE - NOT FLASHY:
@@ -1734,18 +1740,18 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
 
   const generateThumbnail = async () => {
     if (!apiKey) {
-      setError("Lütfen Gemini API Key'inizi girin.");
+      setError(t('enterApiKey'));
       return;
     }
     if (!topic) {
-      setError("Lütfen video konusunu belirtin.");
+      setError(t('uploadPhotoAndTopic'));
       return;
     }
 
     // Günlük kullanım limiti kontrolü
     if (!canGenerate(currentPlan)) {
       const remaining = getRemainingGenerations(currentPlan);
-      setError(`Günlük ücretsiz kullanım limitinize ulaştınız (${currentPlan.limits.dailyGenerations}/${currentPlan.limits.dailyGenerations}). Pro'ya yükselterek sınırsız oluşturma yapabilirsiniz.`);
+      setError(t('dailyLimitReached'));
       return;
     }
 
@@ -1964,7 +1970,7 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
     } catch (err) {
-      setError(err.message || "Bilinmeyen bir hata.");
+      setError(err.message || t('unknownError'));
     } finally {
       setLoading(false);
     }
@@ -2152,7 +2158,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         throw new Error('Optimizasyon başarısız.');
       }
     } catch (err) {
-      setError(err.message || "Optimizasyon hatası.");
+      setError(err.message || t('optimizationError'));
       setPreviousImage(null); // Reset on error
       setPreviousCtrScore(null);
     } finally {
@@ -2235,23 +2241,23 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
   const features = [
     {
       icon: <BrainCircuit className="w-6 h-6" />,
-      title: 'AI Destekli Tasarım',
-      desc: 'Gemini AI ile profesyonel thumbnail\'ler saniyeler içinde'
+      title: t('aiPoweredDesign'),
+      desc: t('aiPoweredDesignDesc')
     },
     {
       icon: <Layers className="w-6 h-6" />,
-      title: 'Akıllı Yerleştirme',
-      desc: 'Kişiyi sahnenin içine organik şekilde entegre eder'
+      title: t('smartPlacement'),
+      desc: t('smartPlacementDesc')
     },
     {
       icon: <Zap className="w-6 h-6" />,
-      title: 'CTR Optimizasyonu',
-      desc: 'Tıklama oranını artıran tipografi ve renk uyumu'
+      title: t('ctrOptimization'),
+      desc: t('ctrOptimizationDesc')
     },
     {
       icon: <Youtube className="w-6 h-6" />,
-      title: 'YouTube Önizleme',
-      desc: 'Thumbnail\'in YouTube\'da nasıl görüneceğini anında gör'
+      title: t('youtubePreview'),
+      desc: t('youtubePreviewDesc')
     }
   ];
 
@@ -2287,7 +2293,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     onClick={() => setCurrentSection('app')}
                     className="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg sm:rounded-full transition-all border border-white/10"
                   >
-                    Başla
+                    {t('tryFree')}
                   </button>
                 </div>
               </div>
@@ -2310,22 +2316,22 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
                     </span>
-                    <p className="text-[10px] sm:text-xs text-green-500">Gemini AI ile Çalışıyor</p>
+                    <p className="text-[10px] sm:text-xs text-green-500">{t('workingWithGemini')}</p>
                   </div>
 
                   {/* Main Heading */}
                   <h1 className="text-white text-center text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter mb-2 sm:mb-4">
-                    Thumbnail Oluştur
+                    {t('createThumbnailHero')}
                   </h1>
                   <h2 className="text-white/80 text-center text-xl sm:text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tighter mb-4 sm:mb-6">
                     <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      Saniyeler İçinde
+                      {t('inSeconds')}
                     </span>
                   </h2>
 
                   {/* Description */}
                   <p className="text-white/60 px-2 sm:px-4 text-center text-xs sm:text-sm md:text-base lg:text-lg max-w-2xl mx-auto mb-6 sm:mb-10">
-                    Fotoğrafınızı yükleyin, konunuzu yazın. AI sizin için viral YouTube thumbnail tasarlasın.
+                    {t('heroDesc')}
                   </p>
 
                   {/* CTA Button - Simplified for mobile */}
@@ -2334,7 +2340,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                       onClick={() => setCurrentSection('app')}
                       className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-black text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
                     >
-                      Ücretsiz Dene
+                      {t('tryFree')}
                       <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
@@ -2364,10 +2370,10 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               >
                 <div className="border border-[#27272a] rounded-xl sm:rounded-2xl py-8 sm:py-12 px-4 sm:px-6 bg-black/40 backdrop-blur-xl">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white text-center mb-2 sm:mb-4">
-                    Neden ThumbnailMAX?
+                    {t('whyThumbnailmax')}
                   </h2>
                   <p className="text-white/50 text-center text-xs sm:text-sm mb-8 sm:mb-12">
-                    Profesyonel YouTuber'ların tercih ettiği AI thumbnail aracı
+                    {t('whyDesc')}
                   </p>
 
                   <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -2414,17 +2420,17 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               >
                 <div className="border border-[#27272a] rounded-xl sm:rounded-2xl py-8 sm:py-12 px-4 sm:px-6 text-center bg-black/40 backdrop-blur-xl">
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white mb-2 sm:mb-3">
-                    Hemen Başlamaya Hazır mısın?
+                    {t('readyToStart')}
                   </h2>
                   <p className="text-white/60 mb-6 sm:mb-8 text-xs sm:text-sm md:text-base max-w-md mx-auto">
-                    Kendi Gemini API Key'inle thumbnail oluşturmaya hemen başla. Ücretsiz plan ile dene, Pro ile sınırları kaldır.
+                    {t('readyDesc')}
                   </p>
                   <button
                     onClick={() => setCurrentSection('app')}
                     className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 mx-auto shadow-lg shadow-orange-500/20"
                   >
                     <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Thumbnail Oluştur
+                    {t('createThumbnail')}
                   </button>
                 </div>
               </motion.div>
@@ -2439,7 +2445,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 <span>ThumbnailMAX — Gemini AI</span>
               </div>
               <p className="text-white/30 text-[10px] sm:text-xs text-center">
-                Verileriniz bizde saklanmaz
+                {t('dataNotStored')}
               </p>
             </div>
           </footer>
@@ -2509,7 +2515,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               {apiKey ? (
                 <div className="bg-green-500/10 border border-green-500/20 px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500" />
-                  <span className="text-[10px] sm:text-xs font-bold text-green-400 hidden sm:inline">Bağlı</span>
+                  <span className="text-[10px] sm:text-xs font-bold text-green-400 hidden sm:inline">{t('connected')}</span>
                 </div>
               ) : (
                 <button
@@ -2552,10 +2558,18 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               >
                 <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-white">Ayarlar</h2>
-                    <button onClick={() => setShowMobileMenu(false)} className="p-2 rounded-lg bg-white/5">
-                      <X className="w-5 h-5 text-slate-400" />
-                    </button>
+                    <h2 className="text-lg font-bold text-white">{t('settings')}</h2>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={toggleLang}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center gap-1.5 text-xs font-bold text-slate-300"
+                      >
+                        {lang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+                      </button>
+                      <button onClick={() => setShowMobileMenu(false)} className="p-2 rounded-lg bg-white/5">
+                        <X className="w-5 h-5 text-slate-400" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* API Key */}
@@ -2578,29 +2592,29 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    {apiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> Kaydedildi</p>}
+                    {apiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> {t('saved')}</p>}
                   </div>
 
                   {/* Channel Name */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500">Kanal Adı</label>
+                    <label className="text-xs font-bold text-slate-500">{t('channelName')}</label>
                     <input
                       type="text"
                       value={channelName}
                       onChange={(e) => setChannelName(e.target.value)}
-                      placeholder="Örn: Benim Kanalım"
+                      placeholder={t('channelNamePlaceholder')}
                       className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm"
                     />
                   </div>
 
                   {/* Thumbnail Position */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500">YouTube Önizleme Konumu</label>
+                    <label className="text-xs font-bold text-slate-500">{t('youtubePreviewPosition')}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: 'top', label: 'Üst', icon: '⬆️' },
-                        { id: 'middle', label: 'Orta', icon: '⏺️' },
-                        { id: 'bottom', label: 'Alt', icon: '⬇️' }
+                        { id: 'top', label: t('posTop'), icon: '⬆️' },
+                        { id: 'middle', label: t('posMid'), icon: '⏺️' },
+                        { id: 'bottom', label: t('posBot'), icon: '⬇️' }
                       ].map((pos) => (
                         <button
                           key={pos.id}
@@ -2621,7 +2635,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                   {/* AI Model Selector */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
-                      <BrainCircuit className="w-3 h-3" /> AI Modeli
+                      <BrainCircuit className="w-3 h-3" /> {t('aiModel')}
                     </label>
                     <div className="space-y-2">
                       {availableModels.map((model) => {
@@ -2655,7 +2669,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                       })}
                     </div>
                     <p className="text-[10px] text-slate-600">
-                      Deneysel model daha iyi sonuç verebilir ama yavaş olabilir
+                      {t('experimentalModelNote')}
                     </p>
                   </div>
                 </div>
@@ -2679,7 +2693,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-blue-400" />
-                        Önce / Sonra
+                        {t('beforeAfter')}
                       </span>
                       {previousCtrScore && ctrScore && (
                         <div className="flex items-center gap-1.5 bg-green-500/20 px-2 py-1 rounded-full">
@@ -2691,11 +2705,11 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:gap-3">
                       <div>
-                        <p className="text-[10px] text-slate-400 text-center mb-1">Önceki</p>
+                        <p className="text-[10px] text-slate-400 text-center mb-1">{t('previous')}</p>
                         <img src={previousImage} alt="Before" className="w-full rounded-lg opacity-70" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-green-400 text-center mb-1 font-bold">Optimize ✓</p>
+                        <p className="text-[10px] text-green-400 text-center mb-1 font-bold">{t('optimized')}</p>
                         <img src={resultImage} alt="After" className="w-full rounded-lg border border-green-500/30" />
                       </div>
                     </div>
@@ -2703,7 +2717,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                       onClick={() => { setPreviousImage(null); setPreviousCtrScore(null); }}
                       className="mt-2 text-xs text-slate-500 hover:text-white flex items-center gap-1 mx-auto"
                     >
-                      <X className="w-3 h-3" /> Kapat
+                      <X className="w-3 h-3" /> {t('close')}
                     </button>
                   </div>
                 )}
@@ -2715,7 +2729,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     {isOptimizing && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <div className="w-10 h-10 border-3 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-3" />
-                        <span className="text-white/80 text-sm font-medium">Optimize ediliyor...</span>
+                        <span className="text-white/80 text-sm font-medium">{t('optimizing')}</span>
                       </div>
                     )}
                   </div>
@@ -2727,7 +2741,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Target className="w-4 h-4 text-blue-400" />
-                        <span className="text-sm font-bold text-white">CTR Skoru</span>
+                        <span className="text-sm font-bold text-white">{t('ctrScore')}</span>
                       </div>
                       <span className={`text-2xl font-black ${ctrScore.likelihoodColor}`}>{ctrScore.score}</span>
                     </div>
@@ -2756,21 +2770,21 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     className="flex-1 sm:flex-none bg-white text-black px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-all text-sm"
                   >
                     <Download className="w-4 h-4" />
-                    <span>İndir</span>
+                    <span>{t('download')}</span>
                   </button>
                   <button
                     onClick={() => setShowYouTubeMockup(true)}
                     className="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm"
                   >
                     <Youtube className="w-4 h-4" />
-                    <span>Önizle</span>
+                    <span>{t('preview')}</span>
                   </button>
                   <button
                     onClick={() => setShowEditor(true)}
                     className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm"
                   >
                     <Edit3 className="w-4 h-4" />
-                    <span>Düzenle</span>
+                    <span>{t('edit')}</span>
                   </button>
                   <button
                     onClick={makeMoreClickable}
@@ -2778,7 +2792,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     className="flex-1 sm:flex-none bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm disabled:opacity-50"
                   >
                     {isOptimizing ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    <span className="hidden sm:inline">Optimize Et</span>
+                    <span className="hidden sm:inline">{t('optimize')}</span>
                   </button>
                 </div>
 
@@ -2786,7 +2800,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-amber-300">
-                      💡 AI yazı eklemiş mi? Yazısız versiyon oluşturup editörde kendi yazınızı ekleyebilirsiniz.
+                      {t('aiAddedTextHint')}
                     </p>
                     <button
                       onClick={regenerateWithoutText}
@@ -2794,7 +2808,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                       className="shrink-0 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50"
                     >
                       <RefreshCcw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                      Yazısız Oluştur
+                      {t('createWithoutText')}
                     </button>
                   </div>
                 </div>
@@ -2810,8 +2824,8 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                   <div className="w-20 h-20 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
                   <BrainCircuit className="w-8 h-8 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                 </div>
-                <p className="text-xl font-black text-white animate-pulse">Oluşturuluyor...</p>
-                <p className="text-sm text-blue-400 mt-1">AI thumbnail tasarlıyor</p>
+                <p className="text-xl font-black text-white animate-pulse">{t('creating')}</p>
+                <p className="text-sm text-blue-400 mt-1">{t('aiDesigningThumbnail')}</p>
               </div>
             </div>
           )}
@@ -2821,7 +2835,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
 
             {/* Essential: Photo + Topic */}
             <CollapsibleSection
-              title="Fotoğraf ve Konu"
+              title={t('photoAndTopic')}
               icon={<Upload className="w-4 h-4" />}
               defaultOpen={true}
               badge={image && topic ? "✓" : null}
@@ -2838,8 +2852,8 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                   <div className="flex items-center gap-4">
                     <img src={image} className="w-16 h-16 rounded-lg object-cover" alt="Ref" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-blue-400">Fotoğraf Yüklendi</p>
-                      <p className="text-xs text-slate-500">Değiştirmek için dokun</p>
+                      <p className="text-sm font-bold text-blue-400">{t('photoUploaded')}</p>
+                      <p className="text-xs text-slate-500">{t('tapToChange')}</p>
                     </div>
                     {!photoAnalysis && (
                       <button
@@ -2848,15 +2862,15 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                         className="bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 disabled:opacity-50"
                       >
                         {isAnalyzingPhoto ? <RefreshCcw className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
-                        Analiz
+                        {t('analyze')}
                       </button>
                     )}
                   </div>
                 ) : (
                   <div className="text-center py-6">
                     <Upload className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-                    <p className="text-sm font-bold text-slate-400">Görsel Yükleyin</p>
-                    <p className="text-xs text-slate-600 mt-1">Fotoğraf, ekran görüntüsü veya referans görsel</p>
+                    <p className="text-sm font-bold text-slate-400">{t('uploadPhoto')}</p>
+                    <p className="text-xs text-slate-600 mt-1">{t('faceInThumbnail')}</p>
                   </div>
                 )}
               </div>
@@ -2865,19 +2879,19 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               {photoAnalysis && (
                 <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
                   <BrainCircuit className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="text-xs font-bold text-purple-400">Görsel analiz tamamlandı ✓</span>
+                  <span className="text-xs font-bold text-purple-400">{t('aiAnalysis')} ✓</span>
                 </div>
               )}
 
               {/* Topic Input */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Video Konusu *</label>
+                <label className="text-xs font-bold text-slate-500">{t('videoTopic')} *</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={topic}
                     onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); }}
-                    placeholder="Örn: Elden Ring, Minecraft Hardcore"
+                    placeholder={t('topicPlaceholder')}
                     className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
                   <button
@@ -2895,7 +2909,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                      <Gamepad2 className="w-3 h-3" /> AI Araştırması: {topic}
+                      <Gamepad2 className="w-3 h-3" /> {t('aiResearch')}: {topic}
                     </p>
                     <button onClick={() => setTopicResearch(null)} className="text-slate-500 hover:text-white">
                       <X className="w-3 h-3" />
@@ -2905,7 +2919,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     {topicResearch}
                   </div>
                   <p className="text-[10px] text-green-400 flex items-center gap-1 pt-1 border-t border-amber-500/20">
-                    <Check className="w-3 h-3" /> Bu araştırma thumbnail oluştururken kullanılacak
+                    <Check className="w-3 h-3" /> {t('researchWillBeUsed')}
                   </p>
                 </div>
               )}
@@ -2913,37 +2927,37 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               {/* Overlay Text - Optional */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
-                  Thumbnail Yazısı
-                  <span className="text-[10px] text-slate-600 font-normal">(opsiyonel)</span>
+                  {t('thumbnailText')}
+                  <span className="text-[10px] text-slate-600 font-normal">{t('optional')}</span>
                 </label>
                 <input
                   type="text"
                   value={overlayText}
                   onChange={(e) => setOverlayText(e.target.value)}
-                  placeholder="Boş bırakılabilir - yazısız thumbnail"
+                  placeholder={t('textPlaceholder')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                 />
                 <p className="text-[10px] text-slate-600">
-                  {overlayText ? '3 kelimeden az olması önerilir' : 'Boş bırakırsanız yazısız thumbnail oluşturulur'}
+                  {overlayText ? t('lessThan3Words') : t('emptyMeansNoText')}
                 </p>
               </div>
             </CollapsibleSection>
 
             {/* Style Selection */}
             <CollapsibleSection
-              title="Stil Seçimi"
+              title={t('styleSelection')}
               icon={<Palette className="w-4 h-4" />}
               badge={selectedArchetype ? CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.icon : null}
             >
               {/* CTR Archetypes - Categorized Grid */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">CTR Arketipi</label>
+                <label className="text-xs font-bold text-slate-500">{t('ctrArchetype')}</label>
                 {/* Category Tabs */}
                 <div className="flex gap-1 bg-black/30 rounded-lg p-1">
                   {[
-                    { id: 'all', label: 'Tümü', icon: '🎯' },
-                    { id: 'universal', label: 'Genel', icon: '🌐' },
-                    { id: 'gaming', label: 'Gaming', icon: '🎮' },
+                    { id: 'all', label: t('all'), icon: '🎯' },
+                    { id: 'universal', label: lang === 'tr' ? 'Genel' : 'General', icon: '🌐' },
+                    { id: 'gaming', label: t('gaming'), icon: '🎮' },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -2978,7 +2992,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-lg">{arch.icon}</span>
-                          <span className="text-xs font-bold truncate">{arch.name}</span>
+                          <span className="text-xs font-bold truncate">{t(arch.nameKey)}</span>
                           {!isArchAllowed && <ProBadge size="xs" />}
                         </div>
                         <span className={`text-[10px] font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
@@ -2992,7 +3006,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
 
               {/* Typography - Horizontal Scroll on Mobile */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Yazı Stili</label>
+                <label className="text-xs font-bold text-slate-500">{t('textStyle')}</label>
                 <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-visible">
                   {typographyOptions.map((opt) => {
                     const isTypoAllowed = currentPlan.limits.allowedTypoStyles.includes(opt.id);
@@ -3024,23 +3038,23 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
 
             {/* Advanced Options */}
             <CollapsibleSection
-              title="Gelişmiş Seçenekler"
+              title={t('advancedOptions')}
               icon={<Sparkles className="w-4 h-4" />}
             >
               {/* Concept Description */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Konsept Açıklaması</label>
+                <label className="text-xs font-bold text-slate-500">{t('conceptDescription')}</label>
                 <textarea
                   value={topicDescription}
                   onChange={(e) => setTopicDescription(e.target.value)}
-                  placeholder={topicResearch ? "Araştırma tamamlandı! Ekstra detay eklemek isterseniz buraya yazın..." : "AI araştırması yapmadan önce konu hakkında bilgi verin..."}
+                  placeholder={topicResearch ? t('conceptPlaceholderWithResearch') : t('conceptPlaceholderNoResearch')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[60px]"
                 />
               </div>
 
               {/* Concept/Reference Image */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Referans Görsel</label>
+                <label className="text-xs font-bold text-slate-500">{t('referenceImage')}</label>
                 <div
                   onClick={() => conceptInputRef.current.click()}
                   className={`border-2 border-dashed rounded-xl p-3 cursor-pointer transition-all ${
@@ -3052,8 +3066,8 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     <div className="flex items-center gap-3">
                       <img src={conceptImage} className="w-12 h-12 rounded-lg object-cover" alt="Concept" />
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-emerald-400">Yüklendi</p>
-                        <p className="text-[10px] text-slate-600">Değiştirmek için dokun</p>
+                        <p className="text-xs font-bold text-emerald-400">{t('uploaded')}</p>
+                        <p className="text-[10px] text-slate-600">{t('tapToChange')}</p>
                       </div>
                       {!conceptAnalysis && (
                         <button
@@ -3061,14 +3075,14 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                           disabled={isAnalyzingConcept || !apiKey}
                           className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
                         >
-                          {isAnalyzingConcept ? <RefreshCcw className="w-3 h-3 animate-spin" /> : 'Analiz'}
+                          {isAnalyzingConcept ? <RefreshCcw className="w-3 h-3 animate-spin" /> : t('analyze')}
                         </button>
                       )}
                     </div>
                   ) : (
                     <div className="text-center py-4 opacity-40">
                       <ImageIcon className="w-6 h-6 mx-auto mb-1" />
-                      <p className="text-xs">Örnek thumbnail yükle</p>
+                      <p className="text-xs">{t('uploadExample')}</p>
                     </div>
                   )}
                 </div>
@@ -3076,18 +3090,18 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 {conceptAnalysis && (
                   <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
                     <BrainCircuit className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-xs font-bold text-emerald-400">Referans analizi tamamlandı ✓</span>
+                    <span className="text-xs font-bold text-emerald-400">{t('referenceImage')} {t('analyze')} ✓</span>
                   </div>
                 )}
               </div>
 
               {/* Extra Request */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Ekstra İstek</label>
+                <label className="text-xs font-bold text-slate-500">{t('extraRequest')}</label>
                 <textarea
                   value={extraRequest}
                   onChange={(e) => setExtraRequest(e.target.value)}
-                  placeholder="Örn: Arka planda yeşil sis olsun..."
+                  placeholder={t('extraRequestPlaceholder')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[50px]"
                 />
               </div>
@@ -3101,7 +3115,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3"
               >
                 {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-                {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
+                {loading ? t('creating') : t('createThumbnail')}
               </button>
               {!isPro && (
                 <div className="flex items-center justify-between mt-2 px-1">
@@ -3110,7 +3124,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                     onClick={() => setShowLicenseModal(true)}
                     className="text-purple-400 hover:text-purple-300 text-[10px] font-medium transition-colors"
                   >
-                    Sınırsız için Pro
+                    {t('unlimitedWithPro')}
                   </button>
                 </div>
               )}
@@ -3123,8 +3137,8 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
               <div className="hidden lg:block bg-[#101014] rounded-2xl p-8 border border-white/5">
                 <div className="text-center opacity-30">
                   <Monitor className="w-16 h-16 mx-auto mb-3" />
-                  <p className="text-lg font-bold">Stüdyo Hazır</p>
-                  <p className="text-sm text-slate-500">Formu doldurup oluştur'a tıklayın</p>
+                  <p className="text-lg font-bold">{t('studioReady')}</p>
+                  <p className="text-sm text-slate-500">{t('fillFormAndCreate')}</p>
                 </div>
               </div>
             )}
@@ -3140,7 +3154,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
                 onClick={() => setShowLicenseModal(true)}
                 className="text-purple-400 hover:text-purple-300 text-[10px] font-medium transition-colors"
               >
-                Sınırsız icin Pro
+                {t('unlimitedWithPro')}
               </button>
             </div>
           )}
@@ -3150,7 +3164,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20"
           >
             {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-            {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
+            {loading ? t('creating') : t('createThumbnail')}
           </button>
         </div>
       </div>

@@ -9,8 +9,10 @@ import {
   getLicenseKey,
   getCachedLicenseStatus,
 } from '@/lib/polar';
+import { useI18n } from '@/lib/i18n';
 
 const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
+  const { t } = useI18n();
   const [licenseKey, setLicenseKey] = useState(getLicenseKey());
   const [status, setStatus] = useState('idle'); // idle | validating | success | error
   const [errorMessage, setErrorMessage] = useState('');
@@ -18,7 +20,7 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
 
   const handleValidate = async () => {
     if (!licenseKey.trim()) {
-      setErrorMessage('Lütfen lisans anahtarınızı girin');
+      setErrorMessage(t('enterLicenseKey'));
       setStatus('error');
       return;
     }
@@ -26,27 +28,22 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
     setStatus('validating');
     setErrorMessage('');
 
-    // Önce doğrula
     const validation = await validateLicenseKey(licenseKey);
 
     if (!validation.valid) {
-      setErrorMessage(validation.error || 'Geçersiz lisans anahtarı');
+      setErrorMessage(validation.error || t('invalidLicenseKey'));
       setStatus('error');
       return;
     }
 
-    // Sonra aktive et
     const activation = await activateLicenseKey(licenseKey);
 
     if (!activation.success) {
-      // Aktivasyon hatası olsa bile doğrulama başarılıysa kabul et
-      // (zaten aktive edilmiş olabilir)
       saveLicenseKey(licenseKey.trim());
     }
 
     setStatus('success');
 
-    // 1.5 saniye sonra kapat
     setTimeout(() => {
       onActivated?.('pro');
       onClose();
@@ -84,8 +81,8 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
                 <Key className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-base">Lisans Anahtarı</h3>
-                <p className="text-white/40 text-xs">Pro planınızı aktive edin</p>
+                <h3 className="text-white font-bold text-base">{t('licenseKey')}</h3>
+                <p className="text-white/40 text-xs">{t('activateProPlan')}</p>
               </div>
             </div>
             <button
@@ -96,21 +93,21 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
             </button>
           </div>
 
-          {/* Mevcut aktif lisans varsa göster */}
+          {/* Existing active license */}
           {existingStatus?.valid && status === 'idle' && (
             <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
               <div className="flex items-center gap-2 mb-1">
                 <Crown className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 text-sm font-medium">Pro Plan Aktif</span>
+                <span className="text-green-400 text-sm font-medium">{t('proPlanActive')}</span>
               </div>
               <p className="text-green-400/60 text-xs">
-                Lisansınız doğrulanmış ve aktif.
+                {t('licenseVerified')}
               </p>
               <button
                 onClick={handleDeactivate}
                 className="mt-2 text-red-400/60 hover:text-red-400 text-xs underline transition-colors"
               >
-                Lisansı Devre Dışı Bırak
+                {t('disableLicense')}
               </button>
             </div>
           )}
@@ -118,7 +115,7 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
           {/* License Key Input */}
           <div className="mb-4">
             <label className="block text-white/60 text-xs font-medium mb-2">
-              Lisans Anahtarı
+              {t('licenseKey')}
             </label>
             <input
               type="text"
@@ -154,8 +151,8 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
             >
               <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-green-400 text-sm font-medium">Pro Plan Aktive Edildi!</p>
-                <p className="text-green-400/60 text-xs mt-0.5">Tüm Pro özellikler açıldı.</p>
+                <p className="text-green-400 text-sm font-medium">{t('proPlanActivated')}</p>
+                <p className="text-green-400/60 text-xs mt-0.5">{t('allProFeaturesUnlocked')}</p>
               </div>
             </motion.div>
           )}
@@ -175,19 +172,19 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
             {status === 'validating' && (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Doğrulanıyor...
+                {t('validating')}
               </>
             )}
             {status === 'success' && (
               <>
                 <Check className="w-4 h-4" />
-                Aktive Edildi
+                {t('activated')}
               </>
             )}
             {(status === 'idle' || status === 'error') && (
               <>
                 <Key className="w-4 h-4" />
-                Lisansı Etkinleştir
+                {t('activateLicense')}
               </>
             )}
           </button>
@@ -196,7 +193,7 @@ const LicenseKeyModal = ({ isOpen, onClose, onActivated }) => {
           <div className="mt-4 flex items-center justify-center gap-1.5">
             <Shield className="w-3 h-3 text-white/20" />
             <p className="text-white/20 text-[10px]">
-              Lisans anahtarınız Polar.sh üzerinden satın alma sonrası e-posta ile gönderilir
+              {t('licenseEmailNote')}
             </p>
           </div>
         </motion.div>
