@@ -1525,15 +1525,17 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .slice(0, 5)
         .join('\n');
 
-      // Step 1.5: Character/Entity Visual Reference Search
-      // Uses Google Search to find images and create ULTRA-DETAILED text descriptions
-      // that an image generation AI can follow pixel-by-pixel
+      // Step 1.5 & Step 2: Run Visual Reference + Deep Analysis in PARALLEL
+      // Both only depend on searchResult, so they can run simultaneously
       let visualReferenceGuide = '';
-      try {
-        const visualRefPayload = {
-          contents: [{
-            parts: [{
-              text: `You are a VISUAL REFERENCE EXPERT. Your job is to search for and DESCRIBE the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
+
+      // Visual Reference promise (non-critical, 25s timeout)
+      const visualRefPromise = (async () => {
+        try {
+          const visualRefPayload = {
+            contents: [{
+              parts: [{
+                text: `You are a VISUAL REFERENCE EXPERT. Your job is to search for and DESCRIBE the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
 
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
@@ -1577,48 +1579,46 @@ RULES:
 - Focus on what makes each entity VISUALLY UNIQUE and DIFFERENT from generic versions
 - Use #hex color codes everywhere possible
 - Write in ENGLISH`
-            }]
-          }],
-          tools: [{
-            google_search: {}
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 4000
-          }
-        };
+              }]
+            }],
+            tools: [{
+              google_search: {}
+            }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 4000
+            }
+          };
 
-        const visualRefController = new AbortController();
-        const visualRefTimeoutId = setTimeout(() => visualRefController.abort(), 30000);
-        const visualRefResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(visualRefPayload),
-            signal: visualRefController.signal
-          }
-        );
-        clearTimeout(visualRefTimeoutId);
+          const visualRefController = new AbortController();
+          const visualRefTimeoutId = setTimeout(() => visualRefController.abort(), 25000);
+          const visualRefResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(visualRefPayload),
+              signal: visualRefController.signal
+            }
+          );
+          clearTimeout(visualRefTimeoutId);
 
-        if (visualRefResponse.ok) {
-          const visualRefData = await visualRefResponse.json();
-          const visualRefText = visualRefData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
+          if (visualRefResponse.ok) {
+            const visualRefData = await visualRefResponse.json();
+            const visualRefText = visualRefData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
 
-          if (visualRefText && !visualRefText.includes('NO_SPECIFIC_ENTITIES')) {
-            visualReferenceGuide = visualRefText;
-            console.log('✅ Visual reference guide with generation prompts created');
-          } else {
-            console.log('No specific entities found for visual reference');
+            if (visualRefText && !visualRefText.includes('NO_SPECIFIC_ENTITIES')) {
+              return visualRefText;
+            }
           }
-        } else {
-          console.warn('Visual reference search failed:', visualRefResponse.status);
+          return '';
+        } catch (visualRefErr) {
+          console.warn('Visual reference search error (non-critical):', visualRefErr.message);
+          return '';
         }
-      } catch (visualRefErr) {
-        console.warn('Visual reference search error (non-critical):', visualRefErr.message);
-      }
+      })();
 
-      // Step 2: Deep visual analysis combining search results + AI creativity
+      // Deep Analysis promise (runs in parallel with visual ref)
       const analysisPayload = {
         contents: [{
           parts: [{
@@ -1762,7 +1762,8 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
         }
       };
 
-      const analysisResponse = await fetch(
+      // Deep Analysis fetch (as promise for parallel execution)
+      const analysisPromise = fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
@@ -1770,6 +1771,13 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
           body: JSON.stringify(analysisPayload)
         }
       );
+
+      // ═══ AWAIT BOTH IN PARALLEL ═══
+      const [visualRefResult, analysisResponse] = await Promise.all([visualRefPromise, analysisPromise]);
+      visualReferenceGuide = visualRefResult;
+      if (visualReferenceGuide) {
+        console.log('✅ Visual reference guide with generation prompts created');
+      }
 
       if (!analysisResponse.ok) {
         const errBody = await analysisResponse.text();
@@ -1780,7 +1788,6 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
       const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!researchText) {
-        // Check if there was a block reason or other issue
         const blockReason = analysisData.candidates?.[0]?.finishReason;
         const promptFeedback = analysisData.promptFeedback?.blockReason;
         console.error('Step 2 returned no text. finishReason:', blockReason, 'promptFeedback:', promptFeedback, 'Full response:', JSON.stringify(analysisData));
@@ -1909,6 +1916,15 @@ For EACH iconic element specify:
 
 **ABSOLUTELY_NOT**: Things that must NOT appear. Be specific.
 
+---
+FINALLY, write a condensed **🎯 ART DIRECTION BRIEF** section at the end (under 300 words):
+🎨 VISUAL DNA: Art style, 4-5 hex color palette, specific lighting setup, texture feel
+📐 DEPTH COMPOSITION: Foreground (blurred), Midground (hero, sharp), Background (massive), Atmosphere
+🎬 NARRATIVE MOMENT: 1-2 sentences of what is HAPPENING (action, not static pose)
+👤 CHARACTER BRIEF: Costume, pose, expression, items (type+size+quantity), face lighting
+🏆 ICONIC DETAILS: 2-3 franchise/lore-specific elements with placement instructions
+⛔ DO NOT: 3-5 specific forbidden elements
+
 Each section should be 2-5 sentences. Be COMPLETE - finish every sentence.`;
 
         const scenePromptHistorical = `${scenePromptBase}
@@ -1957,6 +1973,15 @@ For EACH element: WHAT it is, WHERE to place it, HOW prominent.
 For Ottoman scenes ALWAYS include: "NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
 Example: "NO large two-handed battle axe - this character carries TWO SMALL one-handed axes"
 
+---
+FINALLY, write a condensed **🎯 ART DIRECTION BRIEF** section at the end (under 300 words):
+🎨 VISUAL DNA: Art style, 4-5 hex color palette, specific lighting setup, texture feel
+📐 DEPTH COMPOSITION: Foreground (blurred), Midground (hero, sharp), Background (massive), Atmosphere
+🎬 NARRATIVE MOMENT: 1-2 sentences of what is HAPPENING (action, not static pose)
+👤 CHARACTER BRIEF: Costume, pose, expression, items (type+size+quantity), face lighting
+🏆 ICONIC DETAILS: 2-3 franchise/lore-specific elements with placement instructions
+⛔ DO NOT: 3-5 specific forbidden elements
+
 Keep each section 2-5 sentences. Be COMPLETE - finish every sentence.`;
 
         const scenePayload = {
@@ -1971,133 +1996,40 @@ Keep each section 2-5 sentences. Be COMPLETE - finish every sentence.`;
           }
         };
 
-        // Try gemini-2.5-pro first (better creative writing), fallback to flash
+        // Step 3: Scene Direction + Art Direction Brief (COMBINED into single call)
+        // Uses flash model for speed - pro was too slow
         let sceneDescription = null;
-        const sceneModels = ['gemini-2.5-pro', 'gemini-2.5-flash'];
-        for (const sceneModel of sceneModels) {
-          try {
-            const sceneResponse = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/${sceneModel}:generateContent?key=${apiKey}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(scenePayload)
-              }
-            );
-
-            if (!sceneResponse.ok) {
-              console.warn(`Scene direction with ${sceneModel} failed (${sceneResponse.status}), trying next...`);
-              continue;
-            }
-
-            const sceneData = await sceneResponse.json();
-            sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
-            const finishReason = sceneData.candidates?.[0]?.finishReason;
-
-            if (finishReason === 'MAX_TOKENS' && sceneDescription) {
-              console.warn('Scene direction was truncated. Using partial result.');
-            }
-
-            if (sceneDescription) {
-              console.log(`Scene direction succeeded with ${sceneModel}`);
-              break;
-            } else {
-              console.warn(`Scene direction with ${sceneModel} returned empty, trying next...`);
-            }
-          } catch (sceneErr) {
-            console.warn(`Scene direction with ${sceneModel} threw error:`, sceneErr.message);
-            // Continue to next model
-          }
-        }
-
-        // Step 4: Visual DNA & Art Direction Brief
-        // Condense everything into a focused, concise brief for the image generation model
-        const fullResearch = sceneDescription
-          ? `${researchText}\n\n🎬 SCENE DIRECTION:\n${sceneDescription}`
-          : researchText;
-
-        const artDirectionPayload = {
-          contents: [{
-            parts: [{
-              text: `You are a senior Art Director creating a thumbnail brief. Read ALL the research and scene direction below, then produce a CONCISE art direction brief.
-
-FULL RESEARCH:
-${fullResearch}
-
-TOPIC: "${topic}"
-${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
-${!hasPhoto ? `⚠️ NO PHOTO UPLOADED: Do NOT include any human person/face. The CHARACTER BRIEF section should describe the MAIN FOCAL SUBJECT (creature, object, weapon, vehicle, etc.) instead of a person.` : ''}
-
-YOUR TASK: Distill everything above into a focused ART DIRECTION BRIEF. Write in English.
-Think like a FILM DIRECTOR creating a MOVIE POSTER, not a flat collage.
-
-FORMAT (follow EXACTLY):
-
-🎨 VISUAL DNA:
-- Art style: [e.g., "dark fantasy oil painting", "hyper-realistic cinematic", "cel-shaded anime", "gritty photorealistic"]
-- Color palette: [list 4-5 specific hex colors that define this topic's visual identity, e.g., "#1a0a2e deep void purple, #c9a227 ancient gold, #8b0000 blood crimson"]
-- Lighting: [SPECIFIC 3-point setup, e.g., "Harsh amber key light from upper-left casting long shadows, cool teal fill from right at 30% intensity, hot orange rim light from behind creating edge separation. Volumetric dust particles catching the key light."]
-- Texture feel: [e.g., "weathered stone, oxidized metal, rough leather" or "glossy plastic, chrome, LED glow"]
-- Reference look: [describe what this should look like, e.g., "like a Dark Souls boss intro cinematic" or "like a Netflix documentary poster"]
-
-📐 DEPTH COMPOSITION (CRITICAL):
-- Foreground: [Blurred elements closest to camera - debris, sparks, weapon tips, particles]
-- Midground: [The person - placement, size, pose. This is the HERO of the frame]
-- Background: [Environment, secondary characters/creatures, scale. Should feel MASSIVE]
-- Atmosphere: [What fills the air between layers? Fog, embers, rain, dust, magical energy?]
-
-🎬 NARRATIVE MOMENT (max 2 sentences):
-[What is HAPPENING? Not a static description but a frozen moment of ACTION/TENSION. e.g., "The person braces as Taurox smashes through the fortress wall behind them, stone fragments and fire erupting outward"]
-
-👤 CHARACTER BRIEF (max 3 sentences):
-[Person's costume, pose, expression, items they hold. Be EXACT about weapons/props - type, size, quantity.]
-[CRITICAL: How does the scene's lighting hit the person's face? e.g., "warm firelight on left cheek, deep shadow on right, golden rim light on hair from explosion behind"]
-
-🏆 ICONIC DETAILS (max 3 bullet points):
-[Lore/franchise/era-specific visual elements that make this AUTHENTIC - faction banners, character-specific items, universe-specific visual language, faction colors. These go into specific layers: foreground props, background banners, armor details, etc.]
-[If no established franchise/lore, write "Original content - no franchise iconography"]
-
-⛔ DO NOT:
-[3-5 specific things that must NOT appear - wrong weapons, anachronisms, wrong flags, etc.]
-[ALSO: "NO flat/collage look - scene must have DEPTH with foreground-midground-background separation"]
-
-RULES:
-- Be SPECIFIC, not generic. "Dark moody lighting" is BAD. "Harsh amber key light from upper-left with deep teal shadows and volumetric dust particles" is GOOD.
-- Use the ACTUAL visual identity from the research - real colors, real art style, real atmosphere
-- DEPTH IS MANDATORY: foreground particles/elements + sharp midground subject + atmospheric background
-- The brief must be under 350 words total
-- Every word must add visual value - no filler`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1500
-          }
-        };
-
-        let artDirectionBrief = null;
         try {
-          const artResponse = await fetch(
+          const sceneResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(artDirectionPayload)
+              body: JSON.stringify(scenePayload)
             }
           );
-          const artData = await artResponse.json();
-          artDirectionBrief = artData.candidates?.[0]?.content?.parts?.[0]?.text;
-        } catch (e) {
-          console.warn('Art direction brief failed, using full research:', e);
+
+          if (sceneResponse.ok) {
+            const sceneData = await sceneResponse.json();
+            sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (sceneDescription) {
+              console.log('Scene direction succeeded with gemini-2.5-flash');
+            }
+          } else {
+            console.warn(`Scene direction failed (${sceneResponse.status})`);
+          }
+        } catch (sceneErr) {
+          console.warn('Scene direction error:', sceneErr.message);
         }
 
-        // Combine: full research for display + visual references + art direction brief for generation
+        // Combine results: research + scene direction + visual references
+        const fullResearch = sceneDescription
+          ? `${researchText}\n\n🎬 SCENE DIRECTION:\n${sceneDescription}`
+          : researchText;
+
         let combinedResearch = fullResearch;
         if (visualReferenceGuide) {
           combinedResearch += `\n\n🎨 CHARACTER/ENTITY VISUAL REFERENCES (MUST FOLLOW!):\n${visualReferenceGuide}`;
-        }
-        if (artDirectionBrief) {
-          combinedResearch += `\n\n🎯 ART DIRECTION BRIEF (USE THIS FOR IMAGE GENERATION):\n${artDirectionBrief}`;
         }
 
         setTopicResearch(combinedResearch);
@@ -2190,21 +2122,16 @@ ${topicResearch ? (() => {
   // Extract visual reference guide if present
   const hasVisualRef = topicResearch.includes('CHARACTER/ENTITY VISUAL REFERENCES');
   const visualRefStart = topicResearch.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
-  const visualRefEnd = topicResearch.indexOf('🎯 ART DIRECTION BRIEF');
   const visualRefSection = hasVisualRef && visualRefStart > -1
-    ? topicResearch.substring(visualRefStart, visualRefEnd > visualRefStart ? visualRefEnd : undefined).trim()
+    ? topicResearch.substring(visualRefStart).trim()
     : '';
 
-  // If Art Direction Brief exists, use it as primary direction (more focused)
-  const hasArtBrief = topicResearch.includes('ART DIRECTION BRIEF');
-  if (hasArtBrief) {
-    const briefStart = topicResearch.indexOf('🎯 ART DIRECTION BRIEF');
-    const artBrief = briefStart > -1 ? topicResearch.substring(briefStart) : '';
-    return `
-📋 VISUAL RESEARCH COMPLETED FOR "${topic}".
+  return `
+📋 VISUAL RESEARCH & SCENE DIRECTION FOR "${topic}":
 
-${visualRefSection ? `${visualRefSection}
+${topicResearch}
 
+${visualRefSection ? `
 ⚠️⚠️⚠️ CRITICAL - CHARACTER/ENTITY ACCURACY:
 The VISUAL REFERENCES above describe the EXACT appearance of characters/creatures from ACTUAL source material images.
 You MUST follow these descriptions PRECISELY:
@@ -2214,34 +2141,16 @@ You MUST follow these descriptions PRECISELY:
 - Unique features → these are what make the character RECOGNIZABLE to fans
 - ⚠️ COMMON MISTAKES section → AVOID these specific errors
 DO NOT default to generic versions. A fan should INSTANTLY recognize the character.
-
 ` : ''}
-${artBrief}
 
-⚠️ THE ART DIRECTION BRIEF ABOVE IS YOUR PRIMARY GUIDE. Follow it precisely:
-- VISUAL DNA section defines the exact art style, colors (use the hex codes!), lighting, and texture
-- DEPTH COMPOSITION is CRITICAL: create foreground→midground→background layering, NOT a flat image
-- NARRATIVE MOMENT defines what is HAPPENING - this is a frozen moment of action, not a static pose
-- CHARACTER BRIEF defines costume, pose, expression, and items (follow weapon types/sizes EXACTLY)
-- ICONIC DETAILS are what make this thumbnail AUTHENTIC to fans - faction banners, character-specific items, universe-specific visual elements. Include them in the correct layers (foreground props, background details, armor elements)
-- DO NOT section lists forbidden elements - zero tolerance
-
-The brief was created by analyzing real visual references for "${topic}".
-Your thumbnail must look AUTHENTIC to fans of this content - they should see details that prove you KNOW the source material.
-⚠️ The final image MUST have CINEMATIC DEPTH - foreground particles/elements, sharp midground subject, atmospheric background. NEVER create a flat collage look.
-`;
-  }
-  // Fallback: use full research if no art brief
-  return `
-📋 EXPERT RESEARCH & VISUAL DIRECTION (FOLLOW THIS):
-${topicResearch}
-
-⚠️ Follow the SCENE DIRECTION section EXACTLY:
-- SCENE_DESCRIPTION → exact background
-- COLOR_PALETTE → exact colors
-${base64Image ? '- PERSON_COSTUME → exact outfit' : '- No human person in the scene (no photo uploaded)'}
-- CHARACTER_ITEMS → exact weapons/props (correct type, size, quantity!)
-- ABSOLUTELY_NOT → zero tolerance for listed items
+⚠️ FOLLOW THE SCENE DIRECTION AND ART DIRECTION BRIEF PRECISELY:
+- VISUAL DNA defines art style, colors (use hex codes!), lighting, texture
+- DEPTH COMPOSITION is CRITICAL: foreground→midground→background layering, NOT a flat image
+- NARRATIVE MOMENT defines what is HAPPENING - frozen moment of action
+- CHARACTER BRIEF defines costume, pose, expression, items (type/size/quantity EXACTLY)
+- ICONIC DETAILS make this AUTHENTIC to fans
+- DO NOT / ABSOLUTELY_NOT → zero tolerance for listed items
+- The final image MUST have CINEMATIC DEPTH - foreground particles, sharp midground, atmospheric background. NEVER flat collage.
 `;
 })() : ''}
 
