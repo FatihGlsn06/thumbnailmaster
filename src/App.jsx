@@ -30,43 +30,13 @@ const CONTENT_CATEGORIES = {
   gaming: {
     id: 'gaming',
     keywords: [
-      // Generic gaming terms
-      'game', 'oyun', 'gaming', 'gamer', 'gameplay', 'walkthrough', 'playthrough', 'lets play', 'first look', 'early access',
-      'fps', 'rpg', 'mmorpg', 'jrpg', 'arpg', 'moba', 'rts', 'tps', 'battle royale', 'roguelike', 'roguelite', 'metroidvania', 'soulslike',
-      'boss', 'boss fight', 'raid', 'pvp', 'pve', 'co-op', 'multiplayer', 'speedrun', 'mod', 'dlc', 'expansion', 'patch', 'update',
-      'level', 'damage', 'build', 'loot', 'quest', 'dungeon', 'arena', 'rank', 'ranked', 'esport', 'esports', 'tournament',
-      'oynuyorum', 'oynadım', 'oynuyoruz', 'oynanış', 'bölüm',
-      // Platforms
-      'steam', 'playstation', 'xbox', 'nintendo', 'switch', 'ps5', 'ps4', 'epic games', 'gamepass', 'game pass',
-      // Major game franchises (A-Z)
-      'age of empires', 'aoe', 'among us', 'apex', 'apex legends', 'ark survival', 'armored core', 'assassins creed',
-      'baldurs gate', 'battlefield', 'bioshock', 'black desert', 'bdo', 'bloodborne', 'brawl stars',
-      'call of duty', 'cod', 'civilization', 'civ', 'clash royale', 'clash of clans', 'counter-strike', 'cs2', 'csgo', 'crusader kings', 'cyberpunk',
-      'dark souls', 'dayz', 'dead by daylight', 'dbd', 'death stranding', 'destiny', 'diablo', 'dota', 'dota 2',
-      'elden ring', 'elder scrolls', 'skyrim', 'escape from tarkov', 'tarkov', 'europa universalis',
-      'factorio', 'fall guys', 'fallout', 'far cry', 'fifa', 'eFootball', 'final fantasy', 'fortnite', 'forza',
-      'gacha', 'genshin', 'genshin impact', 'ghost of tsushima', 'god of war', 'gta', 'grand theft auto',
-      'halo', 'hearts of iron', 'hoi4', 'helldivers', 'hogwarts', 'hollow knight', 'honkai', 'star rail', 'horizon', 'hunt showdown',
-      'kingdom come', 'league of legends', 'lol', 'lethal company', 'lost ark',
-      'manor lords', 'metal gear', 'mgs', 'minecraft', 'mobile legends', 'monster hunter', 'mortal kombat', 'mount blade', 'bannerlord', 'mount and blade',
-      'overwatch', 'palworld', 'path of exile', 'poe', 'persona', 'pokemon', 'pubg',
-      'rainbow six', 'r6', 'siege', 'red dead', 'rdr', 'rdr2', 'resident evil', 'rimworld', 'roblox', 'rocket league', 'rust',
-      'satisfactory', 'sekiro', 'silent hill', 'sims', 'spider-man', 'starcraft', 'starfield', 'stardew valley', 'stellaris', 'street fighter', 'subnautica',
-      'tekken', 'terraria', 'the witcher', 'witcher',
-      // Warhammer franchise (all variants)
-      'warhammer', '40k', '40000', 'total war', 'total war warhammer', 'space marine', 'space marines',
-      'chaos', 'nurgle', 'khorne', 'slaanesh', 'tzeentch', 'skaven', 'lizardmen', 'high elves', 'dark elves',
-      'empire', 'bretonnia', 'vampire counts', 'tomb kings', 'beastmen', 'warriors of chaos', 'daemons',
-      'taurox', 'tyrion', 'malekith', 'grimgor', 'archaon', 'karl franz', 'thorgrim', 'settra', 'mannfred',
-      'sigmar', 'imperium', 'primarch', 'ultramarine', 'blood angels', 'dark angels', 'space wolves',
-      // Other strategy games
-      'age of mythology', 'aom', 'company of heroes', 'coh', 'anno', 'stronghold', 'victoria',
-      'valorant', 'warzone', 'world of warcraft', 'wow', 'warcraft', 'hearthstone',
-      'xcom', 'zelda', 'uncharted', 'last of us', 'half-life', 'portal',
-      // Racing
-      'f1', 'racing', 'yarış', 'nfs', 'need for speed', 'gran turismo', 'assetto corsa',
-      // Survival
-      'survival', 'hayatta kalma', 'crafting',
+      // Generic gaming terms (fallback - AI classification is primary)
+      'game', 'oyun', 'gaming', 'gamer', 'gameplay', 'walkthrough', 'playthrough', 'lets play',
+      'fps', 'rpg', 'mmorpg', 'moba', 'rts', 'battle royale', 'roguelike', 'soulslike',
+      'boss fight', 'raid', 'pvp', 'speedrun', 'dlc', 'esport', 'esports',
+      'oynuyorum', 'oynadım', 'oynuyoruz', 'oynanış',
+      // Platforms (strong gaming signal)
+      'steam', 'playstation', 'xbox', 'nintendo', 'ps5', 'epic games', 'gamepass',
     ],
     temperature: 0.7,
     defaultArchetypes: ['shocked_threat', 'power_fantasy', 'scale_contrast', 'almost_fail'],
@@ -148,19 +118,12 @@ function detectContentCategory(topic, description = '') {
   const text = `${topic} ${description}`.toLowerCase();
   const scores = {};
 
+  // Keyword-based detection is just a FALLBACK - AI classification (from research) is primary
   for (const [catId, cat] of Object.entries(CONTENT_CATEGORIES)) {
     scores[catId] = 0;
     for (const keyword of cat.keywords) {
-      const kwLower = keyword.toLowerCase();
-      if (text.includes(kwLower)) {
-        // Longer keywords get higher weight (more specific)
-        let weight = kwLower.length > 5 ? 3 : kwLower.length > 3 ? 2 : 1;
-        // Multi-word keywords are very specific (e.g. "total war warhammer") - extra weight
-        if (kwLower.includes(' ')) weight += 2;
-        // If the topic itself IS the keyword (exact or near-exact match), very high confidence
-        const topicLower = topic.toLowerCase().trim();
-        if (topicLower === kwLower || topicLower.startsWith(kwLower + ' ') || topicLower.endsWith(' ' + kwLower)) weight += 3;
-        scores[catId] += weight;
+      if (text.includes(keyword.toLowerCase())) {
+        scores[catId] += keyword.length > 5 ? 3 : keyword.length > 3 ? 2 : 1;
       }
     }
   }
@@ -1545,9 +1508,6 @@ YOU MUST search the web. Do NOT guess or make up information.`
             text: `Sen bir GÖRSEL TASARIM, İÇERİK ve YOUTUBE uzmanısın.
 "${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yapman gerekiyor.
 
-ALGILANAN İÇERİK KATEGORİSİ: ${category.id.toUpperCase()}
-GÖRSEL RUHHAL: ${category.visualMood}
-
 ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
 
 📡 İNTERNETTEN BULUNAN GÜNCEL BİLGİLER (BU BİLGİLERİ KULLAN!):
@@ -1559,6 +1519,25 @@ ${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
 "${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
 
 Lütfen Türkçe olarak çok detaylı yaz:
+
+⚡ 0. **İÇERİK KATEGORİSİ** (İLK ÖNCE BUNU BELİRLE!):
+İnternet araştırması sonuçlarına göre "${topic}" hangi kategoriye ait?
+Cevabını MUTLAKA şu formatta yaz (ilk satır olmalı):
+DETECTED_CATEGORY: [gaming/education/vlog/food/travel/tech/music/fitness/historical/general]
+
+Karar verirken:
+- gaming: Video oyunu, oyun karakteri, oyun franchise'ı, oyun modu, oyun içi içerik, esport
+- education: Eğitim, bilim, tarih belgeseli, nasıl yapılır, ders, kişisel gelişim, din/maneviyat
+- historical: Tarihsel dönem, imparatorluk, savaş, fetih, antik medeniyet (oyun DEĞİL, gerçek tarih)
+- vlog: Günlük yaşam, reaction, challenge, podcast, sohbet
+- food: Yemek, tarif, restoran, lezzet
+- travel: Seyahat, gezi, ülke/şehir turu, doğa
+- tech: Teknoloji, telefon, bilgisayar, yazılım, AI, ürün inceleme
+- music: Müzik, şarkı, konser, enstrüman, dans
+- fitness: Spor, egzersiz, diyet, vücut geliştirme
+- general: Yukarıdakilerin hiçbirine uymuyorsa
+
+⚠️ ÖNEMLİ: Sözlük anlamına BAKMA! İnternet sonuçlarına bak. Örneğin "Taurox" sözlükte boğa ama internette Warhammer oyun karakteri → gaming!
 
 1. **KONU KİMLİĞİ**:
    - Bu ne? Tam tanımı (Oyun, ürün, kavram, mekan, kişi, olay, teknik, yemek, müzik vb.)
@@ -1722,12 +1701,24 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
       const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (researchText) {
-        // Step 3: Convert research into a CONCRETE visual scene description
-        // Use a shorter prompt for non-historical content, detailed for historical
-        const historicalKeywords = ['tarih', 'history', 'historical', 'savaş', 'war', 'battle', 'empire', 'imparatorluk', 'osmanlı', 'ottoman', 'byzantine', 'bizans', 'medieval', 'ortaçağ', 'antik', 'ancient', 'roma', 'roman', 'kingdom', 'krallık', 'sultan', 'fetih', 'conquest', 'dynasty', 'hanedan'];
-        const topicLower = `${topic} ${topicDescription || ''}`.toLowerCase();
-        const isHistorical = historicalKeywords.some(kw => topicLower.includes(kw));
-        const isGaming = category.id === 'gaming';
+        // Parse AI-determined category from research response
+        const categoryMatch = researchText.match(/DETECTED_CATEGORY:\s*(gaming|education|vlog|food|travel|tech|music|fitness|historical|general)/i);
+        const aiDetectedCategoryId = categoryMatch ? categoryMatch[1].toLowerCase() : null;
+
+        // AI category overrides keyword-based detection (AI has internet context!)
+        if (aiDetectedCategoryId && aiDetectedCategoryId !== 'general') {
+          const aiCategory = aiDetectedCategoryId === 'historical'
+            ? { ...GENERAL_CATEGORY, id: 'historical', visualMood: 'Cinematic, epic, historically authentic, dramatic lighting' }
+            : CONTENT_CATEGORIES[aiDetectedCategoryId];
+          if (aiCategory) {
+            setDetectedCategory(aiCategory);
+          }
+        }
+
+        // Determine content type from AI classification (primary) or keyword fallback
+        const effectiveCategoryId = aiDetectedCategoryId || category.id;
+        const isHistorical = effectiveCategoryId === 'historical';
+        const isGaming = effectiveCategoryId === 'gaming';
 
         const scenePromptBase = `You are a SCENE DIRECTOR. Read the research below and write a CONCRETE, DETAILED scene description for a YouTube thumbnail.
 
