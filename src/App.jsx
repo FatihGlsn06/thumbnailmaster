@@ -1533,7 +1533,27 @@ YOU MUST search the web. Do NOT guess or make up information.`
         try {
           console.log('[RefImage] 🔍 Searching for reference image:', topic);
 
-          // Strategy 1: Extract Fandom wiki pages from grounding metadata
+          // Extract smart search terms from topic
+          // "Total war warhammer 3 : Taurox" → ["Taurox", "Total war warhammer 3 Taurox"]
+          const cleanTopic = topic.replace(/[:\-–—|]/g, ' ').replace(/\s+/g, ' ').trim();
+          const searchTerms = [cleanTopic];
+          const separatorMatch = topic.match(/[:|\-–—]\s*(.+)/);
+          if (separatorMatch) searchTerms.unshift(separatorMatch[1].trim());
+          console.log('[RefImage] 🔤 Search terms:', searchTerms);
+
+          // Helper: try Fandom pageimages API
+          const tryFandomImage = async (wiki, pageTitle) => {
+            const res = await fetch(
+              `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
+              { signal: AbortSignal.timeout(8000) }
+            );
+            if (!res.ok) return null;
+            const data = await res.json();
+            const page = Object.values(data.query?.pages || {})[0];
+            return page?.thumbnail?.source || null;
+          };
+
+          // Strategy 1: Fandom pages directly from grounding metadata
           const fandomPages = groundingChunks
             .filter(c => c.web?.uri?.includes('fandom.com/wiki/'))
             .map(c => {
@@ -1541,97 +1561,82 @@ YOU MUST search the web. Do NOT guess or make up information.`
               return match ? { wiki: match[1], page: decodeURIComponent(match[2].replace(/_/g, ' ')) } : null;
             })
             .filter(Boolean);
-          console.log('[RefImage] 📚 Fandom pages from grounding:', fandomPages);
+          console.log('[RefImage] 📚 Fandom pages from grounding:', fandomPages.map(f => `${f.wiki}/${f.page}`));
 
           for (const { wiki, page } of fandomPages) {
-            try {
-              console.log(`[RefImage] 🔗 Trying Fandom API: ${wiki}.fandom.com → "${page}"`);
-              const res = await fetch(
-                `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(page)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
-                { signal: AbortSignal.timeout(8000) }
-              );
-              if (!res.ok) continue;
-              const data = await res.json();
-              const pageData = Object.values(data.query?.pages || {})[0];
-              const imgUrl = pageData?.thumbnail?.source;
-              if (imgUrl) {
-                console.log('[RefImage] ⬇️ Fandom image URL:', imgUrl);
-                const base64 = await fetchImageAsBase64(imgUrl);
-                if (base64) {
-                  console.log(`[RefImage] ✅ Fandom (${wiki}) image fetched! Size:`, Math.round(base64.length / 1024), 'KB');
-                  setResearchImageBase64(base64);
-                  setResearchImageUrl(imgUrl);
-                  return;
-                }
-              } else {
-                console.log(`[RefImage] ⚠️ Fandom (${wiki}) page exists but no image`);
-              }
-            } catch (e) { console.log(`[RefImage] ❌ Fandom (${wiki}) failed:`, e.message); }
-          }
-
-          // Strategy 2: Wikipedia REST API (fully CORS-enabled)
-          try {
-            const wikiTerm = topic.split(/\s+/).slice(0, 3).join('_');
-            console.log('[RefImage] 🔗 Trying Wikipedia:', wikiTerm);
-            const wikiRes = await fetch(
-              `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTerm)}`,
-              { signal: AbortSignal.timeout(8000) }
-            );
-            if (wikiRes.ok) {
-              const wikiData = await wikiRes.json();
-              if (wikiData.thumbnail?.source) {
-                const highRes = wikiData.thumbnail.source.replace(/\/\d+px-/, '/800px-');
-                console.log('[RefImage] ⬇️ Wikipedia image URL:', highRes);
-                const base64 = await fetchImageAsBase64(highRes);
-                if (base64) {
-                  console.log('[RefImage] ✅ Wikipedia image fetched! Size:', Math.round(base64.length / 1024), 'KB');
-                  setResearchImageBase64(base64);
-                  setResearchImageUrl(highRes);
-                  return;
-                }
+            console.log(`[RefImage] 🔗 Trying Fandom grounding: ${wiki} → "${page}"`);
+            const imgUrl = await tryFandomImage(wiki, page);
+            if (imgUrl) {
+              console.log('[RefImage] ⬇️ Fandom image URL:', imgUrl);
+              const base64 = await fetchImageAsBase64(imgUrl);
+              if (base64) {
+                console.log(`[RefImage] ✅ Fandom grounding (${wiki}) success! Size:`, Math.round(base64.length / 1024), 'KB');
+                setResearchImageBase64(base64);
+                setResearchImageUrl(imgUrl);
+                return;
               }
             }
-          } catch (e) { console.log('[RefImage] ❌ Wikipedia failed:', e.message); }
+          }
 
-          // Strategy 3: Fandom search API (if grounding had no fandom links)
-          if (fandomPages.length === 0) {
-            const categoryWikis = {
-              gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher', 'callofduty', 'fortnite'],
-              food: ['recipes'],
-              tech: ['en.wikipedia.org'],
-            };
-            const wikis = categoryWikis[category?.id] || [];
-            for (const wiki of wikis.slice(0, 3)) {
+          // Strategy 2: Fandom search API (always runs, tries category wikis)
+          const categoryWikis = {
+            gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher', 'callofduty', 'fortnite', 'minecraft', 'genshin-impact', 'zelda'],
+            food: ['recipes'],
+            music: ['music'],
+            historical: ['assassinscreed', 'civilization'],
+          };
+          const wikis = categoryWikis[category?.id] || [];
+          for (const wiki of wikis.slice(0, 5)) {
+            for (const term of searchTerms) {
               try {
-                console.log(`[RefImage] 🔍 Searching Fandom (${wiki}) for:`, topic);
+                console.log(`[RefImage] 🔍 Fandom search: ${wiki} → "${term}"`);
                 const res = await fetch(
-                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&format=json&srlimit=1&origin=*`,
+                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&format=json&srlimit=3&origin=*`,
                   { signal: AbortSignal.timeout(8000) }
                 );
                 if (!res.ok) continue;
                 const data = await res.json();
-                const title = data.query?.search?.[0]?.title;
-                if (!title) continue;
-                console.log(`[RefImage] 📄 Found page: "${title}"`);
-                const imgRes = await fetch(
-                  `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
-                  { signal: AbortSignal.timeout(8000) }
-                );
-                if (!imgRes.ok) continue;
-                const imgData = await imgRes.json();
-                const imgPage = Object.values(imgData.query?.pages || {})[0];
-                const imgUrl = imgPage?.thumbnail?.source;
-                if (imgUrl) {
-                  const base64 = await fetchImageAsBase64(imgUrl);
-                  if (base64) {
-                    console.log(`[RefImage] ✅ Fandom search (${wiki}) image fetched! Size:`, Math.round(base64.length / 1024), 'KB');
-                    setResearchImageBase64(base64);
-                    setResearchImageUrl(imgUrl);
-                    return;
+                const results = data.query?.search || [];
+                for (const result of results) {
+                  console.log(`[RefImage] 📄 Found page: "${result.title}" on ${wiki}`);
+                  const imgUrl = await tryFandomImage(wiki, result.title);
+                  if (imgUrl) {
+                    const base64 = await fetchImageAsBase64(imgUrl);
+                    if (base64) {
+                      console.log(`[RefImage] ✅ Fandom search (${wiki}) success! Size:`, Math.round(base64.length / 1024), 'KB');
+                      setResearchImageBase64(base64);
+                      setResearchImageUrl(imgUrl);
+                      return;
+                    }
                   }
                 }
               } catch (e) { continue; }
             }
+          }
+
+          // Strategy 3: Wikipedia search API (CORS-enabled)
+          for (const term of searchTerms) {
+            try {
+              console.log('[RefImage] 🔗 Wikipedia search:', term);
+              const searchRes = await fetch(
+                `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term.replace(/ /g, '_'))}`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              if (searchRes.ok) {
+                const wikiData = await searchRes.json();
+                if (wikiData.thumbnail?.source) {
+                  const highRes = wikiData.thumbnail.source.replace(/\/\d+px-/, '/800px-');
+                  console.log('[RefImage] ⬇️ Wikipedia image:', highRes);
+                  const base64 = await fetchImageAsBase64(highRes);
+                  if (base64) {
+                    console.log('[RefImage] ✅ Wikipedia success! Size:', Math.round(base64.length / 1024), 'KB');
+                    setResearchImageBase64(base64);
+                    setResearchImageUrl(highRes);
+                    return;
+                  }
+                }
+              }
+            } catch (e) { continue; }
           }
 
           console.log('[RefImage] ⚠️ All strategies failed - no reference image found');
