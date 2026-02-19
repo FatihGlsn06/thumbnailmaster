@@ -1550,10 +1550,10 @@ YOU MUST search the web. Do NOT guess or make up information.`
           if (separatorMatch) searchTerms.unshift(separatorMatch[1].trim());
           console.log('[RefImage] 🔤 Search terms:', searchTerms);
 
-          // Helper: try to get an image from a Fandom wiki page
+          // Helper: try to get an image from a Fandom wiki page (3 methods)
           const tryFandomImage = async (wiki, pageTitle) => {
+            // Method 1: pageimages API (fastest)
             try {
-              // Method 1: pageimages API (fastest, but many pages don't have it set)
               const res = await fetch(
                 `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
                 { signal: AbortSignal.timeout(8000) }
@@ -1561,51 +1561,96 @@ YOU MUST search the web. Do NOT guess or make up information.`
               if (res.ok) {
                 const data = await res.json();
                 const page = Object.values(data.query?.pages || {})[0];
-                if (page?.thumbnail?.source) return page.thumbnail.source;
+                if (page?.thumbnail?.source) {
+                  console.log(`[RefImage] 🖼️ pageimages hit: ${wiki}/${pageTitle} →`, page.thumbnail.source);
+                  return page.thumbnail.source;
+                }
+                console.log(`[RefImage] ℹ️ pageimages empty for ${wiki}/${pageTitle}`);
+              } else {
+                console.log(`[RefImage] ⚠️ pageimages ${res.status} for ${wiki}/${pageTitle}`);
               }
-            } catch {}
+            } catch (e) {
+              console.log(`[RefImage] ❌ pageimages error ${wiki}/${pageTitle}:`, e.message);
+            }
 
+            // Method 2: action=parse → get all images used in the page (most reliable)
             try {
-              // Method 2: list all images on the page, pick first meaningful one
+              const res = await fetch(
+                `https://${wiki}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images&format=json&origin=*`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              if (res.ok) {
+                const data = await res.json();
+                const images = data.parse?.images || [];
+                console.log(`[RefImage] 📷 parse/images ${wiki}/${pageTitle}: ${images.length} files:`, images.slice(0, 5));
+                // Filter out icons, logos, UI elements
+                const skip = ['icon', 'logo', 'button', 'banner', 'badge', 'flag', 'arrow', 'nav', 'wiki', '.svg', '.gif', 'placeholder', 'symbol', 'header', 'footer'];
+                const goodImages = images.filter(name => {
+                  const lower = name.toLowerCase();
+                  return !skip.some(s => lower.includes(s));
+                });
+                console.log(`[RefImage] 📷 ${goodImages.length} good images after filter`);
+
+                for (const fileName of goodImages.slice(0, 3)) {
+                  try {
+                    const infoRes = await fetch(
+                      `https://${wiki}.fandom.com/api.php?action=query&titles=File:${encodeURIComponent(fileName)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
+                      { signal: AbortSignal.timeout(8000) }
+                    );
+                    if (!infoRes.ok) { console.log(`[RefImage] ⚠️ imageinfo ${infoRes.status} for ${fileName}`); continue; }
+                    const infoData = await infoRes.json();
+                    const imgPage = Object.values(infoData.query?.pages || {})[0];
+                    const info = imgPage?.imageinfo?.[0];
+                    if (!info) { console.log(`[RefImage] ⚠️ no imageinfo for ${fileName}`); continue; }
+                    if (info.width < 150 || info.height < 150) { console.log(`[RefImage] ⚠️ too small: ${fileName} ${info.width}x${info.height}`); continue; }
+                    const imgUrl = info.thumburl || info.url;
+                    console.log(`[RefImage] 🖼️ parse/imageinfo hit: ${fileName} → ${imgUrl}`);
+                    return imgUrl;
+                  } catch (e) { console.log(`[RefImage] ❌ imageinfo error ${fileName}:`, e.message); }
+                }
+              } else {
+                console.log(`[RefImage] ⚠️ parse ${res.status} for ${wiki}/${pageTitle}`);
+              }
+            } catch (e) {
+              console.log(`[RefImage] ❌ parse error ${wiki}/${pageTitle}:`, e.message);
+            }
+
+            // Method 3: prop=images list (fallback)
+            try {
               const res = await fetch(
                 `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=images&format=json&imlimit=10&origin=*`,
                 { signal: AbortSignal.timeout(8000) }
               );
-              if (!res.ok) return null;
-              const data = await res.json();
-              const page = Object.values(data.query?.pages || {})[0];
-              const images = page?.images || [];
-              // Filter out icons, logos, UI elements
-              const skip = ['icon', 'logo', 'button', 'banner', 'badge', 'flag', 'arrow', 'nav', 'wiki', '.svg', '.gif', 'placeholder'];
-              const goodImages = images.filter(img => {
-                const name = img.title.toLowerCase();
-                return !skip.some(s => name.includes(s));
-              });
-              console.log(`[RefImage] 📷 ${wiki}/${pageTitle}: ${images.length} images, ${goodImages.length} good`);
+              if (res.ok) {
+                const data = await res.json();
+                const page = Object.values(data.query?.pages || {})[0];
+                const images = page?.images || [];
+                const skip = ['icon', 'logo', 'button', 'banner', 'badge', 'flag', 'arrow', 'nav', 'wiki', '.svg', '.gif', 'placeholder', 'symbol'];
+                const goodImages = images.filter(img => !skip.some(s => img.title.toLowerCase().includes(s)));
+                console.log(`[RefImage] 📋 prop=images ${wiki}/${pageTitle}: ${images.length} total, ${goodImages.length} good`);
 
-              // Get URL for the best image via imageinfo
-              for (const img of goodImages.slice(0, 3)) {
-                try {
-                  const infoRes = await fetch(
-                    `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(img.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
-                    { signal: AbortSignal.timeout(8000) }
-                  );
-                  if (!infoRes.ok) continue;
-                  const infoData = await infoRes.json();
-                  const imgPage = Object.values(infoData.query?.pages || {})[0];
-                  const info = imgPage?.imageinfo?.[0];
-                  if (!info) continue;
-                  // Skip tiny images (likely icons)
-                  if (info.width < 200 || info.height < 200) continue;
-                  const imgUrl = info.thumburl || info.url;
-                  if (imgUrl) {
-                    console.log(`[RefImage] 🖼️ Found image via imageinfo: ${img.title} → ${imgUrl}`);
+                for (const img of goodImages.slice(0, 3)) {
+                  try {
+                    const infoRes = await fetch(
+                      `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(img.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
+                      { signal: AbortSignal.timeout(8000) }
+                    );
+                    if (!infoRes.ok) continue;
+                    const infoData = await infoRes.json();
+                    const imgPage = Object.values(infoData.query?.pages || {})[0];
+                    const info = imgPage?.imageinfo?.[0];
+                    if (!info || info.width < 150 || info.height < 150) continue;
+                    const imgUrl = info.thumburl || info.url;
+                    console.log(`[RefImage] 🖼️ prop=images hit: ${img.title} → ${imgUrl}`);
                     return imgUrl;
-                  }
-                } catch { continue; }
+                  } catch { continue; }
+                }
               }
-            } catch {}
+            } catch (e) {
+              console.log(`[RefImage] ❌ prop=images error ${wiki}/${pageTitle}:`, e.message);
+            }
 
+            console.log(`[RefImage] 🚫 No image found for ${wiki}/${pageTitle}`);
             return null;
           };
 
@@ -1725,10 +1770,10 @@ YOU MUST search the web. Do NOT guess or make up information.`
             }
           }
 
-          // Strategy 3: Wikipedia search API (CORS-enabled)
+          // Strategy 3: Wikipedia REST API (CORS-enabled)
           for (const term of searchTerms) {
             try {
-              console.log('[RefImage] 🔗 Wikipedia search:', term);
+              console.log('[RefImage] 🔗 Wikipedia summary:', term);
               const searchRes = await fetch(
                 `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term.replace(/ /g, '_'))}`,
                 { signal: AbortSignal.timeout(8000) }
@@ -1747,7 +1792,45 @@ YOU MUST search the web. Do NOT guess or make up information.`
                   }
                 }
               }
-            } catch (e) { continue; }
+            } catch (e) { console.log('[RefImage] ❌ Wikipedia error:', e.message); }
+          }
+
+          // Strategy 4: Wikimedia Commons search (always CORS-enabled, huge image library)
+          for (const term of searchTerms) {
+            try {
+              const commonsQuery = `${term} ${category?.id === 'gaming' ? 'game' : ''}`.trim();
+              console.log('[RefImage] 🌐 Wikimedia Commons search:', commonsQuery);
+              const res = await fetch(
+                `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(commonsQuery)}&srnamespace=6&srlimit=5&format=json&origin=*`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              if (!res.ok) continue;
+              const data = await res.json();
+              const results = data.query?.search || [];
+              console.log('[RefImage] 🌐 Commons results:', results.length, results.map(r => r.title).slice(0, 3));
+              for (const result of results) {
+                try {
+                  const infoRes = await fetch(
+                    `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(result.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
+                    { signal: AbortSignal.timeout(8000) }
+                  );
+                  if (!infoRes.ok) continue;
+                  const infoData = await infoRes.json();
+                  const imgPage = Object.values(infoData.query?.pages || {})[0];
+                  const info = imgPage?.imageinfo?.[0];
+                  if (!info || info.width < 200 || info.height < 200) continue;
+                  const imgUrl = info.thumburl || info.url;
+                  console.log('[RefImage] ⬇️ Commons image:', imgUrl);
+                  const base64 = await fetchImageAsBase64(imgUrl);
+                  if (base64) {
+                    console.log('[RefImage] ✅ Wikimedia Commons success! Size:', Math.round(base64.length / 1024), 'KB');
+                    setResearchImageBase64(base64);
+                    setResearchImageUrl(imgUrl);
+                    return;
+                  }
+                } catch { continue; }
+              }
+            } catch (e) { console.log('[RefImage] ❌ Commons error:', e.message); }
           }
 
           console.log('[RefImage] ⚠️ All strategies failed - no reference image found');
