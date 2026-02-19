@@ -1531,6 +1531,7 @@ YOU MUST search the web. Do NOT guess or make up information.`
       // Background: Find reference image for the topic (runs parallel to analysis)
       const imageSearchPromise = (async () => {
         try {
+          console.log('[RefImage] 🔍 Searching for reference image:', topic);
           const imageSearchPayload = {
             contents: [{
               parts: [{
@@ -1550,21 +1551,32 @@ NO text, NO explanation, ONLY URLs. One URL per line.`
           );
           const imageData = await imageRes.json();
           const imageText = imageData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+          console.log('[RefImage] 📝 Gemini response:', imageText.substring(0, 300));
 
           // Extract direct image URLs from response text
           const urlRegex = /https?:\/\/[^\s"'<>\)]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>\)]*)?/gi;
           const urls = [...new Set(imageText.match(urlRegex) || [])].slice(0, 5);
+          console.log('[RefImage] 🔗 Found URLs:', urls.length, urls);
+
+          if (urls.length === 0) {
+            console.log('[RefImage] ⚠️ No image URLs found in Gemini response');
+            return;
+          }
 
           for (const url of urls) {
+            console.log('[RefImage] ⬇️ Trying to fetch:', url);
             const base64 = await fetchImageAsBase64(url);
             if (base64) {
+              console.log('[RefImage] ✅ SUCCESS! Image fetched, size:', Math.round(base64.length / 1024), 'KB');
               setResearchImageBase64(base64);
               setResearchImageUrl(url);
               return;
             }
+            console.log('[RefImage] ❌ Failed to fetch this URL');
           }
+          console.log('[RefImage] ⚠️ All URLs failed to fetch');
         } catch (e) {
-          console.log('Reference image search failed (non-critical):', e.message);
+          console.log('[RefImage] ❌ Search failed:', e.message);
         }
       })();
 
@@ -2055,7 +2067,10 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       }
       // Send research-found reference image so the model knows what the topic looks like
       if (researchImageBase64) {
+        console.log('[Generate] 🖼️ Including research reference image in payload');
         promptParts.push({ inlineData: { mimeType: "image/png", data: researchImageBase64 } });
+      } else {
+        console.log('[Generate] ⚠️ No research reference image available');
       }
 
       const payload = {
