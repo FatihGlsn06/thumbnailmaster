@@ -1555,20 +1555,16 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .slice(0, 5)
         .join('\n');
 
-      // Background: Find reference image via wiki APIs (CORS-enabled, no proxy needed)
+      // Background: Find reference image via wiki APIs + Gemini visual verification
       imageSearchPromise = (async () => {
         try {
           console.log('[RefImage] 🔍 Searching for reference image:', topic);
 
           // ── Subject Extraction ──
-          // "Total War Warhammer 3 : Taurox" → subject="Taurox", context="Total War Warhammer 3"
-          // "Elden Ring Malenia" → subject="Malenia", context="Elden Ring"
-          // "Minecraft" → subject="Minecraft", context=""
           const rawClean = topic.replace(/[:\-–—|]/g, ' ').replace(/\s+/g, ' ').trim();
           const separatorMatch = topic.match(/[:|\-–—]\s*(.+)/);
           const contextMatch = topic.match(/^(.+?)[\s]*[:|\-–—]/);
 
-          // Subject is the specific thing (after separator, or last meaningful words)
           let subject = '';
           let contextPart = '';
           if (separatorMatch) {
@@ -1576,16 +1572,12 @@ YOU MUST search the web. Do NOT guess or make up information.`
             contextPart = contextMatch ? contextMatch[1].trim() : '';
           } else {
             const words = rawClean.split(' ').filter(w => w.length > 2 && !/^\d+$/.test(w));
-            // Common game/franchise prefixes to skip when extracting subject
             const franchiseWords = new Set(['total', 'war', 'warhammer', 'elden', 'ring', 'dark', 'souls', 'league', 'legends', 'call', 'duty', 'grand', 'theft', 'auto', 'world', 'warcraft', 'monster', 'hunter', 'final', 'fantasy', 'resident', 'evil', 'assassins', 'creed', 'god', 'breath', 'wild', 'tears', 'kingdom', 'counter', 'strike', 'red', 'dead', 'horizon', 'tomb', 'raider', 'age', 'empires']);
-            // Find where franchise name ends and subject begins
             let subjectStartIdx = 0;
             for (let i = 0; i < words.length; i++) {
-              if (franchiseWords.has(words[i].toLowerCase()) || /^\d+$/.test(words[i]) || /^(i{1,3}|iv|v|vi{0,3})$/i.test(words[i])) {
+              if (franchiseWords.has(words[i].toLowerCase()) || /^(i{1,3}|iv|v|vi{0,3})$/i.test(words[i])) {
                 subjectStartIdx = i + 1;
-              } else {
-                break;
-              }
+              } else break;
             }
             if (subjectStartIdx > 0 && subjectStartIdx < words.length) {
               subject = words.slice(subjectStartIdx).join(' ');
@@ -1601,7 +1593,6 @@ YOU MUST search the web. Do NOT guess or make up information.`
           if (subject) searchTerms.push(subject);
           if (contextPart && subject) searchTerms.push(`${subject} ${contextPart}`);
           searchTerms.push(rawClean);
-          // Deduplicate
           const seen = new Set();
           const uniqueTerms = searchTerms.filter(t => {
             const key = t.toLowerCase().trim();
@@ -1609,89 +1600,65 @@ YOU MUST search the web. Do NOT guess or make up information.`
             seen.add(key);
             return true;
           });
-
-          // Subject keywords for image scoring
           const subjectWords = subject.toLowerCase().split(/[\s_\-]+/).filter(w => w.length > 2);
-          console.log('[RefImage] 🎯 Subject:', subject, '| Context:', contextPart, '| Terms:', uniqueTerms, '| Keywords:', subjectWords);
+          console.log('[RefImage] 🎯 Subject:', subject, '| Context:', contextPart, '| Terms:', uniqueTerms);
 
-          // ── Image Relevance Scoring ──
+          // ── Image Name Scoring ──
           const scoreImageName = (filename) => {
             const lower = filename.toLowerCase().replace(/[_\-]/g, ' ');
             let score = 0;
-
-            // Full subject match in filename (strongest signal)
             if (lower.includes(subject.toLowerCase())) score += 100;
-
-            // Individual subject word matches
-            for (const word of subjectWords) {
-              if (lower.includes(word)) score += 40;
-            }
-
-            // Positive indicators: character art, portrait, render
-            if (/portrait|render|artwork|character|model|splash|promo|official|full|key[\s_]?art/i.test(filename)) score += 25;
-            if (/infobox|main|primary|profile/i.test(filename)) score += 20;
-
-            // Slightly negative: generic images less likely to show subject
-            if (/screenshot|map|loading|concept|wallpaper|roster|campaign|menu|logo|background|trailer/i.test(filename)) score -= 15;
-            // Very negative: clearly wrong content
+            for (const word of subjectWords) { if (lower.includes(word)) score += 40; }
+            if (/portrait|render|artwork|character|model|splash|promo|official|full|key[\s_]?art|infobox|main|primary|profile/i.test(filename)) score += 25;
+            if (/screenshot|map|loading|wallpaper|roster|campaign|menu|logo|background|trailer/i.test(filename)) score -= 15;
             if (/icon|badge|flag|symbol|arrow|nav|button|header|footer|placeholder|banner/i.test(filename)) score -= 50;
-
-            // Size/format preference
-            if (/\.svg$/i.test(filename)) score -= 100; // SVGs are usually icons
-            if (/\.gif$/i.test(filename)) score -= 30;  // GIFs are usually animations/small
-
+            if (/\.svg$/i.test(filename)) score -= 100;
+            if (/\.gif$/i.test(filename)) score -= 30;
             return score;
           };
 
-          // ── Smart tryFandomImage with scoring ──
-          const tryFandomImage = async (wiki, pageTitle) => {
-            const candidates = []; // { url, score, source }
+          // ── PHASE 1: Collect candidate URLs from all sources ──
+          const allCandidates = []; // { url, score, source, label }
 
-            // Method 1: pageimages API (page thumbnail — usually the main character image)
+          // Helper: get candidates from a Fandom wiki page
+          const collectFandomCandidates = async (wiki, pageTitle, sourceLabel) => {
+            const pageCandidates = [];
+
+            // Method 1: pageimages (main thumbnail)
             try {
               const res = await fetch(
                 `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
-                { signal: AbortSignal.timeout(8000) }
+                { signal: AbortSignal.timeout(6000) }
               );
               if (res.ok) {
                 const data = await res.json();
                 const page = Object.values(data.query?.pages || {})[0];
                 if (page?.thumbnail?.source) {
-                  const pageImageName = page?.pageimage || '';
-                  const score = scoreImageName(pageImageName) + 10; // +10 bonus for being page thumbnail
-                  console.log(`[RefImage] 🖼️ pageimages: ${wiki}/${pageTitle} → score:${score}`, page.thumbnail.source.substring(0, 80));
-                  candidates.push({ url: page.thumbnail.source, score, source: 'pageimage' });
+                  const score = scoreImageName(page?.pageimage || '') + 10;
+                  pageCandidates.push({ url: page.thumbnail.source, score, source: sourceLabel, label: `${wiki}/${pageTitle} (thumbnail)` });
                 }
               }
-            } catch (e) {
-              console.log(`[RefImage] ❌ pageimages error ${wiki}/${pageTitle}:`, e.message);
-            }
+            } catch {}
 
-            // Method 2: action=parse → all images on the page (score and rank them)
+            // Method 2: parse/images (all page images, scored)
             try {
               const res = await fetch(
                 `https://${wiki}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images&format=json&origin=*`,
-                { signal: AbortSignal.timeout(8000) }
+                { signal: AbortSignal.timeout(6000) }
               );
               if (res.ok) {
                 const data = await res.json();
                 const images = data.parse?.images || [];
-
-                // Score all images and sort
                 const scored = images
                   .map(name => ({ name, score: scoreImageName(name) }))
-                  .filter(i => i.score > -50) // Remove definite junk
+                  .filter(i => i.score > -50)
                   .sort((a, b) => b.score - a.score);
 
-                console.log(`[RefImage] 📷 parse/images ${wiki}/${pageTitle}: ${images.length} total, top scored:`,
-                  scored.slice(0, 5).map(s => `${s.name}(${s.score})`));
-
-                // Try top 5 scored images
-                for (const { name: fileName, score: nameScore } of scored.slice(0, 5)) {
+                for (const { name: fileName, score: nameScore } of scored.slice(0, 4)) {
                   try {
                     const infoRes = await fetch(
                       `https://${wiki}.fandom.com/api.php?action=query&titles=File:${encodeURIComponent(fileName)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
-                      { signal: AbortSignal.timeout(8000) }
+                      { signal: AbortSignal.timeout(6000) }
                     );
                     if (!infoRes.ok) continue;
                     const infoData = await infoRes.json();
@@ -1699,120 +1666,41 @@ YOU MUST search the web. Do NOT guess or make up information.`
                     const info = imgPage?.imageinfo?.[0];
                     if (!info || info.width < 150 || info.height < 150) continue;
                     const imgUrl = info.thumburl || info.url;
-                    // Bonus for larger images (likely character art, not small icons)
                     const sizeBonus = Math.min(20, Math.floor(Math.min(info.width, info.height) / 100) * 3);
-                    const totalScore = nameScore + sizeBonus;
-                    console.log(`[RefImage] 📷 candidate: ${fileName} → score:${totalScore} (name:${nameScore} size:${sizeBonus}) ${info.width}x${info.height}`);
-                    candidates.push({ url: imgUrl, score: totalScore, source: 'parse' });
-
-                    // If we found a high-confidence match, no need to check more
-                    if (totalScore >= 100) break;
+                    pageCandidates.push({ url: imgUrl, score: nameScore + sizeBonus, source: sourceLabel, label: `${wiki}/${fileName}` });
                   } catch { continue; }
                 }
               }
-            } catch (e) {
-              console.log(`[RefImage] ❌ parse error ${wiki}/${pageTitle}:`, e.message);
-            }
+            } catch {}
 
-            // Method 3: prop=images list (fallback, also scored)
-            if (candidates.length === 0 || candidates.every(c => c.score < 50)) {
-              try {
-                const res = await fetch(
-                  `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=images&format=json&imlimit=15&origin=*`,
-                  { signal: AbortSignal.timeout(8000) }
-                );
-                if (res.ok) {
-                  const data = await res.json();
-                  const page = Object.values(data.query?.pages || {})[0];
-                  const images = page?.images || [];
-
-                  const scored = images
-                    .map(img => ({ title: img.title, score: scoreImageName(img.title) }))
-                    .filter(i => i.score > -50)
-                    .sort((a, b) => b.score - a.score);
-
-                  console.log(`[RefImage] 📋 prop=images ${wiki}/${pageTitle}: ${images.length} total, top:`,
-                    scored.slice(0, 5).map(s => `${s.title.replace('File:', '')}(${s.score})`));
-
-                  for (const { title, score: nameScore } of scored.slice(0, 3)) {
-                    try {
-                      const infoRes = await fetch(
-                        `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
-                        { signal: AbortSignal.timeout(8000) }
-                      );
-                      if (!infoRes.ok) continue;
-                      const infoData = await infoRes.json();
-                      const imgPage = Object.values(infoData.query?.pages || {})[0];
-                      const info = imgPage?.imageinfo?.[0];
-                      if (!info || info.width < 150 || info.height < 150) continue;
-                      const imgUrl = info.thumburl || info.url;
-                      const sizeBonus = Math.min(20, Math.floor(Math.min(info.width, info.height) / 100) * 3);
-                      candidates.push({ url: imgUrl, score: nameScore + sizeBonus, source: 'prop-images' });
-                      if (nameScore + sizeBonus >= 100) break;
-                    } catch { continue; }
-                  }
-                }
-              } catch (e) {
-                console.log(`[RefImage] ❌ prop=images error ${wiki}/${pageTitle}:`, e.message);
-              }
-            }
-
-            // Return best candidate
-            if (candidates.length > 0) {
-              candidates.sort((a, b) => b.score - a.score);
-              const best = candidates[0];
-              console.log(`[RefImage] 🏆 Best candidate for ${wiki}/${pageTitle}: score:${best.score} source:${best.source} →`, best.url.substring(0, 80));
-              return best.url;
-            }
-
-            console.log(`[RefImage] 🚫 No image found for ${wiki}/${pageTitle}`);
-            return null;
+            return pageCandidates;
           };
 
-          // ── Helper: try to download and set image ──
-          const tryDownloadAndSet = async (imgUrl, label) => {
-            const imgResult = await fetchImageAsBase64(imgUrl);
-            if (imgResult) {
-              console.log(`[RefImage] ✅ ${label} success! Size:`, Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
-              setResearchImageBase64(imgResult.data);
-              setResearchImageMimeType(imgResult.mimeType);
-              setResearchImageUrl(imgUrl);
-              return true;
-            }
-            return false;
-          };
-
-          // ── Strategy 1: Fandom pages from grounding — but prioritize subject-matching pages ──
+          // Strategy 1: Fandom pages from grounding
           const fandomPages = groundingChunks
             .filter(c => c.web?.uri?.includes('fandom.com/wiki/'))
             .map(c => {
               const match = c.web.uri.match(/https?:\/\/([^.]+)\.fandom\.com\/wiki\/([^?#]+)/);
               if (!match) return null;
               const pageName = decodeURIComponent(match[2].replace(/_/g, ' '));
-              // Score page by how well its title matches the subject
               const pageNameLower = pageName.toLowerCase();
               let pageScore = 0;
-              if (pageNameLower === subject.toLowerCase()) pageScore = 100; // Exact match
+              if (pageNameLower === subject.toLowerCase()) pageScore = 100;
               else if (pageNameLower.includes(subject.toLowerCase())) pageScore = 80;
-              else {
-                for (const w of subjectWords) {
-                  if (pageNameLower.includes(w)) pageScore += 30;
-                }
-              }
+              else { for (const w of subjectWords) { if (pageNameLower.includes(w)) pageScore += 30; } }
               return { wiki: match[1], page: pageName, score: pageScore };
             })
             .filter(Boolean)
-            .sort((a, b) => b.score - a.score); // Best matching pages first
+            .sort((a, b) => b.score - a.score);
 
-          console.log('[RefImage] 📚 Fandom pages from grounding (sorted):', fandomPages.map(f => `${f.wiki}/${f.page}(${f.score})`));
+          console.log('[RefImage] 📚 Grounding pages:', fandomPages.map(f => `${f.wiki}/${f.page}(${f.score})`));
 
-          for (const { wiki, page } of fandomPages) {
-            console.log(`[RefImage] 🔗 Trying Fandom grounding: ${wiki} → "${page}"`);
-            const imgUrl = await tryFandomImage(wiki, page);
-            if (imgUrl && await tryDownloadAndSet(imgUrl, `Fandom grounding (${wiki})`)) return;
+          for (const { wiki, page } of fandomPages.slice(0, 3)) {
+            const candidates = await collectFandomCandidates(wiki, page, 'grounding');
+            allCandidates.push(...candidates);
           }
 
-          // ── Strategy 2: Fandom search API ──
+          // Strategy 2: Fandom search
           const topicLower = topic.toLowerCase();
           const topicWikiMap = [
             { patterns: ['total war'], wikis: ['totalwar'] },
@@ -1859,116 +1747,191 @@ YOU MUST search the web. Do NOT guess or make up information.`
           ];
           const matchedWikis = [];
           for (const entry of topicWikiMap) {
-            if (entry.patterns.some(p => topicLower.includes(p))) {
-              matchedWikis.push(...entry.wikis);
-            }
+            if (entry.patterns.some(p => topicLower.includes(p))) matchedWikis.push(...entry.wikis);
           }
           const categoryWikis = {
-            gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher', 'callofduty', 'fortnite', 'minecraft', 'genshin-impact', 'zelda'],
-            food: ['recipes'],
-            music: ['music'],
-            historical: ['assassinscreed', 'civilization'],
+            gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher'],
+            food: ['recipes'], music: ['music'], historical: ['assassinscreed', 'civilization'],
           };
           const fallbackWikis = categoryWikis[category?.id] || [];
           const wikis = [...new Set([...matchedWikis, ...fallbackWikis])];
-          console.log('[RefImage] 🎮 Wikis to search:', wikis, '(matched:', matchedWikis.length, ')');
+          console.log('[RefImage] 🎮 Wikis:', wikis);
 
-          // Search with SUBJECT first (most specific), then full topic
-          for (const wiki of wikis.slice(0, 5)) {
-            for (const term of uniqueTerms) {
+          // Search Fandom wikis — collect candidates, don't stop at first
+          for (const wiki of wikis.slice(0, 4)) {
+            for (const term of uniqueTerms.slice(0, 2)) {
               try {
-                console.log(`[RefImage] 🔍 Fandom search: ${wiki} → "${term}"`);
                 const res = await fetch(
-                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&format=json&srlimit=5&origin=*`,
-                  { signal: AbortSignal.timeout(8000) }
+                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&format=json&srlimit=3&origin=*`,
+                  { signal: AbortSignal.timeout(6000) }
                 );
                 if (!res.ok) continue;
                 const data = await res.json();
-                const results = data.query?.search || [];
+                const results = (data.query?.search || [])
+                  .map(r => {
+                    const titleLower = r.title.toLowerCase();
+                    let score = 0;
+                    if (titleLower === subject.toLowerCase()) score = 100;
+                    else if (titleLower.includes(subject.toLowerCase())) score = 70;
+                    else { for (const w of subjectWords) { if (titleLower.includes(w)) score += 25; } }
+                    return { ...r, relevance: score };
+                  })
+                  .sort((a, b) => b.relevance - a.relevance);
 
-                // Sort results: pages whose title matches the subject come first
-                const scoredResults = results.map(r => {
-                  const titleLower = r.title.toLowerCase();
-                  let score = 0;
-                  if (titleLower === subject.toLowerCase()) score = 100;
-                  else if (titleLower.includes(subject.toLowerCase())) score = 70;
-                  else {
-                    for (const w of subjectWords) {
-                      if (titleLower.includes(w)) score += 25;
-                    }
-                  }
-                  return { ...r, relevance: score };
-                }).sort((a, b) => b.relevance - a.relevance);
-
-                console.log(`[RefImage] 📄 Results (sorted):`, scoredResults.map(r => `"${r.title}"(${r.relevance})`));
-
-                for (const result of scoredResults) {
-                  const imgUrl = await tryFandomImage(wiki, result.title);
-                  if (imgUrl && await tryDownloadAndSet(imgUrl, `Fandom search ${wiki}/${result.title}`)) return;
+                for (const result of results.slice(0, 2)) {
+                  const candidates = await collectFandomCandidates(wiki, result.title, `search-${wiki}`);
+                  allCandidates.push(...candidates);
                 }
               } catch { continue; }
             }
+            if (allCandidates.length >= 15) break;
           }
 
-          // ── Strategy 3: Wikipedia (scored page selection) ──
-          for (const term of uniqueTerms) {
+          // Strategy 3: Wikipedia
+          for (const term of uniqueTerms.slice(0, 2)) {
             try {
-              console.log('[RefImage] 🔗 Wikipedia summary:', term);
               const searchRes = await fetch(
                 `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term.replace(/ /g, '_'))}`,
-                { signal: AbortSignal.timeout(8000) }
+                { signal: AbortSignal.timeout(6000) }
               );
               if (searchRes.ok) {
                 const wikiData = await searchRes.json();
                 if (wikiData.thumbnail?.source) {
                   const highRes = wikiData.thumbnail.source.replace(/\/\d+px-/, '/800px-');
-                  console.log('[RefImage] ⬇️ Wikipedia image:', highRes);
-                  if (await tryDownloadAndSet(highRes, 'Wikipedia')) return;
+                  allCandidates.push({ url: highRes, score: scoreImageName(wikiData.title || term), source: 'wikipedia', label: `Wikipedia: ${term}` });
                 }
               }
-            } catch (e) { console.log('[RefImage] ❌ Wikipedia error:', e.message); }
+            } catch {}
           }
 
-          // ── Strategy 4: Wikimedia Commons (scored) ──
-          for (const term of uniqueTerms) {
+          // Strategy 4: Wikimedia Commons
+          for (const term of uniqueTerms.slice(0, 1)) {
             try {
               const commonsQuery = `${term} ${category?.id === 'gaming' ? 'game' : ''}`.trim();
-              console.log('[RefImage] 🌐 Wikimedia Commons search:', commonsQuery);
               const res = await fetch(
-                `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(commonsQuery)}&srnamespace=6&srlimit=5&format=json&origin=*`,
-                { signal: AbortSignal.timeout(8000) }
+                `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(commonsQuery)}&srnamespace=6&srlimit=3&format=json&origin=*`,
+                { signal: AbortSignal.timeout(6000) }
               );
               if (!res.ok) continue;
               const data = await res.json();
-              const results = data.query?.search || [];
-
-              // Score commons results by title relevance
-              const scoredResults = results
-                .map(r => ({ ...r, relevance: scoreImageName(r.title) }))
-                .sort((a, b) => b.relevance - a.relevance);
-
-              console.log('[RefImage] 🌐 Commons results (sorted):', scoredResults.map(r => `${r.title}(${r.relevance})`).slice(0, 3));
-
-              for (const result of scoredResults) {
+              for (const result of (data.query?.search || []).slice(0, 3)) {
                 try {
                   const infoRes = await fetch(
                     `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(result.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
-                    { signal: AbortSignal.timeout(8000) }
+                    { signal: AbortSignal.timeout(6000) }
                   );
                   if (!infoRes.ok) continue;
                   const infoData = await infoRes.json();
                   const imgPage = Object.values(infoData.query?.pages || {})[0];
                   const info = imgPage?.imageinfo?.[0];
                   if (!info || info.width < 200 || info.height < 200) continue;
-                  const imgUrl = info.thumburl || info.url;
-                  console.log('[RefImage] ⬇️ Commons image:', imgUrl);
-                  if (await tryDownloadAndSet(imgUrl, 'Wikimedia Commons')) return;
+                  allCandidates.push({ url: info.thumburl || info.url, score: scoreImageName(result.title), source: 'commons', label: `Commons: ${result.title}` });
                 } catch { continue; }
               }
-            } catch (e) { console.log('[RefImage] ❌ Commons error:', e.message); }
+            } catch {}
           }
 
-          console.log('[RefImage] ⚠️ All strategies failed - no reference image found');
+          // ── PHASE 2: Deduplicate and download top candidates ──
+          const uniqueCandidates = [];
+          const seenUrls = new Set();
+          for (const c of allCandidates.sort((a, b) => b.score - a.score)) {
+            const urlKey = c.url.replace(/\/\d+px-/, '/X-');
+            if (!seenUrls.has(urlKey)) {
+              seenUrls.add(urlKey);
+              uniqueCandidates.push(c);
+            }
+          }
+
+          console.log(`[RefImage] 📊 Total: ${allCandidates.length}, unique: ${uniqueCandidates.length}`);
+          console.log('[RefImage] 📊 Top:', uniqueCandidates.slice(0, 8).map(c => `${c.label}(${c.score})`));
+
+          if (uniqueCandidates.length === 0) {
+            console.log('[RefImage] ⚠️ No candidates found');
+            return;
+          }
+
+          // Download top candidates (max 5 for Gemini verification)
+          const downloadedCandidates = [];
+          for (const candidate of uniqueCandidates.slice(0, 8)) {
+            try {
+              const imgResult = await fetchImageAsBase64(candidate.url);
+              if (imgResult) {
+                downloadedCandidates.push({ ...candidate, data: imgResult.data, mimeType: imgResult.mimeType });
+                console.log(`[RefImage] ⬇️ Downloaded: ${candidate.label} (${Math.round(imgResult.data.length / 1024)}KB)`);
+                if (downloadedCandidates.length >= 5) break;
+              }
+            } catch { continue; }
+          }
+
+          if (downloadedCandidates.length === 0) {
+            console.log('[RefImage] ⚠️ Failed to download any candidates');
+            return;
+          }
+
+          // ── PHASE 3: Gemini Visual Verification ──
+          if (downloadedCandidates.length >= 2) {
+            console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for verification...`);
+
+            const verifyParts = [
+              { text: `You are an image identification expert. I need to find the correct image of "${subject}"${contextPart ? ` from "${contextPart}"` : ''}.
+
+I have ${downloadedCandidates.length} candidate images below. Your job:
+1. Identify which image BEST depicts "${subject}" specifically (not a generic related image, not a different character/faction/item)
+2. The image should show the actual character/subject, not a map, logo, faction icon, or unrelated character
+
+Reply with ONLY a single number (1-${downloadedCandidates.length}) for the best match.
+If NONE of the images show "${subject}", reply with 0.` }
+            ];
+
+            for (let i = 0; i < downloadedCandidates.length; i++) {
+              verifyParts.push({ text: `\nImage ${i + 1}:` });
+              verifyParts.push({ inlineData: { mimeType: downloadedCandidates[i].mimeType, data: downloadedCandidates[i].data } });
+            }
+
+            try {
+              const verifyResponse = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{ parts: verifyParts }],
+                    generationConfig: { temperature: 0, maxOutputTokens: 10 }
+                  })
+                }
+              );
+
+              if (verifyResponse.ok) {
+                const verifyData = await verifyResponse.json();
+                const responseText = verifyData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+                const choice = parseInt(responseText);
+                console.log(`[RefImage] 🤖 Gemini chose: "${responseText}" → parsed: ${choice}`);
+
+                if (choice > 0 && choice <= downloadedCandidates.length) {
+                  const winner = downloadedCandidates[choice - 1];
+                  console.log(`[RefImage] ✅ Gemini verified: Image ${choice} — ${winner.label} (score:${winner.score})`);
+                  setResearchImageBase64(winner.data);
+                  setResearchImageMimeType(winner.mimeType);
+                  setResearchImageUrl(winner.url);
+                  return;
+                } else if (choice === 0) {
+                  console.log('[RefImage] ⚠️ Gemini says none match — using highest scored');
+                }
+              } else {
+                console.log('[RefImage] ⚠️ Gemini verification failed:', verifyResponse.status);
+              }
+            } catch (e) {
+              console.log('[RefImage] ❌ Gemini verification error:', e.message);
+            }
+          }
+
+          // Fallback: use the highest-scored downloaded candidate
+          const fallback = downloadedCandidates[0];
+          console.log(`[RefImage] 📌 Using fallback: ${fallback.label} (score:${fallback.score})`);
+          setResearchImageBase64(fallback.data);
+          setResearchImageMimeType(fallback.mimeType);
+          setResearchImageUrl(fallback.url);
+
         } catch (e) {
           console.log('[RefImage] ❌ Search failed:', e.message);
         }
