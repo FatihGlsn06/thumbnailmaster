@@ -1560,23 +1560,48 @@ YOU MUST search the web. Do NOT guess or make up information.`
         try {
           console.log('[RefImage] 🔍 Searching for reference image:', topic);
 
-          // Extract smart search terms from topic
-          // "WARHAMMER 3 TAUROX" → ["TAUROX", "WARHAMMER TAUROX", "WARHAMMER 3 TAUROX"]
-          // "Total war warhammer 3 : Taurox" → ["Taurox", "Total war warhammer 3 Taurox"]
+          // ── Subject Extraction ──
+          // "Total War Warhammer 3 : Taurox" → subject="Taurox", context="Total War Warhammer 3"
+          // "Elden Ring Malenia" → subject="Malenia", context="Elden Ring"
+          // "Minecraft" → subject="Minecraft", context=""
           const rawClean = topic.replace(/[:\-–—|]/g, ' ').replace(/\s+/g, ' ').trim();
-          const searchTerms = [];
-          // Part after separator is usually the specific subject
           const separatorMatch = topic.match(/[:|\-–—]\s*(.+)/);
-          if (separatorMatch) searchTerms.push(separatorMatch[1].trim());
-          // Last meaningful word(s) — likely the character name (TAUROX, Malenia, etc.)
-          const words = rawClean.split(' ').filter(w => w.length > 2);
-          if (words.length >= 2) {
-            searchTerms.push(words[words.length - 1]); // "TAUROX"
-            if (words.length >= 3) searchTerms.push(words.slice(-2).join(' ')); // "3 TAUROX" → skip if has number
+          const contextMatch = topic.match(/^(.+?)[\s]*[:|\-–—]/);
+
+          // Subject is the specific thing (after separator, or last meaningful words)
+          let subject = '';
+          let contextPart = '';
+          if (separatorMatch) {
+            subject = separatorMatch[1].trim();
+            contextPart = contextMatch ? contextMatch[1].trim() : '';
+          } else {
+            const words = rawClean.split(' ').filter(w => w.length > 2 && !/^\d+$/.test(w));
+            // Common game/franchise prefixes to skip when extracting subject
+            const franchiseWords = new Set(['total', 'war', 'warhammer', 'elden', 'ring', 'dark', 'souls', 'league', 'legends', 'call', 'duty', 'grand', 'theft', 'auto', 'world', 'warcraft', 'monster', 'hunter', 'final', 'fantasy', 'resident', 'evil', 'assassins', 'creed', 'god', 'breath', 'wild', 'tears', 'kingdom', 'counter', 'strike', 'red', 'dead', 'horizon', 'tomb', 'raider', 'age', 'empires']);
+            // Find where franchise name ends and subject begins
+            let subjectStartIdx = 0;
+            for (let i = 0; i < words.length; i++) {
+              if (franchiseWords.has(words[i].toLowerCase()) || /^\d+$/.test(words[i]) || /^(i{1,3}|iv|v|vi{0,3})$/i.test(words[i])) {
+                subjectStartIdx = i + 1;
+              } else {
+                break;
+              }
+            }
+            if (subjectStartIdx > 0 && subjectStartIdx < words.length) {
+              subject = words.slice(subjectStartIdx).join(' ');
+              contextPart = words.slice(0, subjectStartIdx).join(' ');
+            } else {
+              subject = words[words.length - 1] || rawClean;
+              contextPart = words.slice(0, -1).join(' ');
+            }
           }
-          // Full topic
+
+          // Build search terms: most specific first
+          const searchTerms = [];
+          if (subject) searchTerms.push(subject);
+          if (contextPart && subject) searchTerms.push(`${subject} ${contextPart}`);
           searchTerms.push(rawClean);
-          // Deduplicate case-insensitive
+          // Deduplicate
           const seen = new Set();
           const uniqueTerms = searchTerms.filter(t => {
             const key = t.toLowerCase().trim();
@@ -1584,11 +1609,45 @@ YOU MUST search the web. Do NOT guess or make up information.`
             seen.add(key);
             return true;
           });
-          console.log('[RefImage] 🔤 Search terms:', uniqueTerms);
 
-          // Helper: try to get an image from a Fandom wiki page (3 methods)
+          // Subject keywords for image scoring
+          const subjectWords = subject.toLowerCase().split(/[\s_\-]+/).filter(w => w.length > 2);
+          console.log('[RefImage] 🎯 Subject:', subject, '| Context:', contextPart, '| Terms:', uniqueTerms, '| Keywords:', subjectWords);
+
+          // ── Image Relevance Scoring ──
+          const scoreImageName = (filename) => {
+            const lower = filename.toLowerCase().replace(/[_\-]/g, ' ');
+            let score = 0;
+
+            // Full subject match in filename (strongest signal)
+            if (lower.includes(subject.toLowerCase())) score += 100;
+
+            // Individual subject word matches
+            for (const word of subjectWords) {
+              if (lower.includes(word)) score += 40;
+            }
+
+            // Positive indicators: character art, portrait, render
+            if (/portrait|render|artwork|character|model|splash|promo|official|full|key[\s_]?art/i.test(filename)) score += 25;
+            if (/infobox|main|primary|profile/i.test(filename)) score += 20;
+
+            // Slightly negative: generic images less likely to show subject
+            if (/screenshot|map|loading|concept|wallpaper|roster|campaign|menu|logo|background|trailer/i.test(filename)) score -= 15;
+            // Very negative: clearly wrong content
+            if (/icon|badge|flag|symbol|arrow|nav|button|header|footer|placeholder|banner/i.test(filename)) score -= 50;
+
+            // Size/format preference
+            if (/\.svg$/i.test(filename)) score -= 100; // SVGs are usually icons
+            if (/\.gif$/i.test(filename)) score -= 30;  // GIFs are usually animations/small
+
+            return score;
+          };
+
+          // ── Smart tryFandomImage with scoring ──
           const tryFandomImage = async (wiki, pageTitle) => {
-            // Method 1: pageimages API (fastest)
+            const candidates = []; // { url, score, source }
+
+            // Method 1: pageimages API (page thumbnail — usually the main character image)
             try {
               const res = await fetch(
                 `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
@@ -1598,18 +1657,17 @@ YOU MUST search the web. Do NOT guess or make up information.`
                 const data = await res.json();
                 const page = Object.values(data.query?.pages || {})[0];
                 if (page?.thumbnail?.source) {
-                  console.log(`[RefImage] 🖼️ pageimages hit: ${wiki}/${pageTitle} →`, page.thumbnail.source);
-                  return page.thumbnail.source;
+                  const pageImageName = page?.pageimage || '';
+                  const score = scoreImageName(pageImageName) + 10; // +10 bonus for being page thumbnail
+                  console.log(`[RefImage] 🖼️ pageimages: ${wiki}/${pageTitle} → score:${score}`, page.thumbnail.source.substring(0, 80));
+                  candidates.push({ url: page.thumbnail.source, score, source: 'pageimage' });
                 }
-                console.log(`[RefImage] ℹ️ pageimages empty for ${wiki}/${pageTitle}`);
-              } else {
-                console.log(`[RefImage] ⚠️ pageimages ${res.status} for ${wiki}/${pageTitle}`);
               }
             } catch (e) {
               console.log(`[RefImage] ❌ pageimages error ${wiki}/${pageTitle}:`, e.message);
             }
 
-            // Method 2: action=parse → get all images used in the page (most reliable)
+            // Method 2: action=parse → all images on the page (score and rank them)
             try {
               const res = await fetch(
                 `https://${wiki}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images&format=json&origin=*`,
@@ -1618,57 +1676,21 @@ YOU MUST search the web. Do NOT guess or make up information.`
               if (res.ok) {
                 const data = await res.json();
                 const images = data.parse?.images || [];
-                console.log(`[RefImage] 📷 parse/images ${wiki}/${pageTitle}: ${images.length} files:`, images.slice(0, 5));
-                // Filter out icons, logos, UI elements
-                const skip = ['icon', 'logo', 'button', 'banner', 'badge', 'flag', 'arrow', 'nav', 'wiki', '.svg', '.gif', 'placeholder', 'symbol', 'header', 'footer'];
-                const goodImages = images.filter(name => {
-                  const lower = name.toLowerCase();
-                  return !skip.some(s => lower.includes(s));
-                });
-                console.log(`[RefImage] 📷 ${goodImages.length} good images after filter`);
 
-                for (const fileName of goodImages.slice(0, 3)) {
+                // Score all images and sort
+                const scored = images
+                  .map(name => ({ name, score: scoreImageName(name) }))
+                  .filter(i => i.score > -50) // Remove definite junk
+                  .sort((a, b) => b.score - a.score);
+
+                console.log(`[RefImage] 📷 parse/images ${wiki}/${pageTitle}: ${images.length} total, top scored:`,
+                  scored.slice(0, 5).map(s => `${s.name}(${s.score})`));
+
+                // Try top 5 scored images
+                for (const { name: fileName, score: nameScore } of scored.slice(0, 5)) {
                   try {
                     const infoRes = await fetch(
                       `https://${wiki}.fandom.com/api.php?action=query&titles=File:${encodeURIComponent(fileName)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
-                      { signal: AbortSignal.timeout(8000) }
-                    );
-                    if (!infoRes.ok) { console.log(`[RefImage] ⚠️ imageinfo ${infoRes.status} for ${fileName}`); continue; }
-                    const infoData = await infoRes.json();
-                    const imgPage = Object.values(infoData.query?.pages || {})[0];
-                    const info = imgPage?.imageinfo?.[0];
-                    if (!info) { console.log(`[RefImage] ⚠️ no imageinfo for ${fileName}`); continue; }
-                    if (info.width < 150 || info.height < 150) { console.log(`[RefImage] ⚠️ too small: ${fileName} ${info.width}x${info.height}`); continue; }
-                    const imgUrl = info.thumburl || info.url;
-                    console.log(`[RefImage] 🖼️ parse/imageinfo hit: ${fileName} → ${imgUrl}`);
-                    return imgUrl;
-                  } catch (e) { console.log(`[RefImage] ❌ imageinfo error ${fileName}:`, e.message); }
-                }
-              } else {
-                console.log(`[RefImage] ⚠️ parse ${res.status} for ${wiki}/${pageTitle}`);
-              }
-            } catch (e) {
-              console.log(`[RefImage] ❌ parse error ${wiki}/${pageTitle}:`, e.message);
-            }
-
-            // Method 3: prop=images list (fallback)
-            try {
-              const res = await fetch(
-                `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=images&format=json&imlimit=10&origin=*`,
-                { signal: AbortSignal.timeout(8000) }
-              );
-              if (res.ok) {
-                const data = await res.json();
-                const page = Object.values(data.query?.pages || {})[0];
-                const images = page?.images || [];
-                const skip = ['icon', 'logo', 'button', 'banner', 'badge', 'flag', 'arrow', 'nav', 'wiki', '.svg', '.gif', 'placeholder', 'symbol'];
-                const goodImages = images.filter(img => !skip.some(s => img.title.toLowerCase().includes(s)));
-                console.log(`[RefImage] 📋 prop=images ${wiki}/${pageTitle}: ${images.length} total, ${goodImages.length} good`);
-
-                for (const img of goodImages.slice(0, 3)) {
-                  try {
-                    const infoRes = await fetch(
-                      `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(img.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
                       { signal: AbortSignal.timeout(8000) }
                     );
                     if (!infoRes.ok) continue;
@@ -1677,47 +1699,120 @@ YOU MUST search the web. Do NOT guess or make up information.`
                     const info = imgPage?.imageinfo?.[0];
                     if (!info || info.width < 150 || info.height < 150) continue;
                     const imgUrl = info.thumburl || info.url;
-                    console.log(`[RefImage] 🖼️ prop=images hit: ${img.title} → ${imgUrl}`);
-                    return imgUrl;
+                    // Bonus for larger images (likely character art, not small icons)
+                    const sizeBonus = Math.min(20, Math.floor(Math.min(info.width, info.height) / 100) * 3);
+                    const totalScore = nameScore + sizeBonus;
+                    console.log(`[RefImage] 📷 candidate: ${fileName} → score:${totalScore} (name:${nameScore} size:${sizeBonus}) ${info.width}x${info.height}`);
+                    candidates.push({ url: imgUrl, score: totalScore, source: 'parse' });
+
+                    // If we found a high-confidence match, no need to check more
+                    if (totalScore >= 100) break;
                   } catch { continue; }
                 }
               }
             } catch (e) {
-              console.log(`[RefImage] ❌ prop=images error ${wiki}/${pageTitle}:`, e.message);
+              console.log(`[RefImage] ❌ parse error ${wiki}/${pageTitle}:`, e.message);
+            }
+
+            // Method 3: prop=images list (fallback, also scored)
+            if (candidates.length === 0 || candidates.every(c => c.score < 50)) {
+              try {
+                const res = await fetch(
+                  `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=images&format=json&imlimit=15&origin=*`,
+                  { signal: AbortSignal.timeout(8000) }
+                );
+                if (res.ok) {
+                  const data = await res.json();
+                  const page = Object.values(data.query?.pages || {})[0];
+                  const images = page?.images || [];
+
+                  const scored = images
+                    .map(img => ({ title: img.title, score: scoreImageName(img.title) }))
+                    .filter(i => i.score > -50)
+                    .sort((a, b) => b.score - a.score);
+
+                  console.log(`[RefImage] 📋 prop=images ${wiki}/${pageTitle}: ${images.length} total, top:`,
+                    scored.slice(0, 5).map(s => `${s.title.replace('File:', '')}(${s.score})`));
+
+                  for (const { title, score: nameScore } of scored.slice(0, 3)) {
+                    try {
+                      const infoRes = await fetch(
+                        `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
+                        { signal: AbortSignal.timeout(8000) }
+                      );
+                      if (!infoRes.ok) continue;
+                      const infoData = await infoRes.json();
+                      const imgPage = Object.values(infoData.query?.pages || {})[0];
+                      const info = imgPage?.imageinfo?.[0];
+                      if (!info || info.width < 150 || info.height < 150) continue;
+                      const imgUrl = info.thumburl || info.url;
+                      const sizeBonus = Math.min(20, Math.floor(Math.min(info.width, info.height) / 100) * 3);
+                      candidates.push({ url: imgUrl, score: nameScore + sizeBonus, source: 'prop-images' });
+                      if (nameScore + sizeBonus >= 100) break;
+                    } catch { continue; }
+                  }
+                }
+              } catch (e) {
+                console.log(`[RefImage] ❌ prop=images error ${wiki}/${pageTitle}:`, e.message);
+              }
+            }
+
+            // Return best candidate
+            if (candidates.length > 0) {
+              candidates.sort((a, b) => b.score - a.score);
+              const best = candidates[0];
+              console.log(`[RefImage] 🏆 Best candidate for ${wiki}/${pageTitle}: score:${best.score} source:${best.source} →`, best.url.substring(0, 80));
+              return best.url;
             }
 
             console.log(`[RefImage] 🚫 No image found for ${wiki}/${pageTitle}`);
             return null;
           };
 
-          // Strategy 1: Fandom pages directly from grounding metadata
+          // ── Helper: try to download and set image ──
+          const tryDownloadAndSet = async (imgUrl, label) => {
+            const imgResult = await fetchImageAsBase64(imgUrl);
+            if (imgResult) {
+              console.log(`[RefImage] ✅ ${label} success! Size:`, Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
+              setResearchImageBase64(imgResult.data);
+              setResearchImageMimeType(imgResult.mimeType);
+              setResearchImageUrl(imgUrl);
+              return true;
+            }
+            return false;
+          };
+
+          // ── Strategy 1: Fandom pages from grounding — but prioritize subject-matching pages ──
           const fandomPages = groundingChunks
             .filter(c => c.web?.uri?.includes('fandom.com/wiki/'))
             .map(c => {
               const match = c.web.uri.match(/https?:\/\/([^.]+)\.fandom\.com\/wiki\/([^?#]+)/);
-              return match ? { wiki: match[1], page: decodeURIComponent(match[2].replace(/_/g, ' ')) } : null;
+              if (!match) return null;
+              const pageName = decodeURIComponent(match[2].replace(/_/g, ' '));
+              // Score page by how well its title matches the subject
+              const pageNameLower = pageName.toLowerCase();
+              let pageScore = 0;
+              if (pageNameLower === subject.toLowerCase()) pageScore = 100; // Exact match
+              else if (pageNameLower.includes(subject.toLowerCase())) pageScore = 80;
+              else {
+                for (const w of subjectWords) {
+                  if (pageNameLower.includes(w)) pageScore += 30;
+                }
+              }
+              return { wiki: match[1], page: pageName, score: pageScore };
             })
-            .filter(Boolean);
-          console.log('[RefImage] 📚 Fandom pages from grounding:', fandomPages.map(f => `${f.wiki}/${f.page}`));
+            .filter(Boolean)
+            .sort((a, b) => b.score - a.score); // Best matching pages first
+
+          console.log('[RefImage] 📚 Fandom pages from grounding (sorted):', fandomPages.map(f => `${f.wiki}/${f.page}(${f.score})`));
 
           for (const { wiki, page } of fandomPages) {
             console.log(`[RefImage] 🔗 Trying Fandom grounding: ${wiki} → "${page}"`);
             const imgUrl = await tryFandomImage(wiki, page);
-            if (imgUrl) {
-              console.log('[RefImage] ⬇️ Fandom image URL:', imgUrl);
-              const imgResult = await fetchImageAsBase64(imgUrl);
-              if (imgResult) {
-                console.log(`[RefImage] ✅ Fandom grounding (${wiki}) success! Size:`, Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
-                setResearchImageBase64(imgResult.data);
-                setResearchImageMimeType(imgResult.mimeType);
-                setResearchImageUrl(imgUrl);
-                return;
-              }
-            }
+            if (imgUrl && await tryDownloadAndSet(imgUrl, `Fandom grounding (${wiki})`)) return;
           }
 
-          // Strategy 2: Fandom search API (always runs)
-          // First: detect wikis directly from topic keywords (most reliable)
+          // ── Strategy 2: Fandom search API ──
           const topicLower = topic.toLowerCase();
           const topicWikiMap = [
             { patterns: ['total war'], wikis: ['totalwar'] },
@@ -1762,14 +1857,12 @@ YOU MUST search the web. Do NOT guess or make up information.`
             { patterns: ['starcraft'], wikis: ['starcraft'] },
             { patterns: ['tomb raider'], wikis: ['tombraider'] },
           ];
-          // Find wikis matching topic keywords
           const matchedWikis = [];
           for (const entry of topicWikiMap) {
             if (entry.patterns.some(p => topicLower.includes(p))) {
               matchedWikis.push(...entry.wikis);
             }
           }
-          // Fallback: category-based wikis
           const categoryWikis = {
             gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher', 'callofduty', 'fortnite', 'minecraft', 'genshin-impact', 'zelda'],
             food: ['recipes'],
@@ -1777,40 +1870,47 @@ YOU MUST search the web. Do NOT guess or make up information.`
             historical: ['assassinscreed', 'civilization'],
           };
           const fallbackWikis = categoryWikis[category?.id] || [];
-          // Combine: topic-matched first, then category fallback (deduplicated)
           const wikis = [...new Set([...matchedWikis, ...fallbackWikis])];
-          console.log('[RefImage] 🎮 Wikis to search:', wikis, '(matched:', matchedWikis.length, 'category:', category?.id, ')');
+          console.log('[RefImage] 🎮 Wikis to search:', wikis, '(matched:', matchedWikis.length, ')');
 
+          // Search with SUBJECT first (most specific), then full topic
           for (const wiki of wikis.slice(0, 5)) {
             for (const term of uniqueTerms) {
               try {
                 console.log(`[RefImage] 🔍 Fandom search: ${wiki} → "${term}"`);
                 const res = await fetch(
-                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&format=json&srlimit=3&origin=*`,
+                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&format=json&srlimit=5&origin=*`,
                   { signal: AbortSignal.timeout(8000) }
                 );
                 if (!res.ok) continue;
                 const data = await res.json();
                 const results = data.query?.search || [];
-                for (const result of results) {
-                  console.log(`[RefImage] 📄 Found page: "${result.title}" on ${wiki}`);
-                  const imgUrl = await tryFandomImage(wiki, result.title);
-                  if (imgUrl) {
-                    const imgResult = await fetchImageAsBase64(imgUrl);
-                    if (imgResult) {
-                      console.log(`[RefImage] ✅ Fandom search (${wiki}) success! Size:`, Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
-                      setResearchImageBase64(imgResult.data);
-                      setResearchImageMimeType(imgResult.mimeType);
-                      setResearchImageUrl(imgUrl);
-                      return;
+
+                // Sort results: pages whose title matches the subject come first
+                const scoredResults = results.map(r => {
+                  const titleLower = r.title.toLowerCase();
+                  let score = 0;
+                  if (titleLower === subject.toLowerCase()) score = 100;
+                  else if (titleLower.includes(subject.toLowerCase())) score = 70;
+                  else {
+                    for (const w of subjectWords) {
+                      if (titleLower.includes(w)) score += 25;
                     }
                   }
+                  return { ...r, relevance: score };
+                }).sort((a, b) => b.relevance - a.relevance);
+
+                console.log(`[RefImage] 📄 Results (sorted):`, scoredResults.map(r => `"${r.title}"(${r.relevance})`));
+
+                for (const result of scoredResults) {
+                  const imgUrl = await tryFandomImage(wiki, result.title);
+                  if (imgUrl && await tryDownloadAndSet(imgUrl, `Fandom search ${wiki}/${result.title}`)) return;
                 }
-              } catch (e) { continue; }
+              } catch { continue; }
             }
           }
 
-          // Strategy 3: Wikipedia REST API (CORS-enabled)
+          // ── Strategy 3: Wikipedia (scored page selection) ──
           for (const term of uniqueTerms) {
             try {
               console.log('[RefImage] 🔗 Wikipedia summary:', term);
@@ -1823,20 +1923,13 @@ YOU MUST search the web. Do NOT guess or make up information.`
                 if (wikiData.thumbnail?.source) {
                   const highRes = wikiData.thumbnail.source.replace(/\/\d+px-/, '/800px-');
                   console.log('[RefImage] ⬇️ Wikipedia image:', highRes);
-                  const imgResult = await fetchImageAsBase64(highRes);
-                  if (imgResult) {
-                    console.log('[RefImage] ✅ Wikipedia success! Size:', Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
-                    setResearchImageBase64(imgResult.data);
-                    setResearchImageMimeType(imgResult.mimeType);
-                    setResearchImageUrl(highRes);
-                    return;
-                  }
+                  if (await tryDownloadAndSet(highRes, 'Wikipedia')) return;
                 }
               }
             } catch (e) { console.log('[RefImage] ❌ Wikipedia error:', e.message); }
           }
 
-          // Strategy 4: Wikimedia Commons search (always CORS-enabled, huge image library)
+          // ── Strategy 4: Wikimedia Commons (scored) ──
           for (const term of uniqueTerms) {
             try {
               const commonsQuery = `${term} ${category?.id === 'gaming' ? 'game' : ''}`.trim();
@@ -1848,8 +1941,15 @@ YOU MUST search the web. Do NOT guess or make up information.`
               if (!res.ok) continue;
               const data = await res.json();
               const results = data.query?.search || [];
-              console.log('[RefImage] 🌐 Commons results:', results.length, results.map(r => r.title).slice(0, 3));
-              for (const result of results) {
+
+              // Score commons results by title relevance
+              const scoredResults = results
+                .map(r => ({ ...r, relevance: scoreImageName(r.title) }))
+                .sort((a, b) => b.relevance - a.relevance);
+
+              console.log('[RefImage] 🌐 Commons results (sorted):', scoredResults.map(r => `${r.title}(${r.relevance})`).slice(0, 3));
+
+              for (const result of scoredResults) {
                 try {
                   const infoRes = await fetch(
                     `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(result.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
@@ -1862,14 +1962,7 @@ YOU MUST search the web. Do NOT guess or make up information.`
                   if (!info || info.width < 200 || info.height < 200) continue;
                   const imgUrl = info.thumburl || info.url;
                   console.log('[RefImage] ⬇️ Commons image:', imgUrl);
-                  const imgResult = await fetchImageAsBase64(imgUrl);
-                  if (imgResult) {
-                    console.log('[RefImage] ✅ Wikimedia Commons success! Size:', Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
-                    setResearchImageBase64(imgResult.data);
-                    setResearchImageMimeType(imgResult.mimeType);
-                    setResearchImageUrl(imgUrl);
-                    return;
-                  }
+                  if (await tryDownloadAndSet(imgUrl, 'Wikimedia Commons')) return;
                 } catch { continue; }
               }
             } catch (e) { console.log('[RefImage] ❌ Commons error:', e.message); }
