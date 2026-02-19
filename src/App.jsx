@@ -2339,6 +2339,10 @@ DO NOT fall back to your training data's generic version. The text descriptions 
 ` });
       }
 
+      // Log total prompt size for debugging
+      const totalTextSize = promptParts.filter(p => p.text).reduce((sum, p) => sum + p.text.length, 0);
+      console.log(`📝 Generation prompt total text size: ${totalTextSize} chars (${promptParts.length} parts)`);
+
       const payload = {
         contents: [{
           parts: promptParts
@@ -2365,22 +2369,21 @@ DO NOT fall back to your training data's generic version. The text descriptions 
         }
       );
 
-      const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-      const textResponse = result.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
+      let generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
 
-      if (generatedBase64) {
-        setResultImage(`data:image/png;base64,${generatedBase64}`);
-        incrementDailyUsage(); // Günlük kullanım sayacını artır
-      } else if (textResponse.includes('not available') || textResponse.includes('not cached')) {
-        // Gemini sometimes returns "content not available resource was not cached"
-        // This means the image generation failed internally - retry with simpler prompt
-        console.warn('Gemini image generation returned cache error, retrying with simplified prompt...');
+      // If no image was generated (cache error, safety block, oversized prompt, etc.),
+      // ALWAYS retry with a simplified prompt
+      if (!generatedBase64) {
+        const textResponse = result.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
+        const finishReason = result.candidates?.[0]?.finishReason || 'UNKNOWN';
+        console.warn(`Image generation failed (finishReason: ${finishReason}, text: "${textResponse.substring(0, 100)}"). Retrying with simplified prompt...`);
+
         const retryParts = [
           { text: `Create a HORIZONTAL LANDSCAPE YouTube thumbnail (1280x720, 16:9) for "${topic}".
 ${topicDescription ? `Context: ${topicDescription}` : ''}
 Style: Cinematic, dramatic lighting, depth with foreground-midground-background layers.
 ${overlayText ? `Text on image: "${overlayText}" in bold, large, readable font.` : 'NO text on the image.'}
-${base64Image ? 'Include the person from the uploaded photo in the scene.' : 'No human person in the scene.'}` }
+${base64Image ? 'Include the person from the uploaded photo in the scene, matching the theme.' : 'No human person in the scene - focus on environment and objects.'}` }
         ];
         if (base64Image) {
           retryParts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
@@ -2404,15 +2407,14 @@ ${base64Image ? 'Include the person from the uploaded photo in the scene.' : 'No
           }
         );
 
-        const retryBase64 = retryResult.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-        if (retryBase64) {
-          setResultImage(`data:image/png;base64,${retryBase64}`);
-          incrementDailyUsage();
-        } else {
-          throw new Error('Görsel üretimi başarısız oldu. Lütfen tekrar deneyin veya farklı bir konu/model seçin.');
-        }
+        generatedBase64 = retryResult.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+      }
+
+      if (generatedBase64) {
+        setResultImage(`data:image/png;base64,${generatedBase64}`);
+        incrementDailyUsage();
       } else {
-        throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
+        throw new Error('Görsel üretimi başarısız oldu. Lütfen tekrar deneyin veya farklı bir model seçin.');
       }
     } catch (err) {
       setError(err.message || t('unknownError'));
