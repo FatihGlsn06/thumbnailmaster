@@ -1009,8 +1009,7 @@ const App = () => {
   const [selectedModel, setSelectedModel] = useState('gemini-3-pro-image-preview');
   const availableModels = [
     { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
-    { id: 'gemini-2.0-flash-exp', name: t('modelGemini2Name'), desc: t('modelGemini2Desc') },
-    { id: 'gemini-2.0-flash', name: t('modelGemini2StableName'), desc: t('modelGemini2StableDesc') },
+    { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: 'Hızlı ve ekonomik görsel üretim' },
   ];
 
   // Concept/Reference image states
@@ -1939,194 +1938,41 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
       // Smart content detection for parameter tuning
       const contentCategory = detectedCategory || detectContentCategory(topic, topicDescription);
 
-      const prompt = `You are a world-class YouTube thumbnail designer with expertise in ${contentCategory.id === 'gaming' ? 'gaming and entertainment' : contentCategory.id === 'food' ? 'food photography and culinary content' : contentCategory.id === 'travel' ? 'travel and landscape photography' : contentCategory.id === 'tech' ? 'technology and product showcase' : contentCategory.id === 'music' ? 'music and performance visuals' : contentCategory.id === 'fitness' ? 'fitness and motivational content' : contentCategory.id === 'education' ? 'educational and professional content' : 'YouTube content creation'}. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      const prompt = `Create a cinematic YouTube thumbnail for "${topic}".
+${topicDescription ? `Context: ${topicDescription}` : ''}
 
-⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
-- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
-- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
-- ❌ NEVER create vertical/portrait images
-- ❌ NEVER create square images
-- ✅ ONLY create WIDE horizontal images like a movie poster or YouTube thumbnail
-- If you generate a portrait image, the task has FAILED
-
-${topicDescription ? `
-TOPIC/CONCEPT CONTEXT (IMPORTANT - USE THIS INFO):
-The user has provided the following description about "${topic}":
-${topicDescription}
-
-Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
-` : ''}
-
-${topicResearch ? `
-📋 EXPERT RESEARCH & VISUAL DIRECTION (VERY IMPORTANT - FOLLOW THIS):
-A visual design expert has researched "${topic}" and provided the following detailed information.
-YOU MUST USE THIS INFORMATION to create an authentic, visually accurate thumbnail:
-
+${topicResearch ? `VISUAL RESEARCH (follow this closely):
 ${topicResearch}
 
-⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
-This is not generic - it's specific to "${topic}" and must look authentic to fans/followers of this content.
-
-🎬 SCENE DIRECTION (CRITICAL - FOLLOW EXACTLY):
-The research above contains a "READY-TO-USE SCENE DIRECTION" section.
-If present, this is the MOST IMPORTANT part to follow:
-
-- **SCENE_DESCRIPTION**: Use this EXACT description for the background/environment. Do NOT substitute your own idea!
-- **COLOR_PALETTE**: Use these exact colors for the scene.
-- **PERSON_COSTUME**: Dress the person in THIS specific outfit.
-- **CAMERA_ANGLE / CAMERA_POSITION**: Follow for viewing angle and composition.
-- **KEY_EFFECTS**: Apply these visual effects.
-- **ATTACKER/DEFENDER_DESCRIPTION**: If present, follow for armies/factions.
-- **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance.
-
-For GAME/FRANCHISE content (CRITICAL):
-- **CHARACTER_VISUAL**: Follow EVERY detail about the game character's appearance.
-- **FACTION_ELEMENTS**: Include faction-specific symbols, banners, colors.
-- **GAME_IDENTITY**: Use the game's actual art style and signature visual motifs.
-- The character must be RECOGNIZABLE to fans of this game. Generic fantasy/sci-fi is NOT acceptable.
-
-- **THUMBNAIL_COMPOSITION**: If present, follow this EXACTLY for how to arrange person + game character.
-- ⚠️ If CHARACTER_TYPE says "non-human" or "monster":
-  * The GAME CREATURE must be the BIG dominant element (background/center, 50-70% of frame)
-  * Draw the creature with its EXACT anatomy from CHARACTER_VISUAL (bipedal minotaur ≠ regular bull!)
-  * DO NOT dress the uploaded person AS the creature. Person stays human.
-  * Person appears SMALLER in a corner, reacting to the creature (awe, fear, excitement)
-  * ⚠️ DO NOT use simple animal words like "bull", "dragon", "wolf" - use the FULL anatomical description
-- ⚠️ If CHARACTER_TYPE says "human":
-  * You CAN dress the person as that character (face unchanged, body gets character's outfit)
-
-For HISTORICAL scenes: Do NOT use modern city names (e.g., "Istanbul" draws modern city).
-Build the scene from architectural descriptions only.
-For Ottoman scenes: Use DARK CRIMSON banner + GOLDEN crescent + GOLDEN 8-pointed star (NOT modern Turkish flag).
+Follow the SCENE DIRECTION sections above precisely:
+- Use SCENE_DESCRIPTION for background, COLOR_PALETTE for colors, CHARACTER_VISUAL for character details.
+- If CHARACTER_TYPE is "non-human": Draw the creature as the DOMINANT element (50-70% of frame) using its FULL anatomical description. Never simplify to animal names (e.g. "bipedal Minotaur with brass plates" not just "bull"). If a person photo is uploaded, place them smaller in a corner reacting to the creature.
+- If CHARACTER_TYPE is "human": Dress the uploaded person in the character's exact armor/outfit.
+- For historical content: Describe architecture directly, avoid modern city names. Use period-accurate banners and symbols.
 ` : ''}
-
-${conceptAnalysis ? `
-🎨🎨🎨 REFERENCE IMAGE STYLE (CRITICAL - YOU MUST MATCH THIS STYLE):
-The user has provided a REFERENCE/CONCEPT image that you can SEE in the attached images.
-Your generated thumbnail MUST closely match the visual style of this reference.
-
-AI Analysis of the reference image:
+${conceptAnalysis ? `REFERENCE STYLE (match this exactly):
 ${conceptAnalysis}
-
-⚠️ MANDATORY STYLE MATCHING RULES:
-1. MATCH the color palette of the reference image EXACTLY
-2. MATCH the lighting style and direction
-3. MATCH the composition approach and element placement
-4. MATCH the overall atmosphere, mood, and energy level
-5. MATCH any special effects (glow, particles, gradients, etc.)
-6. If the reference has text, MATCH that text style for overlay text
-7. The reference image is attached - LOOK AT IT and replicate its visual DNA
-
-The reference image defines the TARGET STYLE. Your output should look like it belongs to the SAME series/channel as the reference.
-If a person photo is also provided, include that person but in the STYLE of the reference.
+The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
-
-${photoAnalysis ? `
-👤 IMAGE ANALYSIS:
-${photoAnalysis}
-
-Use this analysis to understand what the uploaded image contains and integrate it properly into the thumbnail.
+${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
-
-${selectedArchetype ? `
-🎯 HIGH-CTR ARCHETYPE (IMPORTANT - USE THIS PATTERN):
-${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
-This archetype is proven to increase click-through rates. Apply this pattern to the thumbnail composition.
+${selectedArchetype ? `COMPOSITION PATTERN: ${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
 ` : ''}
-
-${base64Image ? `⚠️ CRITICAL - UPLOADED IMAGE INTEGRATION:
-The user has uploaded an image. First determine what it contains:
-
-IF THE IMAGE CONTAINS A PERSON/FACE:
-- SEAMLESSLY BLEND the person into the scene with matching lighting and color grading
-- Add dramatic colored rim lighting/glow on the person (green, red, blue, orange based on theme)
-- The person should look like they BELONG in this world
-- Face and facial features must remain unchanged
-- The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
-- Leave adequate space above the head (headroom)
-
-- FOR GAME CONTENT - Check CHARACTER_TYPE in the research:
-  * If CHARACTER_TYPE is "non-human" or "monster" (creature, minotaur, dragon, demon, robot etc.):
-    → DO NOT dress the person as the creature! Person stays HUMAN with their own face.
-    → Person should be SMALLER (25-35% of frame), positioned in bottom-left or bottom-right corner
-    → The GAME CREATURE is the MAIN visual (50-70% of frame), drawn from CHARACTER_VISUAL description
-    → Person reacts to the creature: looking up at it in awe, fear, or excitement
-    → Draw the creature with EXACT anatomy from research (e.g. bipedal minotaur ≠ regular bull on four legs!)
-  * If CHARACTER_TYPE is "human":
-    → Person face takes 40-50% of frame HEIGHT, CENTERED
-    → TRANSFORM clothing to match the character's EXACT armor/outfit from CHARACTER_VISUAL
-    → Person looks like they ARE that game character (their face + character's body/armor)
-
-- FOR NON-GAME CONTENT (default):
-  → THE FACE MUST BE BIG: 40-50% of frame HEIGHT, CENTERED or slightly below center
-  → The face is the MAIN FOCAL POINT
-  → TRANSFORM clothing to match the scene's theme
-  → Show from chest-up or shoulders-up so the face is LARGE
-
-IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
-- Use the image as a REFERENCE or BASE for the thumbnail composition
-- Integrate the visual elements, colors, and style from the image into the thumbnail
-- The uploaded image content should be the PRIMARY VISUAL ELEMENT of the thumbnail
-- Enhance it with professional lighting, color grading, and atmospheric effects
-- Add dramatic visual elements that make it thumbnail-worthy (glow, contrast, depth)
-- You may rearrange or enhance elements but keep the subject matter recognizable
-` : `⚠️ NO REFERENCE IMAGE PROVIDED - CREATE FROM SCRATCH:
-Create a thumbnail purely from the topic description. Design original visuals that represent "${topic}" in the most compelling way.
-- Create an eye-catching, professional composition for a YouTube thumbnail
-- Use dramatic lighting, vibrant colors, and cinematic atmosphere
-- The thumbnail must look like a real YouTube thumbnail, not generic AI art
-- Include relevant visual elements that represent the topic
-- Make the composition compelling enough to make viewers want to click
-- For GAME content: If CHARACTER_VISUAL is in the research, draw that character with EXACT visual details.
-  * For non-human characters: Draw the creature with EXACT anatomy (bipedal minotaur ≠ regular bull!). Use the full anatomical description, NOT simple animal names. The creature should be the DOMINANT element.
-  * For human characters: Draw the character with exact armor, weapons, colors, symbols. Must be recognizable to fans.
-  * Follow THUMBNAIL_COMPOSITION from research for layout.
+${base64Image ? `PERSON PHOTO UPLOADED:
+- Blend the person seamlessly into the scene with matching lighting and dramatic rim glow.
+- Face must remain unchanged, fully visible, never cropped. Leave headroom above.
+- For non-game content: Face should be large (40-50% of frame height), centered.
+- For game content with non-human CHARACTER_TYPE: Person stays human, appears smaller in corner reacting to the game creature.
+- For game content with human CHARACTER_TYPE: Transform clothing to match the character's exact armor/outfit from research.
+` : `No person photo provided. Create a compelling scene from scratch based on the topic.
+${topicResearch ? 'Follow CHARACTER_VISUAL and THUMBNAIL_COMPOSITION from research for character appearance and layout.' : ''}
 `}
-
-${overlayText ? `
-TEXT OVERLAY: "${overlayText}"
-- Place text at the BOTTOM of the image (bottom 20-25% of frame)
-- Text must be VERY LARGE and BOLD - easily readable at small sizes
-- Use thick black stroke/outline (3-5px) for readability
-- Add strong glow effect in the scene's dominant color (green, red, blue, etc.)
-- Text can span the full width of the image
-- NEVER put text over the person's face
-- Avoid bottom-right corner (YouTube timestamp area)
-
-⚠️ CRITICAL - TEXT COLOR HARMONY:
-The text color MUST harmonize with the scene. Follow these rules:
-1. ANALYZE the scene's dominant colors FIRST
-2. Choose text color that CONTRASTS but COMPLEMENTS the background
-3. If scene is dark/cold → Use warm bright text (white, yellow, gold)
-4. If scene is warm/red → Use cool accent (white with blue glow)
-5. The text GLOW/OUTLINE should use a color FROM the scene
-6. Never use a text color that blends into the background
-7. Test: Would this text be readable at 120px thumbnail size?
-` : `
-⚠️⚠️⚠️ ABSOLUTE ZERO TEXT RULE ⚠️⚠️⚠️
-- There must be ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS, NO SYMBOLS anywhere on this image
-- Do NOT add any title, watermark, logo text, game name, channel name, or ANY written content
-- Do NOT add text even if you think it would look good - the user explicitly wants NO TEXT
-- The image must be 100% visual - only the person, scene, and effects
-- If you add ANY text to this image, the task has FAILED
-- This is a CLEAN thumbnail - the user will add their own text later in the editor
+${overlayText ? `TEXT: "${overlayText}" - Place at bottom, very large and bold, thick black outline, glow effect in scene's dominant color. Never over the face. Avoid bottom-right corner.
+` : `NO TEXT on this image. Zero letters, words, numbers, or symbols anywhere. The user will add text later.
 `}
-
-VISUAL STYLE: ${selectedTypo.prompt}
-
-VISUAL MOOD FOR THIS CONTENT: ${contentCategory.visualMood}
-
-CINEMATIC QUALITY DIRECTIVES (CRITICAL - THIS IS WHAT SEPARATES AMATEUR FROM PRO):
-- LIGHTING: Use 3-point lighting setup. Strong key light from one side creating dramatic shadows. Soft fill light on the opposite side. Rim/back light creating a glowing edge separation from background. The lighting should feel INTENTIONAL and PROFESSIONAL, not flat.
-- DEPTH: Shallow depth of field with natural bokeh on background elements. The person should be TACK SHARP while background has gentle blur.
-- COLOR GRADING: Apply professional LUT-style color grading. Crushed blacks (shadows slightly lifted to dark gray, not pure black). Highlights should have warmth or cool tint based on mood. Consistent color temperature throughout.
-- TEXTURE & DETAIL: Micro-detail on skin pores, fabric weave, metal reflections. NO smooth/plastic/waxy AI look. Skin should have natural subsurface scattering. Materials should look REAL - rough surfaces scatter light, smooth surfaces reflect it.
-- ATMOSPHERE: Volumetric god rays, dust particles caught in light beams, subtle haze/fog for depth separation. These atmospheric elements add CINEMATIC REALISM.
-- FILM LOOK: Subtle organic film grain (ISO 400-800 aesthetic). Very slight chromatic aberration on edges. Natural vignette drawing eye to center. The image should feel like it was SHOT, not generated.
-- CONTRAST: High dynamic range feel - deep shadows with detail, bright highlights with controlled bloom. The overall image should POP when viewed at thumbnail size (120px).
-- COMPOSITION: Rule of thirds, leading lines toward the subject, visual hierarchy that guides the eye. Negative space used intentionally. Background elements should FRAME the subject, not compete with it.
-
-${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
+Style: ${selectedTypo.prompt}. Mood: ${contentCategory.visualMood}.
+Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture. Must look like a professional YouTube thumbnail, not generic AI art.
+${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
       // Build parts - image is optional
       const promptParts = [{ text: prompt }];
@@ -2144,8 +1990,10 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: contentCategory.temperature || 0.6,
-          topP: 0.95
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -2332,8 +2180,10 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: Math.min((optimizeCategory.temperature || 0.6) + 0.1, 0.9),
-          topP: 0.95
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -2407,7 +2257,10 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.3
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -2481,7 +2334,10 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.4
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
