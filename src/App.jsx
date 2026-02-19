@@ -1515,6 +1515,89 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .slice(0, 5)
         .join('\n');
 
+      // Step 1.5: Character/Entity Visual Reference Search
+      // Uses Google Search to find ACTUAL IMAGES of specific characters, creatures, items
+      // and creates an extremely detailed visual description for the image generation model
+      let visualReferenceGuide = '';
+      try {
+        const visualRefPayload = {
+          contents: [{
+            parts: [{
+              text: `You are a VISUAL REFERENCE RESEARCHER. Your job is to find and describe the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
+
+TOPIC: "${topic}"
+${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
+
+SEARCH RESULTS (from previous step):
+${searchResult}
+
+YOUR TASK:
+1. SEARCH for images of the MAIN characters, creatures, bosses, items, or entities mentioned in this topic
+2. Search queries to try:
+   - "${topic} official artwork"
+   - "${topic} in-game screenshot"
+   - "${topic} character design"
+   - "${topic} concept art"
+   - "${topic} wiki"
+3. For EACH key character/creature/entity you find, describe their visual appearance in EXTREME detail
+
+For each entity, write a VISUAL_REFERENCE block:
+
+**VISUAL_REFERENCE: [Entity Name]**
+- BODY TYPE: Exact body shape, proportions, posture (bipedal? quadrupedal? humanoid? how tall relative to humans?)
+- HEAD/FACE: Exact head shape, facial features, horns, tusks, eyes, mouth details
+- SKIN/SURFACE: Exact material (flesh? metal? stone? fur?), color (#hex), texture (smooth? rough? scarred? plated?)
+- ARMOR/CLOTHING: Exact armor type, coverage areas, material, color, decorations, damage/wear
+- WEAPONS/ITEMS: Exact weapons held, size relative to body, which hand, material, special features
+- UNIQUE FEATURES: What makes this character VISUALLY DISTINCT from generic versions? (e.g., "Taurox is NOT a normal bull - he is a BIPEDAL Minotaur whose flesh has been replaced by LIVING BRASS METAL, standing upright like a man")
+- SIGNATURE COLORS: The 3-4 colors most associated with this character (#hex values)
+- SIZE/SCALE: How big compared to a normal human? (e.g., "3x the height of a human", "towering 15 feet tall")
+- POSE/STANCE: Typical combat pose or stance from the source material
+- ⚠️ COMMON MISTAKES: What does AI typically get WRONG about this character? (e.g., "AI draws a normal bull, but Taurox is a BIPEDAL brass-plated Minotaur who stands UPRIGHT")
+
+RULES:
+- Be based on what you ACTUALLY FIND from searching, not guessing
+- If the topic has NO specific characters/creatures (e.g., "cooking tips", "travel vlog"), write: "NO_SPECIFIC_ENTITIES: This topic has no specific characters or creatures to reference"
+- Focus on what makes each entity VISUALLY UNIQUE - the details that AI image models typically get WRONG
+- Use #hex color codes where possible
+- Include 1-3 entities maximum (the most important ones for the thumbnail)
+- Write in ENGLISH`
+            }]
+          }],
+          tools: [{
+            google_search: {}
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 3000
+          }
+        };
+
+        const visualRefResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(visualRefPayload)
+          }
+        );
+
+        if (visualRefResponse.ok) {
+          const visualRefData = await visualRefResponse.json();
+          const visualRefText = visualRefData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
+          if (visualRefText && !visualRefText.includes('NO_SPECIFIC_ENTITIES')) {
+            visualReferenceGuide = visualRefText;
+            console.log('Visual reference guide generated successfully');
+          } else {
+            console.log('No specific entities found for visual reference');
+          }
+        } else {
+          console.warn('Visual reference search failed:', visualRefResponse.status);
+        }
+      } catch (visualRefErr) {
+        console.warn('Visual reference search error (non-critical):', visualRefErr.message);
+      }
+
       // Step 2: Deep visual analysis combining search results + AI creativity
       const analysisPayload = {
         contents: [{
@@ -1528,6 +1611,7 @@ ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : '
 ${searchResult}
 
 ${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
+${visualReferenceGuide ? `\n🎨 KARAKTER/VARLIK GÖRSEL REFERANS REHBERİ (KRİTİK!):\n${visualReferenceGuide}\n⚠️ Yukarıdaki görsel referansları MUTLAKA kullan! Bu karakterlerin/varlıkların GERÇEK görünüşleri böyle.\n` : ''}
 
 ⚠️ ÖNEMLİ: Yukarıdaki internet araştırması sonuçlarını TEMEL AL.
 "${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
@@ -1717,7 +1801,15 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
 
 RESEARCH:
 ${researchText}
+${visualReferenceGuide ? `
+🎨 CHARACTER/ENTITY VISUAL REFERENCE (CRITICAL - FOLLOW EXACTLY!):
+${visualReferenceGuide}
 
+⚠️ THE VISUAL REFERENCES ABOVE ARE FROM ACTUAL GAME/SOURCE MATERIAL IMAGES.
+You MUST follow them EXACTLY when describing characters/creatures in the scene.
+DO NOT default to generic versions - use the SPECIFIC details from the reference guide.
+Example: If the reference says "bipedal Minotaur with brass metal skin", do NOT draw "a normal bull".
+` : ''}
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
 ${!hasPhoto ? `
@@ -1979,10 +2071,14 @@ RULES:
           console.warn('Art direction brief failed, using full research:', e);
         }
 
-        // Combine: full research for display + art direction brief for generation
-        const combinedResearch = artDirectionBrief
-          ? `${fullResearch}\n\n🎯 ART DIRECTION BRIEF (USE THIS FOR IMAGE GENERATION):\n${artDirectionBrief}`
-          : fullResearch;
+        // Combine: full research for display + visual references + art direction brief for generation
+        let combinedResearch = fullResearch;
+        if (visualReferenceGuide) {
+          combinedResearch += `\n\n🎨 CHARACTER/ENTITY VISUAL REFERENCES (MUST FOLLOW!):\n${visualReferenceGuide}`;
+        }
+        if (artDirectionBrief) {
+          combinedResearch += `\n\n🎯 ART DIRECTION BRIEF (USE THIS FOR IMAGE GENERATION):\n${artDirectionBrief}`;
+        }
 
         setTopicResearch(combinedResearch);
       }
@@ -2043,6 +2139,14 @@ Use this information to accurately represent the game/topic's visual style, atmo
 ` : ''}
 
 ${topicResearch ? (() => {
+  // Extract visual reference guide if present
+  const hasVisualRef = topicResearch.includes('CHARACTER/ENTITY VISUAL REFERENCES');
+  const visualRefStart = topicResearch.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
+  const visualRefEnd = topicResearch.indexOf('🎯 ART DIRECTION BRIEF');
+  const visualRefSection = hasVisualRef && visualRefStart > -1
+    ? topicResearch.substring(visualRefStart, visualRefEnd > visualRefStart ? visualRefEnd : undefined).trim()
+    : '';
+
   // If Art Direction Brief exists, use it as primary direction (more focused)
   const hasArtBrief = topicResearch.includes('ART DIRECTION BRIEF');
   if (hasArtBrief) {
@@ -2051,6 +2155,19 @@ ${topicResearch ? (() => {
     return `
 📋 VISUAL RESEARCH COMPLETED FOR "${topic}".
 
+${visualRefSection ? `${visualRefSection}
+
+⚠️⚠️⚠️ CRITICAL - CHARACTER/ENTITY ACCURACY:
+The VISUAL REFERENCES above describe the EXACT appearance of characters/creatures from ACTUAL source material images.
+You MUST follow these descriptions PRECISELY:
+- Body type, proportions, posture → draw EXACTLY as described
+- Skin/surface material and colors → use the EXACT colors and textures
+- Armor/clothing details → follow EVERY detail
+- Unique features → these are what make the character RECOGNIZABLE to fans
+- ⚠️ COMMON MISTAKES section → AVOID these specific errors
+DO NOT default to generic versions. A fan should INSTANTLY recognize the character.
+
+` : ''}
 ${artBrief}
 
 ⚠️ THE ART DIRECTION BRIEF ABOVE IS YOUR PRIMARY GUIDE. Follow it precisely:
