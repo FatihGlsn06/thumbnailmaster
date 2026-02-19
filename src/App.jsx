@@ -1423,20 +1423,27 @@ Be concise. 1-2 sentences per point.`
 
   // Fetch an image via CORS proxy and convert to base64
   // Tries multiple proxy services for reliability
-  const fetchImageAsBase64 = async (imageUrl, timeout = 5000) => {
-    // Multiple CORS proxies for fallback - if one fails, try the next
+  const fetchImageAsBase64 = async (imageUrl, timeout = 6000) => {
+    // Clean up URL - remove /revision/latest params from fandom wikis
+    let cleanUrl = imageUrl.replace(/\/revision\/latest.*$/, '');
+    // Remove scale-to-width params
+    cleanUrl = cleanUrl.replace(/\/scale-to-width-down\/\d+/, '');
+
+    // Multiple CORS proxies for fallback
     const proxyStrategies = [
       // Strategy 1: images.weserv.nl (best for images, resizes/optimizes)
       (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=768&h=768&fit=contain&output=jpg&q=85`,
-      // Strategy 2: corsproxy.io (general CORS proxy)
+      // Strategy 2: allorigins.win (reliable general proxy)
+      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      // Strategy 3: corsproxy.io
       (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      // Strategy 3: Try direct fetch (works for some CDNs that allow CORS)
+      // Strategy 4: Try direct fetch (works for CDNs that allow CORS)
       (url) => url,
     ];
 
     for (const makeProxyUrl of proxyStrategies) {
       try {
-        const proxyUrl = makeProxyUrl(imageUrl);
+        const proxyUrl = makeProxyUrl(cleanUrl);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -1457,15 +1464,14 @@ Be concise. 1-2 sentences per point.`
         });
 
         if (base64) {
-          console.log(`✅ Fetched reference image via proxy: ${imageUrl.substring(0, 80)}...`);
+          console.log(`✅ Fetched reference image: ${cleanUrl.substring(0, 80)}...`);
           return base64;
         }
       } catch (e) {
-        // Try next proxy
         continue;
       }
     }
-    console.warn(`❌ All proxies failed for: ${imageUrl.substring(0, 80)}...`);
+    console.warn(`❌ All proxies failed for: ${cleanUrl.substring(0, 80)}...`);
     return null;
   };
 
@@ -1729,6 +1735,68 @@ RULES:
         }
       } catch (visualRefErr) {
         console.warn('Visual reference search error (non-critical):', visualRefErr.message);
+      }
+
+      // FALLBACK: If no images could be downloaded, ask Gemini to describe them
+      // in extreme detail as an "image generation prompt" since it SAW the images during search
+      if (fetchedRefImages.length === 0 && visualReferenceGuide && !visualReferenceGuide.includes('NO_SPECIFIC_ENTITIES')) {
+        try {
+          console.log('🔄 No images downloaded - requesting ultra-detailed visual description from Gemini...');
+          const fallbackPayload = {
+            contents: [{
+              parts: [{
+                text: `You previously searched for images of characters/creatures related to "${topic}".
+
+EXISTING VISUAL NOTES:
+${visualReferenceGuide}
+
+NOW: I could NOT download any reference images due to CORS restrictions. So I need you to search AGAIN and this time provide an ULTRA-DETAILED visual description that an image generation AI can use as a substitute for the actual image.
+
+Search for: "${topic} official render", "${topic} in-game model", "${topic} artwork"
+
+For EACH character/entity, write an IMAGE GENERATION PROMPT that captures EXACTLY what you see in the search results. Be so specific that someone who has NEVER seen this character could draw it perfectly:
+
+**GENERATION_PROMPT: [Entity Name]**
+Describe in ONE detailed paragraph (200+ words): exact pose, camera angle, every visible body part and its exact appearance (material, color, texture, damage, glow effects), armor piece by piece, weapon details, facial expression, background elements. Use specific colors (#hex).
+
+CRITICAL DETAILS TO INCLUDE:
+- Exact skin/surface material and color (not "brass" but "dark oxidized brass with green patina, #8B7355 base with #4A6741 oxidation patches")
+- Exact face structure (jaw shape, eye type and color, mouth/teeth visibility, forehead details)
+- Any mechanical or magical features (glowing cracks, embedded runes, prosthetics)
+- Armor damage and wear patterns (dents, scratches, missing pieces)
+- Proportions relative to a human (exact height multiplier)
+
+This description will be fed DIRECTLY to an AI image generator so make it as visually precise as humanly possible.`
+              }]
+            }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 3000 }
+          };
+
+          const fallbackController = new AbortController();
+          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 25000);
+          const fallbackResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(fallbackPayload),
+              signal: fallbackController.signal
+            }
+          );
+          clearTimeout(fallbackTimeoutId);
+
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            const fallbackText = fallbackData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
+            if (fallbackText) {
+              visualReferenceGuide += `\n\n🎯 ULTRA-DETAILED VISUAL GENERATION PROMPTS (use these since no reference images available):\n${fallbackText}`;
+              console.log('✅ Got ultra-detailed fallback description');
+            }
+          }
+        } catch (fallbackErr) {
+          console.warn('Fallback description error (non-critical):', fallbackErr.message);
+        }
       }
 
       // Store reference images for use in generation
@@ -2554,6 +2622,23 @@ THE REFERENCE IMAGES:
 Your generated thumbnail MUST depict these characters as they ACTUALLY LOOK in the references above.
 If your output character looks significantly different from the references (wrong face, wrong body type, wrong colors, wrong armor), THE TASK HAS FAILED.
 Fans of this content will IMMEDIATELY notice if the character looks wrong.
+` });
+      } else if (research && (research.includes('GENERATION_PROMPT:') || research.includes('VISUAL_REFERENCE:'))) {
+        // No reference images but we have detailed text descriptions - emphasize them heavily
+        promptParts.push({ text: `
+
+⚠️⚠️⚠️ NO REFERENCE IMAGES AVAILABLE - YOU MUST RELY ON TEXT DESCRIPTIONS BELOW.
+
+The research section above contains VISUAL_REFERENCE and/or GENERATION_PROMPT blocks that describe EXACTLY how the characters/creatures should look. These descriptions were written by an AI that SAW the actual official artwork/screenshots.
+
+READ EVERY WORD of those visual descriptions and follow them with PIXEL-PERFECT accuracy:
+- If the description says "dark oxidized brass with green patina" → draw EXACTLY that, NOT clean shiny gold
+- If it says "mechanical jaw plates" → draw mechanical parts on the jaw, NOT an organic beast mouth
+- If it says "glowing orange cracks in chest armor" → draw visible glowing cracks, NOT solid armor
+- Match EVERY color, material, and texture mentioned in the descriptions
+- Pay special attention to UNIQUE FEATURES that distinguish this character from generic versions
+
+DO NOT fall back to your training data's generic version of this character. The text descriptions are your ONLY source of truth.
 ` });
       }
 
