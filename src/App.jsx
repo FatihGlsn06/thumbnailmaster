@@ -1715,8 +1715,10 @@ YOU MUST search the web. Do NOT guess or make up information.`
           const topicLower = topic.toLowerCase();
           const topicWikiMap = [
             { patterns: ['total war'], wikis: ['totalwar'] },
+            { patterns: ['warhammer 3', 'warhammer 2', 'warhammer 1', 'warhammer iii', 'warhammer ii'], wikis: ['totalwar', 'warhammerfantasy'] },
             { patterns: ['warhammer 40', '40k'], wikis: ['warhammer40k'] },
-            { patterns: ['warhammer'], wikis: ['warhammer', 'totalwar'] },
+            { patterns: ['warhammer fantasy', 'age of sigmar', 'beastmen', 'skaven', 'chaos warriors', 'lizardmen', 'high elves', 'dark elves'], wikis: ['warhammerfantasy', 'totalwar'] },
+            { patterns: ['warhammer'], wikis: ['totalwar', 'warhammerfantasy', 'warhammer40k'] },
             { patterns: ['elden ring'], wikis: ['eldenring'] },
             { patterns: ['dark souls', 'demon souls', 'bloodborne', 'sekiro'], wikis: ['darksouls'] },
             { patterns: ['witcher'], wikis: ['witcher'] },
