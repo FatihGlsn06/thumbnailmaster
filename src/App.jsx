@@ -1035,6 +1035,7 @@ const App = () => {
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
   const [researchImageBase64, setResearchImageBase64] = useState(null);
+  const [researchImageMimeType, setResearchImageMimeType] = useState('image/png');
   const [researchImageUrl, setResearchImageUrl] = useState(null);
 
   // Smart Content Detection - otomatik kategori algılama
@@ -1292,13 +1293,15 @@ VIBE: Professional, clean, gaming channel style`
         }
         if (blob.size > 10 * 1024 * 1024) { console.log(`[RefImage] ⚠️ fetch ${target.label}: too large ${blob.size}`); continue; }
         if (blob.size < 1000) { console.log(`[RefImage] ⚠️ fetch ${target.label}: suspiciously small ${blob.size}b`); continue; }
-        console.log(`[RefImage] ✅ fetch ${target.label}: ${Math.round(blob.size / 1024)}KB ${blob.type}`);
-        return await new Promise((resolve, reject) => {
+        const mimeType = blob.type || 'image/jpeg';
+        console.log(`[RefImage] ✅ fetch ${target.label}: ${Math.round(blob.size / 1024)}KB ${mimeType}`);
+        const base64Data = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result.split(',')[1]);
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
+        return { data: base64Data, mimeType };
       } catch (e) {
         console.log(`[RefImage] ❌ fetch ${target.label}: ${e.message} for`, url.substring(0, 80));
         continue;
@@ -1469,6 +1472,8 @@ Be concise. 1-2 sentences per point.`
     const category = detectContentCategory(topic, topicDescription);
     setDetectedCategory(category);
 
+    let imageSearchPromise = null;
+
     try {
       const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
 
@@ -1551,7 +1556,7 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .join('\n');
 
       // Background: Find reference image via wiki APIs (CORS-enabled, no proxy needed)
-      const imageSearchPromise = (async () => {
+      imageSearchPromise = (async () => {
         try {
           console.log('[RefImage] 🔍 Searching for reference image:', topic);
 
@@ -1700,10 +1705,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
             const imgUrl = await tryFandomImage(wiki, page);
             if (imgUrl) {
               console.log('[RefImage] ⬇️ Fandom image URL:', imgUrl);
-              const base64 = await fetchImageAsBase64(imgUrl);
-              if (base64) {
-                console.log(`[RefImage] ✅ Fandom grounding (${wiki}) success! Size:`, Math.round(base64.length / 1024), 'KB');
-                setResearchImageBase64(base64);
+              const imgResult = await fetchImageAsBase64(imgUrl);
+              if (imgResult) {
+                console.log(`[RefImage] ✅ Fandom grounding (${wiki}) success! Size:`, Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
+                setResearchImageBase64(imgResult.data);
+                setResearchImageMimeType(imgResult.mimeType);
                 setResearchImageUrl(imgUrl);
                 return;
               }
@@ -1790,10 +1796,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
                   console.log(`[RefImage] 📄 Found page: "${result.title}" on ${wiki}`);
                   const imgUrl = await tryFandomImage(wiki, result.title);
                   if (imgUrl) {
-                    const base64 = await fetchImageAsBase64(imgUrl);
-                    if (base64) {
-                      console.log(`[RefImage] ✅ Fandom search (${wiki}) success! Size:`, Math.round(base64.length / 1024), 'KB');
-                      setResearchImageBase64(base64);
+                    const imgResult = await fetchImageAsBase64(imgUrl);
+                    if (imgResult) {
+                      console.log(`[RefImage] ✅ Fandom search (${wiki}) success! Size:`, Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
+                      setResearchImageBase64(imgResult.data);
+                      setResearchImageMimeType(imgResult.mimeType);
                       setResearchImageUrl(imgUrl);
                       return;
                     }
@@ -1816,10 +1823,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
                 if (wikiData.thumbnail?.source) {
                   const highRes = wikiData.thumbnail.source.replace(/\/\d+px-/, '/800px-');
                   console.log('[RefImage] ⬇️ Wikipedia image:', highRes);
-                  const base64 = await fetchImageAsBase64(highRes);
-                  if (base64) {
-                    console.log('[RefImage] ✅ Wikipedia success! Size:', Math.round(base64.length / 1024), 'KB');
-                    setResearchImageBase64(base64);
+                  const imgResult = await fetchImageAsBase64(highRes);
+                  if (imgResult) {
+                    console.log('[RefImage] ✅ Wikipedia success! Size:', Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
+                    setResearchImageBase64(imgResult.data);
+                    setResearchImageMimeType(imgResult.mimeType);
                     setResearchImageUrl(highRes);
                     return;
                   }
@@ -1854,10 +1862,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
                   if (!info || info.width < 200 || info.height < 200) continue;
                   const imgUrl = info.thumburl || info.url;
                   console.log('[RefImage] ⬇️ Commons image:', imgUrl);
-                  const base64 = await fetchImageAsBase64(imgUrl);
-                  if (base64) {
-                    console.log('[RefImage] ✅ Wikimedia Commons success! Size:', Math.round(base64.length / 1024), 'KB');
-                    setResearchImageBase64(base64);
+                  const imgResult = await fetchImageAsBase64(imgUrl);
+                  if (imgResult) {
+                    console.log('[RefImage] ✅ Wikimedia Commons success! Size:', Math.round(imgResult.data.length / 1024), 'KB', imgResult.mimeType);
+                    setResearchImageBase64(imgResult.data);
+                    setResearchImageMimeType(imgResult.mimeType);
                     setResearchImageUrl(imgUrl);
                     return;
                   }
@@ -2276,6 +2285,12 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
     } catch (err) {
       setTopicResearch('Araştırma hatası: ' + err.message);
     } finally {
+      // Wait for background image search to complete before marking research done
+      if (imageSearchPromise) {
+        console.log('[Research] ⏳ Waiting for reference image search to complete...');
+        await imageSearchPromise;
+        console.log('[Research] ✅ Reference image search finished, researchImageBase64 set:', !!researchImageBase64);
+      }
       setIsResearchingTopic(false);
     }
   };
@@ -2360,7 +2375,7 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       // Send research-found reference image so the model knows what the topic looks like
       if (researchImageBase64) {
         console.log('[Generate] 🖼️ Including research reference image in payload');
-        promptParts.push({ inlineData: { mimeType: "image/png", data: researchImageBase64 } });
+        promptParts.push({ inlineData: { mimeType: researchImageMimeType || "image/png", data: researchImageBase64 } });
       } else {
         console.log('[Generate] ⚠️ No research reference image available');
       }
@@ -2555,7 +2570,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
       if (researchImageBase64) {
-        optimizeParts.push({ inlineData: { mimeType: "image/png", data: researchImageBase64 } });
+        optimizeParts.push({ inlineData: { mimeType: researchImageMimeType || "image/png", data: researchImageBase64 } });
       }
 
       const payload = {
