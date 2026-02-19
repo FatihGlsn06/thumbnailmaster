@@ -1417,8 +1417,8 @@ Be concise. 1-2 sentences per point.`
     setIsResearchingTopic(true);
     setTopicResearch(null);
 
-    // Smart content detection
-    const category = detectContentCategory(topic, topicDescription);
+    // Smart content detection (initial keyword-based, will be refined by AI later)
+    let category = detectContentCategory(topic, topicDescription);
     setDetectedCategory(category);
 
     // Auto-select archetype and typography if user hasn't manually chosen
@@ -1517,9 +1517,6 @@ YOU MUST search the web. Do NOT guess or make up information.`
             text: `Sen bir GÖRSEL TASARIM, İÇERİK ve YOUTUBE uzmanısın.
 "${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yapman gerekiyor.
 
-ALGILANAN İÇERİK KATEGORİSİ: ${category.id.toUpperCase()}
-GÖRSEL RUHHAL: ${category.visualMood}
-
 ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
 
 📡 İNTERNETTEN BULUNAN GÜNCEL BİLGİLER (BU BİLGİLERİ KULLAN!):
@@ -1531,6 +1528,10 @@ ${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
 "${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
 
 Lütfen Türkçe olarak çok detaylı yaz:
+
+⚠️ ÖNCELİKLE: İlk satırda bu konunun kategorisini belirle. Araştırma sonuçlarına göre DOĞRU kategoriyi seç:
+**CONTENT_CATEGORY**: [gaming / education / vlog / food / travel / tech / music / fitness / general]
+(Örnek: Warhammer = gaming, tarif videosu = food, iPhone inceleme = tech, konser = music)
 
 1. **KONU KİMLİĞİ**:
    - Bu ne? Tam tanımı (Oyun, ürün, kavram, mekan, kişi, olay, teknik, yemek, müzik vb.)
@@ -1665,6 +1666,26 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
       const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (researchText) {
+        // AI-based category detection: parse CONTENT_CATEGORY from analysis output
+        const categoryMatch = researchText.match(/\*\*CONTENT_CATEGORY\*\*:\s*\[?\s*(gaming|education|vlog|food|travel|tech|music|fitness|general)\s*\]?/i);
+        if (categoryMatch) {
+          const aiDetectedId = categoryMatch[1].toLowerCase();
+          const aiCategory = CONTENT_CATEGORIES[aiDetectedId] || GENERAL_CATEGORY;
+          // Update category if AI detected a different (more specific) one
+          if (aiCategory.id !== category.id) {
+            setDetectedCategory(aiCategory);
+            // Update auto-selected styles based on new category
+            if (!selectedArchetype && aiCategory.defaultArchetypes?.length > 0) {
+              setSelectedArchetype(aiCategory.defaultArchetypes[0]);
+            }
+            if ((typoStyle === 'auto_harmony' || typoStyle === category.defaultTypoStyle) && aiCategory.defaultTypoStyle) {
+              setTypoStyle(aiCategory.defaultTypoStyle);
+            }
+            // Use the AI-detected category for the rest of the pipeline
+            category = aiCategory;
+          }
+        }
+
         // Step 3: Convert research into a CONCRETE visual scene description
         // Use a shorter prompt for non-historical content, detailed for historical
         const historicalKeywords = ['tarih', 'history', 'historical', 'savaş', 'war', 'battle', 'empire', 'imparatorluk', 'osmanlı', 'ottoman', 'byzantine', 'bizans', 'medieval', 'ortaçağ', 'antik', 'ancient', 'roma', 'roman', 'kingdom', 'krallık', 'sultan', 'fetih', 'conquest', 'dynasty', 'hanedan'];
