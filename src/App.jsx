@@ -29,7 +29,45 @@ import {
 const CONTENT_CATEGORIES = {
   gaming: {
     id: 'gaming',
-    keywords: ['game', 'oyun', 'gaming', 'fps', 'rpg', 'mmorpg', 'battle royale', 'boss', 'raid', 'pvp', 'speedrun', 'mod', 'dlc', 'steam', 'playstation', 'xbox', 'nintendo', 'valorant', 'fortnite', 'minecraft', 'gta', 'elden ring', 'dark souls', 'league of legends', 'counter-strike', 'cs2', 'dota', 'overwatch', 'apex', 'pubg', 'warzone', 'diablo', 'world of warcraft', 'wow', 'zelda', 'pokemon', 'resident evil', 'silent hill', 'god of war', 'cyberpunk', 'witcher', 'assassins creed', 'call of duty', 'cod', 'halo', 'destiny', 'final fantasy', 'monster hunter', 'horizon', 'spider-man', 'hogwarts', 'starfield', 'baldurs gate', 'palworld', 'lethal company', 'helldivers', 'manor lords', 'level', 'damage', 'build', 'loot', 'quest', 'dungeon', 'arena'],
+    keywords: [
+      // Generic gaming terms
+      'game', 'oyun', 'gaming', 'gamer', 'gameplay', 'walkthrough', 'playthrough', 'lets play', 'first look', 'early access',
+      'fps', 'rpg', 'mmorpg', 'jrpg', 'arpg', 'moba', 'rts', 'tps', 'battle royale', 'roguelike', 'roguelite', 'metroidvania', 'soulslike',
+      'boss', 'boss fight', 'raid', 'pvp', 'pve', 'co-op', 'multiplayer', 'speedrun', 'mod', 'dlc', 'expansion', 'patch', 'update',
+      'level', 'damage', 'build', 'loot', 'quest', 'dungeon', 'arena', 'rank', 'ranked', 'esport', 'esports', 'tournament',
+      'oynuyorum', 'oynadım', 'oynuyoruz', 'oynanış', 'bölüm',
+      // Platforms
+      'steam', 'playstation', 'xbox', 'nintendo', 'switch', 'ps5', 'ps4', 'epic games', 'gamepass', 'game pass',
+      // Major game franchises (A-Z)
+      'age of empires', 'aoe', 'among us', 'apex', 'apex legends', 'ark survival', 'armored core', 'assassins creed',
+      'baldurs gate', 'battlefield', 'bioshock', 'black desert', 'bdo', 'bloodborne', 'brawl stars',
+      'call of duty', 'cod', 'civilization', 'civ', 'clash royale', 'clash of clans', 'counter-strike', 'cs2', 'csgo', 'crusader kings', 'cyberpunk',
+      'dark souls', 'dayz', 'dead by daylight', 'dbd', 'death stranding', 'destiny', 'diablo', 'dota', 'dota 2',
+      'elden ring', 'elder scrolls', 'skyrim', 'escape from tarkov', 'tarkov', 'europa universalis',
+      'factorio', 'fall guys', 'fallout', 'far cry', 'fifa', 'eFootball', 'final fantasy', 'fortnite', 'forza',
+      'gacha', 'genshin', 'genshin impact', 'ghost of tsushima', 'god of war', 'gta', 'grand theft auto',
+      'halo', 'hearts of iron', 'hoi4', 'helldivers', 'hogwarts', 'hollow knight', 'honkai', 'star rail', 'horizon', 'hunt showdown',
+      'kingdom come', 'league of legends', 'lol', 'lethal company', 'lost ark',
+      'manor lords', 'metal gear', 'mgs', 'minecraft', 'mobile legends', 'monster hunter', 'mortal kombat', 'mount blade', 'bannerlord', 'mount and blade',
+      'overwatch', 'palworld', 'path of exile', 'poe', 'persona', 'pokemon', 'pubg',
+      'rainbow six', 'r6', 'siege', 'red dead', 'rdr', 'rdr2', 'resident evil', 'rimworld', 'roblox', 'rocket league', 'rust',
+      'satisfactory', 'sekiro', 'silent hill', 'sims', 'spider-man', 'starcraft', 'starfield', 'stardew valley', 'stellaris', 'street fighter', 'subnautica',
+      'tekken', 'terraria', 'the witcher', 'witcher',
+      // Warhammer franchise (all variants)
+      'warhammer', '40k', '40000', 'total war', 'total war warhammer', 'space marine', 'space marines',
+      'chaos', 'nurgle', 'khorne', 'slaanesh', 'tzeentch', 'skaven', 'lizardmen', 'high elves', 'dark elves',
+      'empire', 'bretonnia', 'vampire counts', 'tomb kings', 'beastmen', 'warriors of chaos', 'daemons',
+      'taurox', 'tyrion', 'malekith', 'grimgor', 'archaon', 'karl franz', 'thorgrim', 'settra', 'mannfred',
+      'sigmar', 'imperium', 'primarch', 'ultramarine', 'blood angels', 'dark angels', 'space wolves',
+      // Other strategy games
+      'age of mythology', 'aom', 'company of heroes', 'coh', 'anno', 'stronghold', 'victoria',
+      'valorant', 'warzone', 'world of warcraft', 'wow', 'warcraft', 'hearthstone',
+      'xcom', 'zelda', 'uncharted', 'last of us', 'half-life', 'portal',
+      // Racing
+      'f1', 'racing', 'yarış', 'nfs', 'need for speed', 'gran turismo', 'assetto corsa',
+      // Survival
+      'survival', 'hayatta kalma', 'crafting',
+    ],
     temperature: 0.7,
     defaultArchetypes: ['shocked_threat', 'power_fantasy', 'scale_contrast', 'almost_fail'],
     promptStyle: 'epic',
@@ -113,9 +151,16 @@ function detectContentCategory(topic, description = '') {
   for (const [catId, cat] of Object.entries(CONTENT_CATEGORIES)) {
     scores[catId] = 0;
     for (const keyword of cat.keywords) {
-      if (text.includes(keyword.toLowerCase())) {
+      const kwLower = keyword.toLowerCase();
+      if (text.includes(kwLower)) {
         // Longer keywords get higher weight (more specific)
-        scores[catId] += keyword.length > 5 ? 3 : keyword.length > 3 ? 2 : 1;
+        let weight = kwLower.length > 5 ? 3 : kwLower.length > 3 ? 2 : 1;
+        // Multi-word keywords are very specific (e.g. "total war warhammer") - extra weight
+        if (kwLower.includes(' ')) weight += 2;
+        // If the topic itself IS the keyword (exact or near-exact match), very high confidence
+        const topicLower = topic.toLowerCase().trim();
+        if (topicLower === kwLower || topicLower.startsWith(kwLower + ' ') || topicLower.endsWith(' ' + kwLower)) weight += 3;
+        scores[catId] += weight;
       }
     }
   }
