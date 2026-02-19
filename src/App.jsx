@@ -1494,6 +1494,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
         }
       );
 
+      if (!searchResponse.ok) {
+        const errBody = await searchResponse.text();
+        console.error('Step 1 (Search) API error:', searchResponse.status, errBody);
+        throw new Error(`Arama API hatası (${searchResponse.status}): ${searchResponse.statusText}`);
+      }
       const searchData = await searchResponse.json();
 
       // Extract search result text AND grounding metadata
@@ -1662,10 +1667,24 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
         }
       );
 
+      if (!analysisResponse.ok) {
+        const errBody = await analysisResponse.text();
+        console.error('Step 2 (Analysis) API error:', analysisResponse.status, errBody);
+        throw new Error(`Analiz API hatası (${analysisResponse.status}): ${analysisResponse.statusText}`);
+      }
       const analysisData = await analysisResponse.json();
       const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (researchText) {
+      if (!researchText) {
+        // Check if there was a block reason or other issue
+        const blockReason = analysisData.candidates?.[0]?.finishReason;
+        const promptFeedback = analysisData.promptFeedback?.blockReason;
+        console.error('Step 2 returned no text. finishReason:', blockReason, 'promptFeedback:', promptFeedback, 'Full response:', JSON.stringify(analysisData));
+        throw new Error(`Analiz sonucu boş döndü${blockReason ? ` (sebep: ${blockReason})` : ''}${promptFeedback ? ` (engel: ${promptFeedback})` : ''}. Farklı bir konu deneyin.`);
+      }
+
+      // researchText is valid, continue
+      {
         // AI-based category detection: parse CONTENT_CATEGORY from analysis output
         const categoryMatch = researchText.match(/\*\*CONTENT_CATEGORY\*\*:\s*\[?\s*(gaming|education|vlog|food|travel|tech|music|fitness|general)\s*\]?/i);
         if (categoryMatch) {
@@ -1835,22 +1854,43 @@ Keep each section 2-5 sentences. Be COMPLETE - finish every sentence.`;
           }
         };
 
-        const sceneResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(scenePayload)
+        // Try gemini-2.5-pro first (better creative writing), fallback to flash
+        let sceneDescription = null;
+        const sceneModels = ['gemini-2.5-pro', 'gemini-2.5-flash'];
+        for (const sceneModel of sceneModels) {
+          try {
+            const sceneResponse = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${sceneModel}:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(scenePayload)
+              }
+            );
+
+            if (!sceneResponse.ok) {
+              console.warn(`Scene direction with ${sceneModel} failed (${sceneResponse.status}), trying next...`);
+              continue;
+            }
+
+            const sceneData = await sceneResponse.json();
+            sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
+            const finishReason = sceneData.candidates?.[0]?.finishReason;
+
+            if (finishReason === 'MAX_TOKENS' && sceneDescription) {
+              console.warn('Scene direction was truncated. Using partial result.');
+            }
+
+            if (sceneDescription) {
+              console.log(`Scene direction succeeded with ${sceneModel}`);
+              break;
+            } else {
+              console.warn(`Scene direction with ${sceneModel} returned empty, trying next...`);
+            }
+          } catch (sceneErr) {
+            console.warn(`Scene direction with ${sceneModel} threw error:`, sceneErr.message);
+            // Continue to next model
           }
-        );
-
-        const sceneData = await sceneResponse.json();
-        let sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
-        const finishReason = sceneData.candidates?.[0]?.finishReason;
-
-        // If output was truncated (MAX_TOKENS), log warning but still use what we got
-        if (finishReason === 'MAX_TOKENS' && sceneDescription) {
-          console.warn('Scene direction was truncated. Using partial result.');
         }
 
         // Step 4: Visual DNA & Art Direction Brief
@@ -1939,10 +1979,9 @@ RULES:
           : fullResearch;
 
         setTopicResearch(combinedResearch);
-      } else {
-        setTopicResearch('Araştırma yapılamadı.');
       }
     } catch (err) {
+      console.error('Research pipeline error:', err);
       setTopicResearch('Araştırma hatası: ' + err.message);
     } finally {
       setIsResearchingTopic(false);
