@@ -1528,67 +1528,113 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .slice(0, 5)
         .join('\n');
 
-      // Background: Find reference image for the topic (runs parallel to analysis)
+      // Background: Find reference image via wiki APIs (CORS-enabled, no proxy needed)
       const imageSearchPromise = (async () => {
         try {
           console.log('[RefImage] 🔍 Searching for reference image:', topic);
-          const imageSearchPayload = {
-            contents: [{
-              parts: [{
-                text: `Search for "${topic}" and find official images or artwork.
-I need DIRECT image file URLs. Examples of good URLs:
-- https://static.wikia.nocookie.net/warhammer/images/a/ab/Taurox.png
-- https://cdna.artstation.com/p/assets/images/images/012/345/large/name.jpg
 
-Return 3-5 direct image URLs, one per line. NO text, NO explanation. ONLY URLs.`
-              }]
-            }],
-            tools: [{ google_search: {} }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 500 }
-          };
+          // Strategy 1: Extract Fandom wiki pages from grounding metadata
+          const fandomPages = groundingChunks
+            .filter(c => c.web?.uri?.includes('fandom.com/wiki/'))
+            .map(c => {
+              const match = c.web.uri.match(/https?:\/\/([^.]+)\.fandom\.com\/wiki\/([^?#]+)/);
+              return match ? { wiki: match[1], page: decodeURIComponent(match[2].replace(/_/g, ' ')) } : null;
+            })
+            .filter(Boolean);
+          console.log('[RefImage] 📚 Fandom pages from grounding:', fandomPages);
 
-          const imageRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(imageSearchPayload) }
-          );
-          const imageData = await imageRes.json();
-          const imageText = imageData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
-          console.log('[RefImage] 📝 Full Gemini response:', imageText);
-
-          // Strategy 1: URLs with image file extensions
-          const extRegex = /https?:\/\/[^\s"'<>\)\]]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>\)\]]*)?/gi;
-          const extUrls = imageText.match(extRegex) || [];
-
-          // Strategy 2: URLs from known image CDNs (even without extension)
-          const cdnRegex = /https?:\/\/(?:cdna?\.artstation\.com|static\.wikia\.nocookie\.net|upload\.wikimedia\.org|i\.imgur\.com|images\.igdb\.com|cdn\.akamai\.steamstatic\.com|steamcdn-a\.akamaihd\.net)[^\s"'<>\)\]]*/gi;
-          const cdnUrls = imageText.match(cdnRegex) || [];
-
-          // Strategy 3: Any remaining https URL as last resort
-          const anyUrlRegex = /https?:\/\/[^\s"'<>\)\]]{20,}/gi;
-          const anyUrls = (imageText.match(anyUrlRegex) || []).filter(u =>
-            /image|img|photo|art|asset|media|upload|static|cdn/i.test(u)
-          );
-
-          const allUrls = [...new Set([...extUrls, ...cdnUrls, ...anyUrls])].slice(0, 8);
-          console.log('[RefImage] 🔗 Found URLs:', allUrls.length, allUrls);
-
-          if (allUrls.length === 0) {
-            console.log('[RefImage] ⚠️ No image URLs found in Gemini response');
-            return;
+          for (const { wiki, page } of fandomPages) {
+            try {
+              console.log(`[RefImage] 🔗 Trying Fandom API: ${wiki}.fandom.com → "${page}"`);
+              const res = await fetch(
+                `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(page)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              if (!res.ok) continue;
+              const data = await res.json();
+              const pageData = Object.values(data.query?.pages || {})[0];
+              const imgUrl = pageData?.thumbnail?.source;
+              if (imgUrl) {
+                console.log('[RefImage] ⬇️ Fandom image URL:', imgUrl);
+                const base64 = await fetchImageAsBase64(imgUrl);
+                if (base64) {
+                  console.log(`[RefImage] ✅ Fandom (${wiki}) image fetched! Size:`, Math.round(base64.length / 1024), 'KB');
+                  setResearchImageBase64(base64);
+                  setResearchImageUrl(imgUrl);
+                  return;
+                }
+              } else {
+                console.log(`[RefImage] ⚠️ Fandom (${wiki}) page exists but no image`);
+              }
+            } catch (e) { console.log(`[RefImage] ❌ Fandom (${wiki}) failed:`, e.message); }
           }
 
-          for (const url of allUrls) {
-            console.log('[RefImage] ⬇️ Trying to fetch:', url);
-            const base64 = await fetchImageAsBase64(url);
-            if (base64) {
-              console.log('[RefImage] ✅ SUCCESS! Image fetched, size:', Math.round(base64.length / 1024), 'KB');
-              setResearchImageBase64(base64);
-              setResearchImageUrl(url);
-              return;
+          // Strategy 2: Wikipedia REST API (fully CORS-enabled)
+          try {
+            const wikiTerm = topic.split(/\s+/).slice(0, 3).join('_');
+            console.log('[RefImage] 🔗 Trying Wikipedia:', wikiTerm);
+            const wikiRes = await fetch(
+              `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTerm)}`,
+              { signal: AbortSignal.timeout(8000) }
+            );
+            if (wikiRes.ok) {
+              const wikiData = await wikiRes.json();
+              if (wikiData.thumbnail?.source) {
+                const highRes = wikiData.thumbnail.source.replace(/\/\d+px-/, '/800px-');
+                console.log('[RefImage] ⬇️ Wikipedia image URL:', highRes);
+                const base64 = await fetchImageAsBase64(highRes);
+                if (base64) {
+                  console.log('[RefImage] ✅ Wikipedia image fetched! Size:', Math.round(base64.length / 1024), 'KB');
+                  setResearchImageBase64(base64);
+                  setResearchImageUrl(highRes);
+                  return;
+                }
+              }
             }
-            console.log('[RefImage] ❌ Failed to fetch this URL');
+          } catch (e) { console.log('[RefImage] ❌ Wikipedia failed:', e.message); }
+
+          // Strategy 3: Fandom search API (if grounding had no fandom links)
+          if (fandomPages.length === 0) {
+            const categoryWikis = {
+              gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher', 'callofduty', 'fortnite'],
+              food: ['recipes'],
+              tech: ['en.wikipedia.org'],
+            };
+            const wikis = categoryWikis[category?.id] || [];
+            for (const wiki of wikis.slice(0, 3)) {
+              try {
+                console.log(`[RefImage] 🔍 Searching Fandom (${wiki}) for:`, topic);
+                const res = await fetch(
+                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&format=json&srlimit=1&origin=*`,
+                  { signal: AbortSignal.timeout(8000) }
+                );
+                if (!res.ok) continue;
+                const data = await res.json();
+                const title = data.query?.search?.[0]?.title;
+                if (!title) continue;
+                console.log(`[RefImage] 📄 Found page: "${title}"`);
+                const imgRes = await fetch(
+                  `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
+                  { signal: AbortSignal.timeout(8000) }
+                );
+                if (!imgRes.ok) continue;
+                const imgData = await imgRes.json();
+                const imgPage = Object.values(imgData.query?.pages || {})[0];
+                const imgUrl = imgPage?.thumbnail?.source;
+                if (imgUrl) {
+                  const base64 = await fetchImageAsBase64(imgUrl);
+                  if (base64) {
+                    console.log(`[RefImage] ✅ Fandom search (${wiki}) image fetched! Size:`, Math.round(base64.length / 1024), 'KB');
+                    setResearchImageBase64(base64);
+                    setResearchImageUrl(imgUrl);
+                    return;
+                  }
+                }
+              } catch (e) { continue; }
+            }
           }
-          console.log('[RefImage] ⚠️ All URLs failed to fetch');
+
+          console.log('[RefImage] ⚠️ All strategies failed - no reference image found');
         } catch (e) {
           console.log('[RefImage] ❌ Search failed:', e.message);
         }
