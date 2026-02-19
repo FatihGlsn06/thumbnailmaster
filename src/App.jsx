@@ -1348,7 +1348,7 @@ The AI image generator will use your analysis to replicate this exact style.`
 
   // Analyze uploaded photo with AI
   const analyzePhoto = async () => {
-    if (!base64Image || !apiKey) return;
+    if (!base64Image || !apiKey) return null;
 
     setIsAnalyzingPhoto(true);
     try {
@@ -1399,13 +1399,13 @@ Be concise. 1-2 sentences per point.`
       const data = await response.json();
       const analysisText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (analysisText) {
-        setPhotoAnalysis(analysisText);
-      } else {
-        setPhotoAnalysis('Analiz yapılamadı.');
-      }
+      const result = analysisText || 'Analiz yapılamadı.';
+      setPhotoAnalysis(result);
+      return result;
     } catch (err) {
-      setPhotoAnalysis('Analiz hatası: ' + err.message);
+      const errorMsg = 'Analiz hatası: ' + err.message;
+      setPhotoAnalysis(errorMsg);
+      return errorMsg;
     } finally {
       setIsAnalyzingPhoto(false);
     }
@@ -1442,7 +1442,7 @@ Be concise. 1-2 sentences per point.`
 
   // Research topic/concept using AI (gaming/lore knowledge)
   const researchTopic = async () => {
-    if (!topic || !apiKey) return;
+    if (!topic || !apiKey) return null;
 
     setIsResearchingTopic(true);
     setTopicResearch(null);
@@ -2160,10 +2160,12 @@ RULES:
         }
 
         setTopicResearch(combinedResearch);
+        return { research: combinedResearch, refImages: fetchedRefImages };
       }
     } catch (err) {
       console.error('Research pipeline error:', err);
       setTopicResearch('Araştırma hatası: ' + err.message);
+      return null;
     } finally {
       setIsResearchingTopic(false);
     }
@@ -2192,6 +2194,35 @@ RULES:
     setIsOptimized(false);
     setPreviousImage(null);
     setPreviousCtrScore(null);
+
+    // ═══ AUTO-PREREQUISITE: Run missing steps automatically ═══
+    // This allows single-click generation: photo analysis + research + generate
+    let effectivePhotoAnalysis = photoAnalysis;
+    let effectiveTopicResearch = topicResearch;
+    let effectiveCharacterRefImages = characterRefImages;
+
+    // Auto-analyze photo if uploaded but not yet analyzed
+    if (base64Image && !effectivePhotoAnalysis && !isAnalyzingPhoto) {
+      console.log('Auto-analyzing photo before generation...');
+      effectivePhotoAnalysis = await analyzePhoto();
+    }
+
+    // Auto-research topic if not yet researched
+    if (!effectiveTopicResearch && !isResearchingTopic) {
+      console.log('Auto-researching topic before generation...');
+      const researchResult = await researchTopic();
+      if (researchResult) {
+        effectiveTopicResearch = researchResult.research;
+        effectiveCharacterRefImages = researchResult.refImages || [];
+      }
+    }
+
+    // Shadow state variables with fresh values for prompt building
+    // This ensures the prompts use the just-fetched data even before React re-renders
+    const topicResearch = effectiveTopicResearch;
+    const photoAnalysis = effectivePhotoAnalysis;
+    const characterRefImages = effectiveCharacterRefImages;
+    // ═══ END AUTO-PREREQUISITE ═══
 
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
