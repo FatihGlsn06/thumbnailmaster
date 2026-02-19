@@ -32,7 +32,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['game', 'oyun', 'gaming', 'fps', 'rpg', 'mmorpg', 'battle royale', 'boss', 'raid', 'pvp', 'speedrun', 'mod', 'dlc', 'steam', 'playstation', 'xbox', 'nintendo', 'valorant', 'fortnite', 'minecraft', 'gta', 'elden ring', 'dark souls', 'league of legends', 'counter-strike', 'cs2', 'dota', 'overwatch', 'apex', 'pubg', 'warzone', 'diablo', 'world of warcraft', 'wow', 'zelda', 'pokemon', 'resident evil', 'silent hill', 'god of war', 'cyberpunk', 'witcher', 'assassins creed', 'call of duty', 'cod', 'halo', 'destiny', 'final fantasy', 'monster hunter', 'horizon', 'spider-man', 'hogwarts', 'starfield', 'baldurs gate', 'palworld', 'lethal company', 'helldivers', 'manor lords', 'level', 'damage', 'build', 'loot', 'quest', 'dungeon', 'arena'],
     temperature: 0.7,
     defaultArchetypes: ['shocked_threat', 'power_fantasy', 'scale_contrast', 'almost_fail'],
-    defaultTypoStyle: 'gaming_neon',
     promptStyle: 'epic',
     visualMood: 'Cinematic, epic, high-energy, dramatic lighting with vibrant color accents',
   },
@@ -41,7 +40,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'bilim', 'science', 'matematik', 'tarih', 'history', 'fizik', 'kimya', 'biyoloji', 'edebiyat', 'felsefe', 'psikoloji', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'documentary', 'belgesel', 'araştırma', 'research', 'ramazan', 'namaz', 'ibadet', 'oruç', 'dua', 'kuran', 'quran', 'din', 'islam', 'hristiyanlık', 'budizm', 'meditasyon', 'meditation', 'spirituality', 'maneviyat', 'felsefe', 'philosophy', 'hadis', 'sünnet', 'cami', 'kilise', 'sinagog', 'bayram', 'iftar', 'sahur', 'teravih', 'zekat', 'hac', 'umre', 'mevlid', 'kandil', 'cuma', 'hutbe', 'vaaz', 'ilmihal', 'fıkıh', 'tefsir', 'siyer', 'peygamber', 'sahabe', 'kitap', 'book', 'okuma', 'reading', 'özet', 'summary', 'inceleme', 'review', 'motivasyon', 'motivation', 'kişisel gelişim', 'self improvement', 'psychology', 'mindset'],
     temperature: 0.5,
     defaultArchetypes: ['expert_authority', 'mystery_reveal', 'reaction_face'],
-    defaultTypoStyle: 'elegant_modern',
     promptStyle: 'clean',
     visualMood: 'Professional, clean, trustworthy, soft lighting with clear focal points',
   },
@@ -50,7 +48,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['vlog', 'günlük', 'daily', 'storytime', 'story time', 'hayatım', 'life', 'reaction', 'tepki', 'challenge', 'denedim', 'tried', 'podcast', 'sohbet', 'chat', 'q&a', 'soru cevap', 'mukbang', 'unboxing', 'kutu açılımı', 'haul', 'alışveriş', 'shopping', 'day in my life', 'routine', 'rutin', 'grwm', 'get ready', 'hazırlan', 'tag', 'trend', 'tiktok'],
     temperature: 0.6,
     defaultArchetypes: ['reaction_face', 'challenge_fun', 'breaking_news'],
-    defaultTypoStyle: 'bold_impact',
     promptStyle: 'energetic',
     visualMood: 'Bright, energetic, authentic, natural lighting with bold pops of color',
   },
@@ -59,7 +56,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['yemek', 'food', 'tarif', 'recipe', 'cooking', 'pişir', 'mutfak', 'kitchen', 'chef', 'şef', 'restoran', 'restaurant', 'lezzet', 'taste', 'yedim', 'ate', 'eat', 'burger', 'pizza', 'pasta', 'tatlı', 'dessert', 'cake', 'kahvaltı', 'breakfast', 'dinner', 'lunch', 'street food', 'sokak lezzeti', 'mukbang', 'asmr food'],
     temperature: 0.6,
     defaultArchetypes: ['food_desire', 'reaction_face', 'transformation'],
-    defaultTypoStyle: 'auto_harmony',
     promptStyle: 'warm',
     visualMood: 'Warm tones, appetizing, close-up detail, golden-hour style lighting, steam and texture',
   },
@@ -68,7 +64,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['seyahat', 'travel', 'gezi', 'trip', 'tur', 'tour', 'otel', 'hotel', 'havalimanı', 'airport', 'uçak', 'flight', 'ülke', 'country', 'şehir', 'city', 'plaj', 'beach', 'dağ', 'mountain', 'doğa', 'nature', 'kamp', 'camp', 'hiking', 'yürüyüş', 'backpack', 'manzara', 'landscape', 'keşfet', 'explore', 'adventure', 'macera'],
     temperature: 0.7,
     defaultArchetypes: ['travel_wonder', 'reaction_face', 'scale_contrast'],
-    defaultTypoStyle: 'cinematic_epic',
     promptStyle: 'cinematic',
     visualMood: 'Breathtaking, wide-angle, golden hour, vivid natural colors, sense of awe and scale',
   },
@@ -77,7 +72,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['teknoloji', 'tech', 'technology', 'telefon', 'phone', 'iphone', 'samsung', 'android', 'ios', 'apple', 'google', 'ai', 'yapay zeka', 'artificial intelligence', 'robot', 'software', 'yazılım', 'code', 'coding', 'programlama', 'programming', 'app', 'uygulama', 'review', 'inceleme', 'laptop', 'pc', 'bilgisayar', 'computer', 'gadget', 'gpu', 'cpu', 'setup', 'unboxing', 'comparison', 'karşılaştırma', 'benchmark', 'test'],
     temperature: 0.5,
     defaultArchetypes: ['expert_authority', 'reaction_face', 'mystery_reveal'],
-    defaultTypoStyle: 'elegant_modern',
     promptStyle: 'futuristic',
     visualMood: 'Sleek, modern, minimalist with neon accents, clean product showcase lighting',
   },
@@ -86,7 +80,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['müzik', 'music', 'şarkı', 'song', 'albüm', 'album', 'konser', 'concert', 'rap', 'hip hop', 'pop', 'rock', 'metal', 'edm', 'dj', 'beat', 'cover', 'remix', 'karaoke', 'enstrüman', 'instrument', 'gitar', 'guitar', 'piyano', 'piano', 'davul', 'drums', 'dans', 'dance', 'choreography', 'koreografi', 'performans', 'performance', 'spotify', 'clip', 'klip'],
     temperature: 0.8,
     defaultArchetypes: ['music_energy', 'reaction_face', 'challenge_fun'],
-    defaultTypoStyle: 'gaming_neon',
     promptStyle: 'neon',
     visualMood: 'Neon-lit, high energy, sound wave visuals, concert atmosphere, vibrant and pulsing',
   },
@@ -95,7 +88,6 @@ const CONTENT_CATEGORIES = {
     keywords: ['fitness', 'spor', 'sport', 'gym', 'egzersiz', 'exercise', 'workout', 'antrenman', 'training', 'kas', 'muscle', 'diyet', 'diet', 'kilo', 'weight', 'zayıfla', 'bulk', 'protein', 'supplement', 'koşu', 'run', 'yoga', 'pilates', 'bodybuilding', 'crossfit', 'martial arts', 'dövüş', 'boks', 'boxing', 'mma', 'transformation', 'dönüşüm', 'before after', 'öncesi sonrası', 'motivation', 'motivasyon'],
     temperature: 0.6,
     defaultArchetypes: ['transformation', 'power_fantasy', 'expert_authority'],
-    defaultTypoStyle: 'bold_impact',
     promptStyle: 'bold',
     visualMood: 'High contrast, motivational, powerful poses, dramatic side lighting, gritty texture',
   },
@@ -107,7 +99,6 @@ const GENERAL_CATEGORY = {
   keywords: [],
   temperature: 0.6,
   defaultArchetypes: ['reaction_face', 'expert_authority', 'mystery_reveal'],
-  defaultTypoStyle: 'auto_harmony',
   promptStyle: 'balanced',
   visualMood: 'Professional, balanced, visually engaging, clean composition with purposeful lighting and natural color palette',
 };
@@ -1027,7 +1018,6 @@ const App = () => {
   // Topic/Concept research states
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
-  const [characterRefImages, setCharacterRefImages] = useState([]); // base64 reference images of characters/entities
 
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
@@ -1245,31 +1235,21 @@ VIBE: Professional, clean, gaming channel style`
     }
   ];
 
-  const fetchWithRetry = async (url, options, retries = 3, backoff = 2000) => {
+  const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
     try {
-      // Add a 120s timeout to each fetch call so it never hangs indefinitely
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
-      const fetchOptions = { ...options, signal: controller.signal };
-
-      const response = await fetch(url, fetchOptions);
-      clearTimeout(timeoutId);
-
+      const response = await fetch(url, options);
       if (!response.ok) {
+        if (response.status === 429 && retries > 0) throw new Error('Rate limit');
         const errorBody = await response.json().catch(() => ({}));
-        const errorMsg = errorBody?.error?.message || `Error ${response.status}`;
-        // Only retry on rate limit (429) or server errors (500+)
-        if ((response.status === 429 || response.status >= 500) && retries > 0) {
-          throw new Error(errorMsg);
-        }
-        throw Object.assign(new Error(errorMsg), { noRetry: true });
+        throw new Error(errorBody?.error?.message || `Error ${response.status}`);
       }
       return await response.json();
     } catch (err) {
-      if (err.noRetry || retries <= 0) throw err;
-      console.warn(`Retrying API call (${retries} left, waiting ${backoff}ms):`, err.message);
-      await new Promise(r => setTimeout(r, backoff));
-      return fetchWithRetry(url, options, retries - 1, backoff * 2);
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, backoff));
+        return fetchWithRetry(url, options, retries - 1, backoff * 2);
+      }
+      throw err;
     }
   };
 
@@ -1358,7 +1338,7 @@ The AI image generator will use your analysis to replicate this exact style.`
 
   // Analyze uploaded photo with AI
   const analyzePhoto = async () => {
-    if (!base64Image || !apiKey) return null;
+    if (!base64Image || !apiKey) return;
 
     setIsAnalyzingPhoto(true);
     try {
@@ -1409,90 +1389,28 @@ Be concise. 1-2 sentences per point.`
       const data = await response.json();
       const analysisText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      const result = analysisText || 'Analiz yapılamadı.';
-      setPhotoAnalysis(result);
-      return result;
+      if (analysisText) {
+        setPhotoAnalysis(analysisText);
+      } else {
+        setPhotoAnalysis('Analiz yapılamadı.');
+      }
     } catch (err) {
-      const errorMsg = 'Analiz hatası: ' + err.message;
-      setPhotoAnalysis(errorMsg);
-      return errorMsg;
+      setPhotoAnalysis('Analiz hatası: ' + err.message);
     } finally {
       setIsAnalyzingPhoto(false);
     }
   };
 
-  // Fetch an image via CORS proxy and convert to base64
-  // Tries multiple proxy services for reliability
-  const fetchImageAsBase64 = async (imageUrl, timeout = 6000) => {
-    // Clean up URL - remove /revision/latest params from fandom wikis
-    let cleanUrl = imageUrl.replace(/\/revision\/latest.*$/, '');
-    // Remove scale-to-width params
-    cleanUrl = cleanUrl.replace(/\/scale-to-width-down\/\d+/, '');
-
-    // Multiple CORS proxies for fallback
-    const proxyStrategies = [
-      // Strategy 1: images.weserv.nl (best for images, resizes/optimizes)
-      (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=768&h=768&fit=contain&output=jpg&q=85`,
-      // Strategy 2: allorigins.win (reliable general proxy)
-      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      // Strategy 3: corsproxy.io
-      (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      // Strategy 4: Try direct fetch (works for CDNs that allow CORS)
-      (url) => url,
-    ];
-
-    for (const makeProxyUrl of proxyStrategies) {
-      try {
-        const proxyUrl = makeProxyUrl(cleanUrl);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-        const response = await fetch(proxyUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) continue;
-
-        const blob = await response.blob();
-        // Verify it's actually an image (not an error page)
-        if (!blob.type.startsWith('image/') || blob.size < 1000) continue;
-
-        const base64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = () => resolve(null);
-          reader.readAsDataURL(blob);
-        });
-
-        if (base64) {
-          console.log(`✅ Fetched reference image: ${cleanUrl.substring(0, 80)}...`);
-          return base64;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-    console.warn(`❌ All proxies failed for: ${cleanUrl.substring(0, 80)}...`);
-    return null;
-  };
-
   // Research topic/concept using AI (gaming/lore knowledge)
   const researchTopic = async () => {
-    if (!topic || !apiKey) return null;
+    if (!topic || !apiKey) return;
 
     setIsResearchingTopic(true);
     setTopicResearch(null);
 
-    // Smart content detection (initial keyword-based, will be refined by AI later)
-    let category = detectContentCategory(topic, topicDescription);
+    // Smart content detection
+    const category = detectContentCategory(topic, topicDescription);
     setDetectedCategory(category);
-
-    // Auto-select archetype and typography if user hasn't manually chosen
-    if (!selectedArchetype && category.defaultArchetypes?.length > 0) {
-      setSelectedArchetype(category.defaultArchetypes[0]);
-    }
-    if (typoStyle === 'auto_harmony' && category.defaultTypoStyle) {
-      setTypoStyle(category.defaultTypoStyle);
-    }
 
     try {
       const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
@@ -1559,11 +1477,6 @@ YOU MUST search the web. Do NOT guess or make up information.`
         }
       );
 
-      if (!searchResponse.ok) {
-        const errBody = await searchResponse.text();
-        console.error('Step 1 (Search) API error:', searchResponse.status, errBody);
-        throw new Error(`Arama API hatası (${searchResponse.status}): ${searchResponse.statusText}`);
-      }
       const searchData = await searchResponse.json();
 
       // Extract search result text AND grounding metadata
@@ -1580,228 +1493,6 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .slice(0, 5)
         .join('\n');
 
-      // Step 1.5: Character/Entity Visual Reference Search
-      // Uses Google Search to find ACTUAL IMAGES of specific characters, creatures, items
-      // Creates detailed text description AND fetches actual reference images
-      let visualReferenceGuide = '';
-      let fetchedRefImages = [];
-      try {
-        const visualRefPayload = {
-          contents: [{
-            parts: [{
-              text: `You are a VISUAL REFERENCE RESEARCHER. Your job is to find the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
-
-TOPIC: "${topic}"
-${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
-
-SEARCH RESULTS (from previous step):
-${searchResult}
-
-YOUR TASK:
-1. SEARCH for images of the MAIN characters, creatures, bosses, items, or entities mentioned in this topic
-2. Search queries to try (TRY ALL OF THEM):
-   - "${topic} official artwork"
-   - "${topic} in-game screenshot render"
-   - "${topic} wiki fandom image"
-   - "${topic} concept art character design"
-   - "${topic} total war warhammer" (if gaming)
-   - "site:static.wikia.nocookie.net ${topic}"
-   - "site:fandom.com ${topic}"
-3. For EACH key character/creature/entity, write TWO things:
-
-PART A - IMAGE URLS (CRITICAL! We will download these images):
-Find DIRECT image file URLs showing the character. These URLs should point directly to image files.
-
-BEST SOURCES for direct image URLs:
-- Fandom/Wiki: Look for URLs like https://static.wikia.nocookie.net/.../filename.png
-- Official game sites: Look for URLs ending in .png, .jpg, .webp
-- Steam store pages: Game artwork/screenshots
-- Reddit posts with direct image links
-
-List them as (one per line):
-IMAGE_URL: https://static.wikia.nocookie.net/example/images/X/XX/Character.png
-IMAGE_URL: https://cdn.example.com/artwork/character_render.jpg
-
-⚠️ IMPORTANT URL RULES:
-- URLs MUST be direct image files (ending in .png, .jpg, .jpeg, .webp, .gif)
-- Do NOT give page URLs (like https://warhammer.fandom.com/wiki/Taurox) - give the ACTUAL IMAGE file URL
-- Fandom wiki image URLs typically look like: https://static.wikia.nocookie.net/WIKI_NAME/images/X/XX/FILENAME.png
-- Find 3-5 image URLs per entity from different angles/sources
-
-PART B - VISUAL DESCRIPTION:
-For each entity, write a VISUAL_REFERENCE block:
-
-**VISUAL_REFERENCE: [Entity Name]**
-- BODY TYPE: Exact body shape, proportions, posture (bipedal? quadrupedal? humanoid? how tall relative to humans?)
-- HEAD/FACE: Exact head shape, facial features, horns, tusks, eyes, mouth details
-- SKIN/SURFACE: Exact material (flesh? metal? stone? fur?), color (#hex), texture (smooth? rough? scarred? plated?)
-- ARMOR/CLOTHING: Exact armor type, coverage areas, material, color, decorations, damage/wear
-- WEAPONS/ITEMS: Exact weapons held, size relative to body, which hand, material, special features
-- UNIQUE FEATURES: What makes this character VISUALLY DISTINCT from generic versions? (e.g., "Taurox is NOT a normal bull - he is a BIPEDAL Minotaur whose flesh has been replaced by LIVING BRASS METAL, standing upright like a man")
-- SIGNATURE COLORS: The 3-4 colors most associated with this character (#hex values)
-- SIZE/SCALE: How big compared to a normal human? (e.g., "3x the height of a human", "towering 15 feet tall")
-- POSE/STANCE: Typical combat pose or stance from the source material
-- ⚠️ COMMON MISTAKES: What does AI typically get WRONG about this character? (e.g., "AI draws a normal bull, but Taurox is a BIPEDAL brass-plated Minotaur who stands UPRIGHT")
-
-RULES:
-- ALWAYS include IMAGE_URL lines with direct image file URLs (ending in .jpg, .png, .webp or from wiki/fandom image pages)
-- If the topic has NO specific characters/creatures (e.g., "cooking tips", "travel vlog"), write: "NO_SPECIFIC_ENTITIES"
-- Focus on what makes each entity VISUALLY UNIQUE
-- Use #hex color codes where possible
-- Include 1-3 entities maximum
-- Write in ENGLISH`
-            }]
-          }],
-          tools: [{
-            google_search: {}
-          }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 3000
-          }
-        };
-
-        // Timeout for visual reference API call (30s max - it shouldn't block the pipeline)
-        const visualRefController = new AbortController();
-        const visualRefTimeoutId = setTimeout(() => visualRefController.abort(), 30000);
-        const visualRefResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(visualRefPayload),
-            signal: visualRefController.signal
-          }
-        );
-        clearTimeout(visualRefTimeoutId);
-
-        if (visualRefResponse.ok) {
-          const visualRefData = await visualRefResponse.json();
-          const visualRefText = visualRefData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
-
-          // Also extract image URLs from grounding metadata
-          const refGroundingChunks = visualRefData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-          const groundingImageUrls = refGroundingChunks
-            .filter(chunk => chunk.web?.uri)
-            .map(chunk => chunk.web.uri)
-            .filter(url => /\.(jpg|jpeg|png|webp|gif)/i.test(url));
-
-          if (visualRefText && !visualRefText.includes('NO_SPECIFIC_ENTITIES')) {
-            visualReferenceGuide = visualRefText;
-            console.log('Visual reference guide generated successfully');
-
-            // Extract IMAGE_URL lines from the response text
-            const imageUrlRegex = /IMAGE_URL:\s*(https?:\/\/[^\s\)>\]]+)/gi;
-            const textImageUrls = [];
-            let urlMatch;
-            while ((urlMatch = imageUrlRegex.exec(visualRefText)) !== null) {
-              textImageUrls.push(urlMatch[1]);
-            }
-
-            // Also find any other URLs that look like direct image links
-            const inlineImageRegex = /https?:\/\/[^\s\)>\]]+\.(jpg|jpeg|png|webp)/gi;
-            let inlineMatch;
-            while ((inlineMatch = inlineImageRegex.exec(visualRefText)) !== null) {
-              if (!textImageUrls.includes(inlineMatch[0])) {
-                textImageUrls.push(inlineMatch[0]);
-              }
-            }
-
-            // Combine all found image URLs (text URLs + grounding URLs), deduplicate
-            const allImageUrls = [...new Set([...textImageUrls, ...groundingImageUrls])].slice(0, 5);
-            console.log(`Found ${allImageUrls.length} character reference image URLs`);
-
-            if (allImageUrls.length > 0) {
-              // Fetch images in parallel via CORS proxy, with a GLOBAL timeout of 15s
-              // so it never blocks the whole pipeline for too long
-              const globalTimeout = new Promise((resolve) => setTimeout(() => resolve('TIMEOUT'), 15000));
-              const imagePromises = allImageUrls.map(url => fetchImageAsBase64(url));
-              const raceResult = await Promise.race([
-                Promise.all(imagePromises),
-                globalTimeout
-              ]);
-              if (raceResult === 'TIMEOUT') {
-                console.warn('⏰ Global timeout: reference image fetching took too long, skipping');
-              } else {
-                fetchedRefImages = raceResult.filter(img => img !== null).slice(0, 3);
-              }
-              console.log(`Successfully fetched ${fetchedRefImages.length} reference images`);
-            }
-          } else {
-            console.log('No specific entities found for visual reference');
-          }
-        } else {
-          console.warn('Visual reference search failed:', visualRefResponse.status);
-        }
-      } catch (visualRefErr) {
-        console.warn('Visual reference search error (non-critical):', visualRefErr.message);
-      }
-
-      // FALLBACK: If no images could be downloaded, ask Gemini to describe them
-      // in extreme detail as an "image generation prompt" since it SAW the images during search
-      if (fetchedRefImages.length === 0 && visualReferenceGuide && !visualReferenceGuide.includes('NO_SPECIFIC_ENTITIES')) {
-        try {
-          console.log('🔄 No images downloaded - requesting ultra-detailed visual description from Gemini...');
-          const fallbackPayload = {
-            contents: [{
-              parts: [{
-                text: `You previously searched for images of characters/creatures related to "${topic}".
-
-EXISTING VISUAL NOTES:
-${visualReferenceGuide}
-
-NOW: I could NOT download any reference images due to CORS restrictions. So I need you to search AGAIN and this time provide an ULTRA-DETAILED visual description that an image generation AI can use as a substitute for the actual image.
-
-Search for: "${topic} official render", "${topic} in-game model", "${topic} artwork"
-
-For EACH character/entity, write an IMAGE GENERATION PROMPT that captures EXACTLY what you see in the search results. Be so specific that someone who has NEVER seen this character could draw it perfectly:
-
-**GENERATION_PROMPT: [Entity Name]**
-Describe in ONE detailed paragraph (200+ words): exact pose, camera angle, every visible body part and its exact appearance (material, color, texture, damage, glow effects), armor piece by piece, weapon details, facial expression, background elements. Use specific colors (#hex).
-
-CRITICAL DETAILS TO INCLUDE:
-- Exact skin/surface material and color (not "brass" but "dark oxidized brass with green patina, #8B7355 base with #4A6741 oxidation patches")
-- Exact face structure (jaw shape, eye type and color, mouth/teeth visibility, forehead details)
-- Any mechanical or magical features (glowing cracks, embedded runes, prosthetics)
-- Armor damage and wear patterns (dents, scratches, missing pieces)
-- Proportions relative to a human (exact height multiplier)
-
-This description will be fed DIRECTLY to an AI image generator so make it as visually precise as humanly possible.`
-              }]
-            }],
-            tools: [{ google_search: {} }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 3000 }
-          };
-
-          const fallbackController = new AbortController();
-          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 25000);
-          const fallbackResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(fallbackPayload),
-              signal: fallbackController.signal
-            }
-          );
-          clearTimeout(fallbackTimeoutId);
-
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json();
-            const fallbackText = fallbackData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
-            if (fallbackText) {
-              visualReferenceGuide += `\n\n🎯 ULTRA-DETAILED VISUAL GENERATION PROMPTS (use these since no reference images available):\n${fallbackText}`;
-              console.log('✅ Got ultra-detailed fallback description');
-            }
-          }
-        } catch (fallbackErr) {
-          console.warn('Fallback description error (non-critical):', fallbackErr.message);
-        }
-      }
-
-      // Store reference images for use in generation
-      setCharacterRefImages(fetchedRefImages);
-
       // Step 2: Deep visual analysis combining search results + AI creativity
       const analysisPayload = {
         contents: [{
@@ -1809,22 +1500,20 @@ This description will be fed DIRECTLY to an AI image generator so make it as vis
             text: `Sen bir GÖRSEL TASARIM, İÇERİK ve YOUTUBE uzmanısın.
 "${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yapman gerekiyor.
 
+ALGILANAN İÇERİK KATEGORİSİ: ${category.id.toUpperCase()}
+GÖRSEL RUHHAL: ${category.visualMood}
+
 ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
 
 📡 İNTERNETTEN BULUNAN GÜNCEL BİLGİLER (BU BİLGİLERİ KULLAN!):
 ${searchResult}
 
 ${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
-${visualReferenceGuide ? `\n🎨 KARAKTER/VARLIK GÖRSEL REFERANS REHBERİ (KRİTİK!):\n${visualReferenceGuide}\n⚠️ Yukarıdaki görsel referansları MUTLAKA kullan! Bu karakterlerin/varlıkların GERÇEK görünüşleri böyle.\n` : ''}
 
 ⚠️ ÖNEMLİ: Yukarıdaki internet araştırması sonuçlarını TEMEL AL.
 "${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
 
 Lütfen Türkçe olarak çok detaylı yaz:
-
-⚠️ ÖNCELİKLE: İlk satırda bu konunun kategorisini belirle. Araştırma sonuçlarına göre DOĞRU kategoriyi seç:
-**CONTENT_CATEGORY**: [gaming / education / vlog / food / travel / tech / music / fitness / general]
-(Örnek: Warhammer = gaming, tarif videosu = food, iPhone inceleme = tech, konser = music)
 
 1. **KONU KİMLİĞİ**:
    - Bu ne? Tam tanımı (Oyun, ürün, kavram, mekan, kişi, olay, teknik, yemek, müzik vb.)
@@ -1887,11 +1576,6 @@ Lütfen Türkçe olarak çok detaylı yaz:
    - **SİLAHLAR ve SAVAŞ TEKNOLOJİSİ**:
      * O dönemde kullanılan başlıca silahlar (yakın dövüş, uzak menzil, kuşatma)
      * Barut var mıydı? Topçuluk? Ok/yay mı arbalet mi tüfek mi?
-     * ⚠️ KARAKTER SİLAHLARI (ÇOK KRİTİK!): Eğer belirli bir karakter varsa, O KARAKTERİN kullandığı spesifik silahları yaz:
-       - DOĞRU TİP: Kılıç mı, balta mı, mızrak mı, yay mı? Tam tipi yaz (pala, kılıç, çift balta, kısa balta vb.)
-       - DOĞRU BOYUT: Büyük mü küçük mü? Tek el mi çift el mi?
-       - DOĞRU ADET: Kaç tane? (örn: "İKİ ADET kısa balta" veya "TEK kılıç")
-       - YANLIŞ SİLAH NE OLUR? (örn: "Büyük savaş baltası YANLIŞ - bu karakter iki küçük el baltası kullanır")
 
    - **MİMARİ ve ÇEVRE**:
      * O dönemin ve medeniyetin mimari stili (kubbe, kemer, sütun, gotik, pagoda vb.)
@@ -1921,11 +1605,6 @@ Lütfen Türkçe olarak çok detaylı yaz:
    - En iyi kompozisyon önerisi (kişi nerede durmalı, arka plan nasıl olmalı)
    - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare, bokeh, duman vb.)
    - Kostüm/kıyafet önerisi (kişi ne giymeli - İÇERİĞE UYGUN olmalı!)
-   - ⚠️ KARAKTER EŞYALARI/SİLAHLARI: Eğer karakterin spesifik silahları/eşyaları varsa ÇOK DETAYLI yaz:
-     * Tam silah tipi (kılıç mı balta mı yay mı? Ne tür bir kılıç/balta?)
-     * Boyut (küçük, orta, büyük)
-     * Adet (kaç tane taşıyor?)
-     * YANLIŞ olan ne olur? (örn: "Büyük savaş baltası YANLIŞ, karakter 2 küçük el baltası kullanır")
    - Kaçınılması gereken hatalar
    - Örnek yazı önerileri (2-3 kelime, Türkçe ve İngilizce seçenekler)
 
@@ -1955,145 +1634,41 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
         }
       );
 
-      if (!analysisResponse.ok) {
-        const errBody = await analysisResponse.text();
-        console.error('Step 2 (Analysis) API error:', analysisResponse.status, errBody);
-        throw new Error(`Analiz API hatası (${analysisResponse.status}): ${analysisResponse.statusText}`);
-      }
       const analysisData = await analysisResponse.json();
       const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!researchText) {
-        // Check if there was a block reason or other issue
-        const blockReason = analysisData.candidates?.[0]?.finishReason;
-        const promptFeedback = analysisData.promptFeedback?.blockReason;
-        console.error('Step 2 returned no text. finishReason:', blockReason, 'promptFeedback:', promptFeedback, 'Full response:', JSON.stringify(analysisData));
-        throw new Error(`Analiz sonucu boş döndü${blockReason ? ` (sebep: ${blockReason})` : ''}${promptFeedback ? ` (engel: ${promptFeedback})` : ''}. Farklı bir konu deneyin.`);
-      }
-
-      // researchText is valid, continue
-      {
-        // AI-based category detection: parse CONTENT_CATEGORY from analysis output
-        const categoryMatch = researchText.match(/\*\*CONTENT_CATEGORY\*\*:\s*\[?\s*(gaming|education|vlog|food|travel|tech|music|fitness|general)\s*\]?/i);
-        if (categoryMatch) {
-          const aiDetectedId = categoryMatch[1].toLowerCase();
-          const aiCategory = CONTENT_CATEGORIES[aiDetectedId] || GENERAL_CATEGORY;
-          // Update category if AI detected a different (more specific) one
-          if (aiCategory.id !== category.id) {
-            setDetectedCategory(aiCategory);
-            // Update auto-selected styles based on new category
-            if (!selectedArchetype && aiCategory.defaultArchetypes?.length > 0) {
-              setSelectedArchetype(aiCategory.defaultArchetypes[0]);
-            }
-            if ((typoStyle === 'auto_harmony' || typoStyle === category.defaultTypoStyle) && aiCategory.defaultTypoStyle) {
-              setTypoStyle(aiCategory.defaultTypoStyle);
-            }
-            // Use the AI-detected category for the rest of the pipeline
-            category = aiCategory;
-          }
-        }
-
+      if (researchText) {
         // Step 3: Convert research into a CONCRETE visual scene description
-        // Using gemini-2.5-pro for richer, more creative scene descriptions (flash is too generic)
         // Use a shorter prompt for non-historical content, detailed for historical
         const historicalKeywords = ['tarih', 'history', 'historical', 'savaş', 'war', 'battle', 'empire', 'imparatorluk', 'osmanlı', 'ottoman', 'byzantine', 'bizans', 'medieval', 'ortaçağ', 'antik', 'ancient', 'roma', 'roman', 'kingdom', 'krallık', 'sultan', 'fetih', 'conquest', 'dynasty', 'hanedan'];
         const topicLower = `${topic} ${topicDescription || ''}`.toLowerCase();
         const isHistorical = historicalKeywords.some(kw => topicLower.includes(kw));
 
-        const hasPhoto = !!base64Image;
         const scenePromptBase = `You are a SCENE DIRECTOR. Read the research below and write a CONCRETE, DETAILED scene description for a YouTube thumbnail.
 
 RESEARCH:
 ${researchText}
-${visualReferenceGuide ? `
-🎨 CHARACTER/ENTITY VISUAL REFERENCE (CRITICAL - FOLLOW EXACTLY!):
-${visualReferenceGuide}
 
-⚠️ THE VISUAL REFERENCES ABOVE ARE FROM ACTUAL GAME/SOURCE MATERIAL IMAGES.
-You MUST follow them EXACTLY when describing characters/creatures in the scene.
-DO NOT default to generic versions - use the SPECIFIC details from the reference guide.
-Example: If the reference says "bipedal Minotaur with brass metal skin", do NOT draw "a normal bull".
-` : ''}
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
-${!hasPhoto ? `
-⚠️ IMPORTANT: The user has NOT uploaded a photo. Do NOT include any human person/face in the scene.
-Instead, make the ENVIRONMENT, CREATURES, OBJECTS, or ICONIC ELEMENTS the hero of the frame.
-In PERSON_PLACEMENT_AND_COSTUME section, describe the MAIN FOCAL SUBJECT instead (a creature, weapon, object, vehicle, building, etc.)
-` : ''}
+
 Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
 
         const scenePromptGeneral = `${scenePromptBase}
 
-⚠️ YOU ARE A CINEMATOGRAPHER, NOT A DECORATOR. Think like a film director composing a MOVIE POSTER - not a flat collage.
-
 FORMAT (write each section completely):
 
-**NARRATIVE_MOMENT**: What is HAPPENING in this frame? Describe a specific dramatic moment, NOT a static pose.
-BAD: "A person standing in front of a monster"
-GOOD: "The person turns to face the camera in terror as Taurox the Brass Bull charges through a burning village wall behind them, debris and embers flying past the person's face"
-- What emotion is the viewer supposed to feel? (awe, fear, excitement, curiosity)
-- What just happened 1 second before this frame? What happens 1 second after?
+**SCENE_DESCRIPTION**: Describe the background environment in vivid detail. Include: setting, lighting, colors, atmosphere, key objects, mood. Be very specific - e.g. "A dark, rain-soaked cyberpunk alley with neon signs reflecting off wet pavement, holographic advertisements flickering overhead, steam rising from grates" NOT just "a city street".
 
-**DEPTH_LAYERS** (CRITICAL - creates cinematic depth, NOT a flat image):
-- FOREGROUND (closest to camera): Objects that are partially visible at the edges/bottom of frame, creating depth. Examples: burning debris, sparks, weapon tips, smoke wisps, grass blades, rain drops. These should be SLIGHTLY BLURRED.
-- MIDGROUND (main subject): The person/main subject. Sharp focus. This is the hero of the frame.
-- BACKGROUND (far): The environment, secondary characters (like game bosses/monsters), landscapes. Slightly soft. Should feel MASSIVE in scale compared to the person.
-- ATMOSPHERIC LAYER: What fills the AIR between layers? Fog, dust particles, embers, rain, magical energy, heat distortion? This is what makes the scene feel REAL and 3D.
+**COLOR_PALETTE**: List 3-5 dominant colors for the scene (e.g., "deep crimson, electric blue, dark charcoal, golden amber")
 
-**SCENE_ENVIRONMENT**: The background world in vivid detail. Include:
-- Specific setting (not "a battlefield" but "a shattered stone bridge over a lava river, with obsidian cliffs and a blood-red sky filled with circling carrion birds")
-- Time of day and weather conditions
-- Scale indicators (how BIG is the environment compared to the person?)
+**PERSON_COSTUME**: What should the person in the thumbnail wear? Match the theme. (e.g., "futuristic tactical suit with glowing blue accents" or "casual gaming hoodie with headphones around neck")
 
-**COLOR_PALETTE**: List 4-5 dominant colors with their role:
-- Primary (60% of frame): e.g., "deep crimson #8B0000 - the burning sky and lava"
-- Secondary (25%): e.g., "obsidian black #1a1a1a - the scorched earth and shadows"
-- Accent (10%): e.g., "molten gold #FFD700 - the magical energy and rim lighting"
-- Highlight (5%): e.g., "pale bone white #F5F5DC - the skull trophies and teeth"
+**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at subject, dramatic perspective, wide-angle lens feel")
 
-**PERSON_PLACEMENT_AND_COSTUME**:
-- WHERE in the frame is the person? (e.g., "Left third, slightly below center, body angled 30° right, face turned toward camera")
-- What SIZE relative to frame? (e.g., "Head at 40% from top, showing chest-up, face fills 35% of frame height")
-- What are they WEARING? Match the theme universe. Transform their clothes.
-- What is their EXPRESSION? (Must be dramatic: terrified, awe-struck, battle-ready, determined, maniacal grin)
-- How does the scene's lighting HIT their face? (e.g., "Orange firelight from the left illuminates the left side of their face, right side in deep shadow, rim light from the explosion behind creates a golden edge on their hair and shoulders")
+**KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
 
-**CHARACTER_ITEMS**: Specific items, weapons, tools, or props. Be EXTREMELY precise:
-- Exact type (e.g., "TWO short hand-axes" NOT "an axe")
-- Size, quantity, position (in right hand, on back, etc.)
-- Style details from the research (ornamental, battle-worn, glowing, etc.)
-⚠️ The AI image model defaults to generic weapons if not specified precisely!
-
-**CAMERA_AND_COMPOSITION**:
-- Camera angle (e.g., "Low angle, 15° below eye level, making subject look powerful")
-- Lens feel (e.g., "Wide-angle 24mm feel - exaggerates foreground, makes background feel vast")
-- Rule of thirds placement
-- Leading lines (e.g., "Diagonal crack in ground leads eye from bottom-left to the person's face")
-
-**ICONIC_ELEMENTS** (CRITICAL for authenticity - fans will notice!):
-Extract from the research any LORE-SPECIFIC, FRANCHISE-SPECIFIC, or BRAND-SPECIFIC visual details. These are what separate a GENERIC thumbnail from an AUTHENTIC one.
-Examples of what to look for and include:
-- FACTION/TEAM symbols, banners, flags, emblems (e.g., Khorne's skull rune, Beastmen's horned skull totem, a football club's crest)
-- CHARACTER-SPECIFIC iconic items (e.g., Taurox's brass/bronze body plating, Archaon's Crown of Domination, a streamer's signature item)
-- UNIVERSE-SPECIFIC visual language (e.g., Warhammer Chaos corruption tendrils, Star Wars lightsaber glow color, anime-specific energy auras)
-- FACTION COLORS that fans recognize (e.g., Khorne = brass/red/black, Nurgle = green/brown/rot, Ultramarines = blue/gold)
-- Environmental storytelling props (e.g., faction banners on poles in background, skull piles for Khorne, specific architectural style)
-For EACH iconic element specify:
-1. WHAT it is (exact description from the lore/research)
-2. WHERE to place it (foreground prop? background banner? on the person's armor? floating in the sky?)
-3. HOW PROMINENT it should be (subtle background detail or major visual element?)
-⚠️ These details are what make fans say "this person KNOWS the content" vs "generic AI slop". Do NOT skip this section.
-⚠️ If the research doesn't mention specific lore/franchise details, write "N/A - original content, no established iconography" and move on.
-
-**KEY_EFFECTS**: Atmospheric and post-processing effects:
-- Practical effects: sparks, embers, rain, snow, debris, energy particles
-- Light effects: god rays, volumetric fog, lens flare, caustics
-- Color grading: "Teal and orange grade" or "desaturated with selective color pop"
-
-**ABSOLUTELY_NOT**: Things that must NOT appear. Be specific.
-
-Each section should be 2-5 sentences. Be COMPLETE - finish every sentence.`;
+Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
 
         const scenePromptHistorical = `${scenePromptBase}
 
@@ -2117,31 +1692,10 @@ NEVER use: "Turkish flag", "flag of Turkey", white crescent, 5-pointed star, bri
 
 **PERSON_COSTUME**: What should the thumbnail person wear? Match the era.
 
-**CHARACTER_ITEMS**: What specific weapons, tools, or items should the character hold or wear?
-⚠️ Be EXTREMELY PRECISE - the AI defaults to generic/wrong weapons if not told exactly:
-- Exact weapon type and size (e.g., "TWO short hand-axes (NOT a large battle axe)" or "a curved scimitar (kilij), NOT a straight European longsword")
-- Exact quantity (one, two, etc.)
-- Which hand holds what
-- Style details (ornamental, plain, jeweled hilt, leather-wrapped grip, etc.)
-- Any shield, bow, or secondary items
-List what they MUST have AND what they must NOT have.
+**ABSOLUTELY_NOT**: Things that MUST NOT appear. For Ottoman scenes ALWAYS include:
+"NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
 
-**ICONIC_ELEMENTS** (CRITICAL for historical authenticity):
-Extract from the research PERIOD-SPECIFIC and FACTION-SPECIFIC visual details that make the scene historically convincing:
-- FACTION/EMPIRE banners, standards, symbols (exact description: colors, emblems, shapes - NOT modern equivalents)
-- PERIOD-SPECIFIC architectural details (column styles, wall construction, gate designs)
-- ARMY-SPECIFIC equipment details (specific helmet types, shield patterns, armor styles that identify the faction)
-- CULTURAL PROPS (religious symbols, royal insignia, trade goods, siege equipment specific to the era)
-- ENVIRONMENTAL storytelling (battle damage, siege marks, weather conditions appropriate to the historical event)
-For EACH element: WHAT it is, WHERE to place it, HOW prominent.
-⚠️ These details separate "generic medieval scene" from "THIS specific historical event". Fans will notice accuracy.
-⚠️ If this is a HISTORICAL GAME (Total War, Crusader Kings, etc.), include BOTH game-specific AND historical visual elements.
-
-**ABSOLUTELY_NOT**: Things that MUST NOT appear. Be very specific about wrong weapons/items too.
-For Ottoman scenes ALWAYS include: "NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
-Example: "NO large two-handed battle axe - this character carries TWO SMALL one-handed axes"
-
-Keep each section 2-5 sentences. Be COMPLETE - finish every sentence.`;
+Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
 
         const scenePayload = {
           contents: [{
@@ -2150,153 +1704,40 @@ Keep each section 2-5 sentences. Be COMPLETE - finish every sentence.`;
             }]
           }],
           generationConfig: {
-            temperature: 0.7,
+            temperature: 0.3,
             maxOutputTokens: 8192
           }
         };
 
-        // Try gemini-2.5-pro first (better creative writing), fallback to flash
-        let sceneDescription = null;
-        const sceneModels = ['gemini-2.5-pro', 'gemini-2.5-flash'];
-        for (const sceneModel of sceneModels) {
-          try {
-            const sceneResponse = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/${sceneModel}:generateContent?key=${apiKey}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(scenePayload)
-              }
-            );
-
-            if (!sceneResponse.ok) {
-              console.warn(`Scene direction with ${sceneModel} failed (${sceneResponse.status}), trying next...`);
-              continue;
-            }
-
-            const sceneData = await sceneResponse.json();
-            sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
-            const finishReason = sceneData.candidates?.[0]?.finishReason;
-
-            if (finishReason === 'MAX_TOKENS' && sceneDescription) {
-              console.warn('Scene direction was truncated. Using partial result.');
-            }
-
-            if (sceneDescription) {
-              console.log(`Scene direction succeeded with ${sceneModel}`);
-              break;
-            } else {
-              console.warn(`Scene direction with ${sceneModel} returned empty, trying next...`);
-            }
-          } catch (sceneErr) {
-            console.warn(`Scene direction with ${sceneModel} threw error:`, sceneErr.message);
-            // Continue to next model
+        const sceneResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(scenePayload)
           }
+        );
+
+        const sceneData = await sceneResponse.json();
+        let sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
+        const finishReason = sceneData.candidates?.[0]?.finishReason;
+
+        // If output was truncated (MAX_TOKENS), log warning but still use what we got
+        if (finishReason === 'MAX_TOKENS' && sceneDescription) {
+          console.warn('Scene direction was truncated. Using partial result.');
         }
 
-        // Step 4: Visual DNA & Art Direction Brief
-        // Condense everything into a focused, concise brief for the image generation model
-        const fullResearch = sceneDescription
-          ? `${researchText}\n\n🎬 SCENE DIRECTION:\n${sceneDescription}`
+        // Combine research + scene description
+        const combinedResearch = sceneDescription
+          ? `${researchText}\n\n🎬 READY-TO-USE SCENE DIRECTION:\n${sceneDescription}`
           : researchText;
 
-        const artDirectionPayload = {
-          contents: [{
-            parts: [{
-              text: `You are a senior Art Director creating a thumbnail brief. Read ALL the research and scene direction below, then produce a CONCISE art direction brief.
-
-FULL RESEARCH:
-${fullResearch}
-
-TOPIC: "${topic}"
-${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
-${!hasPhoto ? `⚠️ NO PHOTO UPLOADED: Do NOT include any human person/face. The CHARACTER BRIEF section should describe the MAIN FOCAL SUBJECT (creature, object, weapon, vehicle, etc.) instead of a person.` : ''}
-
-YOUR TASK: Distill everything above into a focused ART DIRECTION BRIEF. Write in English.
-Think like a FILM DIRECTOR creating a MOVIE POSTER, not a flat collage.
-
-FORMAT (follow EXACTLY):
-
-🎨 VISUAL DNA:
-- Art style: [e.g., "dark fantasy oil painting", "hyper-realistic cinematic", "cel-shaded anime", "gritty photorealistic"]
-- Color palette: [list 4-5 specific hex colors that define this topic's visual identity, e.g., "#1a0a2e deep void purple, #c9a227 ancient gold, #8b0000 blood crimson"]
-- Lighting: [SPECIFIC 3-point setup, e.g., "Harsh amber key light from upper-left casting long shadows, cool teal fill from right at 30% intensity, hot orange rim light from behind creating edge separation. Volumetric dust particles catching the key light."]
-- Texture feel: [e.g., "weathered stone, oxidized metal, rough leather" or "glossy plastic, chrome, LED glow"]
-- Reference look: [describe what this should look like, e.g., "like a Dark Souls boss intro cinematic" or "like a Netflix documentary poster"]
-
-📐 DEPTH COMPOSITION (CRITICAL):
-- Foreground: [Blurred elements closest to camera - debris, sparks, weapon tips, particles]
-- Midground: [The person - placement, size, pose. This is the HERO of the frame]
-- Background: [Environment, secondary characters/creatures, scale. Should feel MASSIVE]
-- Atmosphere: [What fills the air between layers? Fog, embers, rain, dust, magical energy?]
-
-🎬 NARRATIVE MOMENT (max 2 sentences):
-[What is HAPPENING? Not a static description but a frozen moment of ACTION/TENSION. e.g., "The person braces as Taurox smashes through the fortress wall behind them, stone fragments and fire erupting outward"]
-
-👤 CHARACTER BRIEF (max 3 sentences):
-[Person's costume, pose, expression, items they hold. Be EXACT about weapons/props - type, size, quantity.]
-[CRITICAL: How does the scene's lighting hit the person's face? e.g., "warm firelight on left cheek, deep shadow on right, golden rim light on hair from explosion behind"]
-
-🏆 ICONIC DETAILS (max 3 bullet points):
-[Lore/franchise/era-specific visual elements that make this AUTHENTIC - faction banners, character-specific items, universe-specific visual language, faction colors. These go into specific layers: foreground props, background banners, armor details, etc.]
-[If no established franchise/lore, write "Original content - no franchise iconography"]
-
-⛔ DO NOT:
-[3-5 specific things that must NOT appear - wrong weapons, anachronisms, wrong flags, etc.]
-[ALSO: "NO flat/collage look - scene must have DEPTH with foreground-midground-background separation"]
-
-RULES:
-- Be SPECIFIC, not generic. "Dark moody lighting" is BAD. "Harsh amber key light from upper-left with deep teal shadows and volumetric dust particles" is GOOD.
-- Use the ACTUAL visual identity from the research - real colors, real art style, real atmosphere
-- DEPTH IS MANDATORY: foreground particles/elements + sharp midground subject + atmospheric background
-- The brief must be under 350 words total
-- Every word must add visual value - no filler`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1500
-          }
-        };
-
-        let artDirectionBrief = null;
-        try {
-          const artResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(artDirectionPayload)
-            }
-          );
-          const artData = await artResponse.json();
-          artDirectionBrief = artData.candidates?.[0]?.content?.parts?.[0]?.text;
-        } catch (e) {
-          console.warn('Art direction brief failed, using full research:', e);
-        }
-
-        // Combine: full research for display + visual references + art direction brief for generation
-        let combinedResearch = fullResearch;
-        if (visualReferenceGuide) {
-          combinedResearch += `\n\n🎨 CHARACTER/ENTITY VISUAL REFERENCES (MUST FOLLOW!):\n${visualReferenceGuide}`;
-        }
-        // Show reference image status to user
-        if (fetchedRefImages.length > 0) {
-          combinedResearch += `\n\n🖼️ ${fetchedRefImages.length} REFERANS GÖRSEL BULUNDU VE İNDİRİLDİ - Thumbnail üretiminde kullanılacak.`;
-        } else if (visualReferenceGuide) {
-          combinedResearch += `\n\n⚠️ Referans görseller indirilemedi - sadece metin açıklamaları kullanılacak.`;
-        }
-        if (artDirectionBrief) {
-          combinedResearch += `\n\n🎯 ART DIRECTION BRIEF (USE THIS FOR IMAGE GENERATION):\n${artDirectionBrief}`;
-        }
-
         setTopicResearch(combinedResearch);
-        return { research: combinedResearch, refImages: fetchedRefImages };
+      } else {
+        setTopicResearch('Araştırma yapılamadı.');
       }
     } catch (err) {
-      console.error('Research pipeline error:', err);
       setTopicResearch('Araştırma hatası: ' + err.message);
-      return null;
     } finally {
       setIsResearchingTopic(false);
     }
@@ -2326,35 +1767,6 @@ RULES:
     setPreviousImage(null);
     setPreviousCtrScore(null);
 
-    // ═══ AUTO-PREREQUISITE: Run missing steps automatically ═══
-    // This allows single-click generation: photo analysis + research + generate
-    let effectivePhotoAnalysis = photoAnalysis;
-    let effectiveTopicResearch = topicResearch;
-    let effectiveCharacterRefImages = characterRefImages;
-
-    // Auto-analyze photo if uploaded but not yet analyzed
-    if (base64Image && !effectivePhotoAnalysis && !isAnalyzingPhoto) {
-      console.log('Auto-analyzing photo before generation...');
-      effectivePhotoAnalysis = await analyzePhoto();
-    }
-
-    // Auto-research topic if not yet researched
-    if (!effectiveTopicResearch && !isResearchingTopic) {
-      console.log('Auto-researching topic before generation...');
-      const researchResult = await researchTopic();
-      if (researchResult) {
-        effectiveTopicResearch = researchResult.research;
-        effectiveCharacterRefImages = researchResult.refImages || [];
-      }
-    }
-
-    // Shadow state variables with fresh values for prompt building
-    // This ensures the prompts use the just-fetched data even before React re-renders
-    const topicResearch = effectiveTopicResearch;
-    const photoAnalysis = effectivePhotoAnalysis;
-    const characterRefImages = effectiveCharacterRefImages;
-    // ═══ END AUTO-PREREQUISITE ═══
-
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
     try {
@@ -2379,64 +1791,32 @@ ${topicDescription}
 Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
 ` : ''}
 
-${topicResearch ? (() => {
-  // Extract visual reference guide if present
-  const hasVisualRef = topicResearch.includes('CHARACTER/ENTITY VISUAL REFERENCES');
-  const visualRefStart = topicResearch.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
-  const visualRefEnd = topicResearch.indexOf('🎯 ART DIRECTION BRIEF');
-  const visualRefSection = hasVisualRef && visualRefStart > -1
-    ? topicResearch.substring(visualRefStart, visualRefEnd > visualRefStart ? visualRefEnd : undefined).trim()
-    : '';
+${topicResearch ? `
+📋 EXPERT RESEARCH & VISUAL DIRECTION (VERY IMPORTANT - FOLLOW THIS):
+A visual design expert has researched "${topic}" and provided the following detailed information.
+YOU MUST USE THIS INFORMATION to create an authentic, visually accurate thumbnail:
 
-  // If Art Direction Brief exists, use it as primary direction (more focused)
-  const hasArtBrief = topicResearch.includes('ART DIRECTION BRIEF');
-  if (hasArtBrief) {
-    const briefStart = topicResearch.indexOf('🎯 ART DIRECTION BRIEF');
-    const artBrief = briefStart > -1 ? topicResearch.substring(briefStart) : '';
-    return `
-📋 VISUAL RESEARCH COMPLETED FOR "${topic}".
-
-${visualRefSection ? `${visualRefSection}
-
-⚠️⚠️⚠️ CRITICAL - CHARACTER/ENTITY ACCURACY:
-The VISUAL REFERENCES above describe the EXACT appearance of characters/creatures from ACTUAL source material images.
-You MUST follow these descriptions PRECISELY:
-- Body type, proportions, posture → draw EXACTLY as described
-- Skin/surface material and colors → use the EXACT colors and textures
-- Armor/clothing details → follow EVERY detail
-- Unique features → these are what make the character RECOGNIZABLE to fans
-- ⚠️ COMMON MISTAKES section → AVOID these specific errors
-DO NOT default to generic versions. A fan should INSTANTLY recognize the character.
-
-` : ''}
-${artBrief}
-
-⚠️ THE ART DIRECTION BRIEF ABOVE IS YOUR PRIMARY GUIDE. Follow it precisely:
-- VISUAL DNA section defines the exact art style, colors (use the hex codes!), lighting, and texture
-- DEPTH COMPOSITION is CRITICAL: create foreground→midground→background layering, NOT a flat image
-- NARRATIVE MOMENT defines what is HAPPENING - this is a frozen moment of action, not a static pose
-- CHARACTER BRIEF defines costume, pose, expression, and items (follow weapon types/sizes EXACTLY)
-- ICONIC DETAILS are what make this thumbnail AUTHENTIC to fans - faction banners, character-specific items, universe-specific visual elements. Include them in the correct layers (foreground props, background details, armor elements)
-- DO NOT section lists forbidden elements - zero tolerance
-
-The brief was created by analyzing real visual references for "${topic}".
-Your thumbnail must look AUTHENTIC to fans of this content - they should see details that prove you KNOW the source material.
-⚠️ The final image MUST have CINEMATIC DEPTH - foreground particles/elements, sharp midground subject, atmospheric background. NEVER create a flat collage look.
-`;
-  }
-  // Fallback: use full research if no art brief
-  return `
-📋 EXPERT RESEARCH & VISUAL DIRECTION (FOLLOW THIS):
 ${topicResearch}
 
-⚠️ Follow the SCENE DIRECTION section EXACTLY:
-- SCENE_DESCRIPTION → exact background
-- COLOR_PALETTE → exact colors
-${base64Image ? '- PERSON_COSTUME → exact outfit' : '- No human person in the scene (no photo uploaded)'}
-- CHARACTER_ITEMS → exact weapons/props (correct type, size, quantity!)
-- ABSOLUTELY_NOT → zero tolerance for listed items
-`;
-})() : ''}
+⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
+This is not generic - it's specific to "${topic}" and must look authentic to fans/followers of this content.
+
+🎬 SCENE DIRECTION (CRITICAL - FOLLOW EXACTLY):
+The research above contains a "READY-TO-USE SCENE DIRECTION" section.
+If present, this is the MOST IMPORTANT part to follow:
+
+- **SCENE_DESCRIPTION**: Use this EXACT description for the background/environment. Do NOT substitute your own idea!
+- **COLOR_PALETTE**: Use these exact colors for the scene.
+- **PERSON_COSTUME**: Dress the person in THIS specific outfit.
+- **CAMERA_ANGLE / CAMERA_POSITION**: Follow for viewing angle and composition.
+- **KEY_EFFECTS**: Apply these visual effects.
+- **ATTACKER/DEFENDER_DESCRIPTION**: If present, follow for armies/factions.
+- **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance.
+
+For HISTORICAL scenes: Do NOT use modern city names (e.g., "Istanbul" draws modern city).
+Build the scene from architectural descriptions only.
+For Ottoman scenes: Use DARK CRIMSON banner + GOLDEN crescent + GOLDEN 8-pointed star (NOT modern Turkish flag).
+` : ''}
 
 ${conceptAnalysis ? `
 🎨🎨🎨 REFERENCE IMAGE STYLE (CRITICAL - YOU MUST MATCH THIS STYLE):
@@ -2479,30 +1859,15 @@ IF THE IMAGE CONTAINS A PERSON/FACE:
 - THE FACE MUST BE BIG: The person's face should take up 40-50% of the frame HEIGHT
 - Position the person CENTERED or slightly below center in the frame
 - The face is the MAIN FOCAL POINT - everything else is secondary
-- Show from chest-up or shoulders-up so the face is LARGE
-- The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
-- Leave adequate space above the head (headroom)
+- SEAMLESSLY BLEND the person into the scene with matching lighting and color grading
+- Add dramatic colored rim lighting/glow on the person (green, red, blue, orange based on theme)
+- The person should look like they BELONG in this world
+- TRANSFORM the person's clothing to match the scene's theme and universe
+- Do NOT keep their original casual clothes in themed scenes (use armor, suits, gear as appropriate)
 - Face and facial features must remain unchanged, only transform the body/clothing
-
-⚠️ CRITICAL - CINEMATIC FACE INTEGRATION (NOT a flat paste/collage):
-- The person must look like they were PHOTOGRAPHED INSIDE the scene, not pasted on top
-- LIGHTING MATCH: The scene's light sources must illuminate the person's face realistically:
-  * If there's fire/explosion on the left → warm orange light on the left side of their face, shadow on the right
-  * If there's a cool blue environment → cool blue fill light reflecting off their skin
-  * Always add a STRONG RIM LIGHT from behind (from the brightest background element) creating an edge glow on hair and shoulders
-  * The person's skin tone must be COLOR GRADED to match the scene's overall color temperature
-- ATMOSPHERIC INTEGRATION: Scene particles/effects must pass IN FRONT of the person too:
-  * If there are embers → some embers should float between camera and person (foreground layer)
-  * If there's fog → subtle fog/haze should partially wrap around the person's lower body
-  * If there's rain → rain should be visible on both sides of the person
-  * This creates DEPTH - the person is IN the scene, not ON TOP of it
-- CLOTHING TRANSFORMATION: Transform their clothing to match the scene's theme and universe
-  * Do NOT keep original casual clothes in themed scenes
-  * Use armor, gear, robes, suits as appropriate to the universe
-- SCALE AND PERSPECTIVE: If there's a large creature/character behind the person:
-  * The creature should feel MASSIVE - towering over the person
-  * Use perspective tricks: creature slightly out of focus, leaning forward/toward camera
-  * The person should appear to be REACTING to the creature (not ignoring it)
+- The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
+- Show from chest-up or shoulders-up so the face is LARGE
+- Leave adequate space above the head (headroom)
 
 IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
 - Use the image as a REFERENCE or BASE for the thumbnail composition
@@ -2511,29 +1876,12 @@ IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
 - Enhance it with professional lighting, color grading, and atmospheric effects
 - Add dramatic visual elements that make it thumbnail-worthy (glow, contrast, depth)
 - You may rearrange or enhance elements but keep the subject matter recognizable
-` : `⚠️ NO REFERENCE IMAGE PROVIDED - CREATE FROM SCRATCH (NO RANDOM PEOPLE!):
+` : `⚠️ NO REFERENCE IMAGE PROVIDED - CREATE FROM SCRATCH:
 Create a thumbnail purely from the topic description. Design original visuals that represent "${topic}" in the most compelling way.
-
-🚫 ABSOLUTELY NO RANDOM/GENERIC HUMAN FACES OR PEOPLE:
-- Do NOT generate any human faces, people, or characters in the thumbnail
-- The user chose NOT to include their photo - respect that choice
-- A random AI-generated person looks fake and generic - it RUINS the thumbnail
-- Instead, make the SCENE, ENVIRONMENT, CREATURES, or OBJECTS the hero of the frame
-
-✅ WHAT TO DO INSTEAD:
-- Make the ENVIRONMENT itself the main subject (epic landscape, dramatic scene, powerful creature/monster)
-- If the topic involves a game character/boss/creature → make THAT the focal point (NOT a human viewer/player)
-- Use iconic objects, weapons, items, or symbols as the midground hero element
-- Create dramatic SCALE: massive architecture, towering creatures, vast landscapes
-- The thumbnail should feel like a cinematic ESTABLISHING SHOT or a MOVIE POSTER without the actor
-
-COMPOSITION WITHOUT A PERSON:
-- Think like a FILM DIRECTOR composing a MOVIE POSTER, not generic AI art
-- DEPTH IS MANDATORY: foreground particles/elements (slightly blurred) + sharp midground subject + atmospheric background with scale
-- Create a NARRATIVE MOMENT: something is HAPPENING in this frame (action, tension, discovery)
-- Use dramatic 3-point lighting with specific direction and color temperature
-- Atmospheric effects between layers: fog, embers, dust, rain, energy particles
-- The midground hero can be: a creature, a weapon, an explosion, a vehicle, food, a building, a symbolic object
+- Create an eye-catching, professional composition for a YouTube thumbnail
+- Use dramatic lighting, vibrant colors, and cinematic atmosphere
+- The thumbnail must look like a real YouTube thumbnail, not generic AI art
+- Include relevant visual elements that represent the topic
 - Make the composition compelling enough to make viewers want to click
 `}
 
@@ -2570,17 +1918,15 @@ VISUAL STYLE: ${selectedTypo.prompt}
 
 VISUAL MOOD FOR THIS CONTENT: ${contentCategory.visualMood}
 
-PRO QUALITY (NON-NEGOTIABLE):
-- 3-point dramatic lighting (key + fill + rim light for edge separation). NO flat lighting.
-- Shallow depth of field: subject tack sharp, background slightly soft, foreground elements blurred
-- Professional color grading with crushed blacks and controlled highlights
-- Real textures: skin pores, fabric weave, metal reflections. NO plastic/waxy AI look
-- CINEMATIC DEPTH LAYERS: foreground particles/debris (blurred) → sharp midground subject → atmospheric background
-- Atmospheric effects BETWEEN layers: volumetric light, particles, fog, haze connecting all depth planes
-- Scene lighting must consistently illuminate ALL elements (person's face lit by same sources as environment)
-- Film aesthetic: subtle grain, natural vignette, cinematic contrast
-- Must POP at 120px thumbnail size - high contrast, clear focal point
-- ⚠️ THE IMAGE MUST NOT LOOK LIKE A FLAT COLLAGE. It must look like a PHOTOGRAPH taken inside the scene.
+CINEMATIC QUALITY DIRECTIVES (CRITICAL - THIS IS WHAT SEPARATES AMATEUR FROM PRO):
+- LIGHTING: Use 3-point lighting setup. Strong key light from one side creating dramatic shadows. Soft fill light on the opposite side. Rim/back light creating a glowing edge separation from background. The lighting should feel INTENTIONAL and PROFESSIONAL, not flat.
+- DEPTH: Shallow depth of field with natural bokeh on background elements. The person should be TACK SHARP while background has gentle blur.
+- COLOR GRADING: Apply professional LUT-style color grading. Crushed blacks (shadows slightly lifted to dark gray, not pure black). Highlights should have warmth or cool tint based on mood. Consistent color temperature throughout.
+- TEXTURE & DETAIL: Micro-detail on skin pores, fabric weave, metal reflections. NO smooth/plastic/waxy AI look. Skin should have natural subsurface scattering. Materials should look REAL - rough surfaces scatter light, smooth surfaces reflect it.
+- ATMOSPHERE: Volumetric god rays, dust particles caught in light beams, subtle haze/fog for depth separation. These atmospheric elements add CINEMATIC REALISM.
+- FILM LOOK: Subtle organic film grain (ISO 400-800 aesthetic). Very slight chromatic aberration on edges. Natural vignette drawing eye to center. The image should feel like it was SHOT, not generated.
+- CONTRAST: High dynamic range feel - deep shadows with detail, bright highlights with controlled bloom. The overall image should POP when viewed at thumbnail size (120px).
+- COMPOSITION: Rule of thirds, leading lines toward the subject, visual hierarchy that guides the eye. Negative space used intentionally. Background elements should FRAME the subject, not compete with it.
 
 ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
@@ -2592,54 +1938,6 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       // Send concept/reference image to the model so it can SEE the reference style
       if (conceptBase64) {
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
-      }
-      // Send character/entity reference images so the model can SEE what the character actually looks like
-      if (characterRefImages && characterRefImages.length > 0) {
-        promptParts.push({ text: `
-
-🖼️🖼️🖼️ CRITICAL: CHARACTER/ENTITY REFERENCE IMAGES (${characterRefImages.length} images attached below)
-
-LOOK AT THESE IMAGES CAREFULLY. They show the REAL, OFFICIAL appearance of the characters/creatures/entities in this thumbnail topic. These are from the actual game/source material.
-
-You MUST replicate the character design from these reference images with HIGH FIDELITY:
-- FACE/HEAD SHAPE: Copy the EXACT head structure, jaw shape, eye placement, horns/features from the reference
-- BODY PROPORTIONS: Match the exact body type - if bipedal, draw bipedal. If massive, draw massive. Match the proportions
-- SURFACE/SKIN MATERIAL: Copy the exact texture - if brass metal, draw brass metal. If corroded, draw corroded. Match the color tone
-- ARMOR/CLOTHING DESIGN: Replicate the exact armor pattern, coverage areas, damage, decorations from the reference
-- UNIQUE IDENTIFYING FEATURES: These are what make THIS character recognizable - glowing cracks, mechanical parts, specific markings, etc. COPY THEM
-- COLOR PALETTE: Use the SAME colors you see in the reference images, not brighter/cleaner versions
-
-⚠️ COMMON AI MISTAKE: Drawing a "clean", "shiny", "polished" version of a character that should be dark, grimy, corroded, or battle-worn. MATCH THE REFERENCE TONE.
-
-THE REFERENCE IMAGES:
-` });
-        characterRefImages.forEach((imgBase64) => {
-          promptParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
-        });
-        promptParts.push({ text: `
-
-⚠️⚠️⚠️ YOU HAVE NOW SEEN THE ACTUAL CHARACTER REFERENCE IMAGES.
-Your generated thumbnail MUST depict these characters as they ACTUALLY LOOK in the references above.
-If your output character looks significantly different from the references (wrong face, wrong body type, wrong colors, wrong armor), THE TASK HAS FAILED.
-Fans of this content will IMMEDIATELY notice if the character looks wrong.
-` });
-      } else if (research && (research.includes('GENERATION_PROMPT:') || research.includes('VISUAL_REFERENCE:'))) {
-        // No reference images but we have detailed text descriptions - emphasize them heavily
-        promptParts.push({ text: `
-
-⚠️⚠️⚠️ NO REFERENCE IMAGES AVAILABLE - YOU MUST RELY ON TEXT DESCRIPTIONS BELOW.
-
-The research section above contains VISUAL_REFERENCE and/or GENERATION_PROMPT blocks that describe EXACTLY how the characters/creatures should look. These descriptions were written by an AI that SAW the actual official artwork/screenshots.
-
-READ EVERY WORD of those visual descriptions and follow them with PIXEL-PERFECT accuracy:
-- If the description says "dark oxidized brass with green patina" → draw EXACTLY that, NOT clean shiny gold
-- If it says "mechanical jaw plates" → draw mechanical parts on the jaw, NOT an organic beast mouth
-- If it says "glowing orange cracks in chest armor" → draw visible glowing cracks, NOT solid armor
-- Match EVERY color, material, and texture mentioned in the descriptions
-- Pay special attention to UNIQUE FEATURES that distinguish this character from generic versions
-
-DO NOT fall back to your training data's generic version of this character. The text descriptions are your ONLY source of truth.
-` });
       }
 
       const payload = {
@@ -2751,12 +2049,10 @@ ${topicResearch ? `
 ${topicResearch}
 Apply the visual identity, colors, and atmosphere described above!
 
-🏛️ SCENE DIRECTION (FOLLOW EXACTLY - DO NOT OVERRIDE):
-If the research contains "READY-TO-USE SCENE DIRECTION", follow EVERY field EXACTLY:
+🏛️ HISTORICAL SCENE (IF APPLICABLE):
+If the research contains "READY-TO-USE SCENE DIRECTION", follow it EXACTLY:
 - Use SCENE_DESCRIPTION for background (do NOT substitute modern city visuals!)
 - Use PERSON_COSTUME for the person's outfit
-- Use CHARACTER_ITEMS for weapons/props - draw EXACTLY what is listed (correct type, size, quantity!)
-  ⚠️ If it says "two short axes" = TWO SHORT AXES, not one big axe!
 - Follow ABSOLUTELY_NOT list strictly - zero tolerance for listed items
 - Do NOT use modern city names internally - build scene from architectural descriptions only
 ` : ''}
@@ -2773,7 +2069,7 @@ ${photoAnalysis ? `
 ${photoAnalysis}
 ` : ''}
 
-${base64Image ? `UPLOADED IMAGE INTEGRATION:
+UPLOADED IMAGE INTEGRATION:
 If the image contains a person:
 - Face should take up 40-50% of the frame HEIGHT - make it BIG
 - Transform clothing to match theme
@@ -2782,11 +2078,7 @@ If the image contains a person:
 - NEVER crop the head - leave headroom above
 If the image is not a person (screenshot, product, etc.):
 - Use it as the primary visual element, enhanced with professional effects
-- Integrate its colors, style, and elements into a compelling thumbnail` : `🚫 NO PHOTO UPLOADED - NO RANDOM PEOPLE:
-- Do NOT add any human faces or people to the thumbnail
-- Make the SCENE, CREATURES, OBJECTS, or ENVIRONMENT the hero
-- The focal point should be: epic landscapes, powerful creatures/monsters, iconic objects, dramatic architecture
-- A random AI-generated person looks FAKE and ruins the thumbnail`}
+- Integrate its colors, style, and elements into a compelling thumbnail
 
 ${optimizedText ? `
 TEXT: "${optimizedText}"
@@ -2834,14 +2126,6 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       }
       if (conceptBase64) {
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
-      }
-      // Include character reference images for accurate entity rendering
-      if (characterRefImages && characterRefImages.length > 0) {
-        optimizeParts.push({ text: `\n🖼️🖼️🖼️ CHARACTER REFERENCE IMAGES - these show the REAL appearance of the characters. REPLICATE their face, body, armor, colors, and unique features with HIGH FIDELITY. Do NOT draw a generic/clean version - match the exact look:\n` });
-        characterRefImages.forEach((imgBase64) => {
-          optimizeParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
-        });
-        optimizeParts.push({ text: `\n⚠️ Character accuracy is NON-NEGOTIABLE. Fans will notice if the character looks wrong.\n` });
       }
 
       const payload = {
