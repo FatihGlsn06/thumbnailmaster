@@ -32,6 +32,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['game', 'oyun', 'gaming', 'fps', 'rpg', 'mmorpg', 'battle royale', 'boss', 'raid', 'pvp', 'speedrun', 'mod', 'dlc', 'steam', 'playstation', 'xbox', 'nintendo', 'valorant', 'fortnite', 'minecraft', 'gta', 'elden ring', 'dark souls', 'league of legends', 'counter-strike', 'cs2', 'dota', 'overwatch', 'apex', 'pubg', 'warzone', 'diablo', 'world of warcraft', 'wow', 'zelda', 'pokemon', 'resident evil', 'silent hill', 'god of war', 'cyberpunk', 'witcher', 'assassins creed', 'call of duty', 'cod', 'halo', 'destiny', 'final fantasy', 'monster hunter', 'horizon', 'spider-man', 'hogwarts', 'starfield', 'baldurs gate', 'palworld', 'lethal company', 'helldivers', 'manor lords', 'level', 'damage', 'build', 'loot', 'quest', 'dungeon', 'arena'],
     temperature: 0.7,
     defaultArchetypes: ['shocked_threat', 'power_fantasy', 'scale_contrast', 'almost_fail'],
+    defaultTypoStyle: 'gaming_neon',
     promptStyle: 'epic',
     visualMood: 'Cinematic, epic, high-energy, dramatic lighting with vibrant color accents',
   },
@@ -40,6 +41,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'bilim', 'science', 'matematik', 'tarih', 'history', 'fizik', 'kimya', 'biyoloji', 'edebiyat', 'felsefe', 'psikoloji', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'documentary', 'belgesel', 'araştırma', 'research', 'ramazan', 'namaz', 'ibadet', 'oruç', 'dua', 'kuran', 'quran', 'din', 'islam', 'hristiyanlık', 'budizm', 'meditasyon', 'meditation', 'spirituality', 'maneviyat', 'felsefe', 'philosophy', 'hadis', 'sünnet', 'cami', 'kilise', 'sinagog', 'bayram', 'iftar', 'sahur', 'teravih', 'zekat', 'hac', 'umre', 'mevlid', 'kandil', 'cuma', 'hutbe', 'vaaz', 'ilmihal', 'fıkıh', 'tefsir', 'siyer', 'peygamber', 'sahabe', 'kitap', 'book', 'okuma', 'reading', 'özet', 'summary', 'inceleme', 'review', 'motivasyon', 'motivation', 'kişisel gelişim', 'self improvement', 'psychology', 'mindset'],
     temperature: 0.5,
     defaultArchetypes: ['expert_authority', 'mystery_reveal', 'reaction_face'],
+    defaultTypoStyle: 'elegant_modern',
     promptStyle: 'clean',
     visualMood: 'Professional, clean, trustworthy, soft lighting with clear focal points',
   },
@@ -48,6 +50,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['vlog', 'günlük', 'daily', 'storytime', 'story time', 'hayatım', 'life', 'reaction', 'tepki', 'challenge', 'denedim', 'tried', 'podcast', 'sohbet', 'chat', 'q&a', 'soru cevap', 'mukbang', 'unboxing', 'kutu açılımı', 'haul', 'alışveriş', 'shopping', 'day in my life', 'routine', 'rutin', 'grwm', 'get ready', 'hazırlan', 'tag', 'trend', 'tiktok'],
     temperature: 0.6,
     defaultArchetypes: ['reaction_face', 'challenge_fun', 'breaking_news'],
+    defaultTypoStyle: 'bold_impact',
     promptStyle: 'energetic',
     visualMood: 'Bright, energetic, authentic, natural lighting with bold pops of color',
   },
@@ -56,6 +59,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['yemek', 'food', 'tarif', 'recipe', 'cooking', 'pişir', 'mutfak', 'kitchen', 'chef', 'şef', 'restoran', 'restaurant', 'lezzet', 'taste', 'yedim', 'ate', 'eat', 'burger', 'pizza', 'pasta', 'tatlı', 'dessert', 'cake', 'kahvaltı', 'breakfast', 'dinner', 'lunch', 'street food', 'sokak lezzeti', 'mukbang', 'asmr food'],
     temperature: 0.6,
     defaultArchetypes: ['food_desire', 'reaction_face', 'transformation'],
+    defaultTypoStyle: 'auto_harmony',
     promptStyle: 'warm',
     visualMood: 'Warm tones, appetizing, close-up detail, golden-hour style lighting, steam and texture',
   },
@@ -64,6 +68,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['seyahat', 'travel', 'gezi', 'trip', 'tur', 'tour', 'otel', 'hotel', 'havalimanı', 'airport', 'uçak', 'flight', 'ülke', 'country', 'şehir', 'city', 'plaj', 'beach', 'dağ', 'mountain', 'doğa', 'nature', 'kamp', 'camp', 'hiking', 'yürüyüş', 'backpack', 'manzara', 'landscape', 'keşfet', 'explore', 'adventure', 'macera'],
     temperature: 0.7,
     defaultArchetypes: ['travel_wonder', 'reaction_face', 'scale_contrast'],
+    defaultTypoStyle: 'cinematic_epic',
     promptStyle: 'cinematic',
     visualMood: 'Breathtaking, wide-angle, golden hour, vivid natural colors, sense of awe and scale',
   },
@@ -72,6 +77,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['teknoloji', 'tech', 'technology', 'telefon', 'phone', 'iphone', 'samsung', 'android', 'ios', 'apple', 'google', 'ai', 'yapay zeka', 'artificial intelligence', 'robot', 'software', 'yazılım', 'code', 'coding', 'programlama', 'programming', 'app', 'uygulama', 'review', 'inceleme', 'laptop', 'pc', 'bilgisayar', 'computer', 'gadget', 'gpu', 'cpu', 'setup', 'unboxing', 'comparison', 'karşılaştırma', 'benchmark', 'test'],
     temperature: 0.5,
     defaultArchetypes: ['expert_authority', 'reaction_face', 'mystery_reveal'],
+    defaultTypoStyle: 'elegant_modern',
     promptStyle: 'futuristic',
     visualMood: 'Sleek, modern, minimalist with neon accents, clean product showcase lighting',
   },
@@ -80,6 +86,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['müzik', 'music', 'şarkı', 'song', 'albüm', 'album', 'konser', 'concert', 'rap', 'hip hop', 'pop', 'rock', 'metal', 'edm', 'dj', 'beat', 'cover', 'remix', 'karaoke', 'enstrüman', 'instrument', 'gitar', 'guitar', 'piyano', 'piano', 'davul', 'drums', 'dans', 'dance', 'choreography', 'koreografi', 'performans', 'performance', 'spotify', 'clip', 'klip'],
     temperature: 0.8,
     defaultArchetypes: ['music_energy', 'reaction_face', 'challenge_fun'],
+    defaultTypoStyle: 'gaming_neon',
     promptStyle: 'neon',
     visualMood: 'Neon-lit, high energy, sound wave visuals, concert atmosphere, vibrant and pulsing',
   },
@@ -88,6 +95,7 @@ const CONTENT_CATEGORIES = {
     keywords: ['fitness', 'spor', 'sport', 'gym', 'egzersiz', 'exercise', 'workout', 'antrenman', 'training', 'kas', 'muscle', 'diyet', 'diet', 'kilo', 'weight', 'zayıfla', 'bulk', 'protein', 'supplement', 'koşu', 'run', 'yoga', 'pilates', 'bodybuilding', 'crossfit', 'martial arts', 'dövüş', 'boks', 'boxing', 'mma', 'transformation', 'dönüşüm', 'before after', 'öncesi sonrası', 'motivation', 'motivasyon'],
     temperature: 0.6,
     defaultArchetypes: ['transformation', 'power_fantasy', 'expert_authority'],
+    defaultTypoStyle: 'bold_impact',
     promptStyle: 'bold',
     visualMood: 'High contrast, motivational, powerful poses, dramatic side lighting, gritty texture',
   },
@@ -99,6 +107,7 @@ const GENERAL_CATEGORY = {
   keywords: [],
   temperature: 0.6,
   defaultArchetypes: ['reaction_face', 'expert_authority', 'mystery_reveal'],
+  defaultTypoStyle: 'auto_harmony',
   promptStyle: 'balanced',
   visualMood: 'Professional, balanced, visually engaging, clean composition with purposeful lighting and natural color palette',
 };
@@ -1412,6 +1421,14 @@ Be concise. 1-2 sentences per point.`
     const category = detectContentCategory(topic, topicDescription);
     setDetectedCategory(category);
 
+    // Auto-select archetype and typography if user hasn't manually chosen
+    if (!selectedArchetype && category.defaultArchetypes?.length > 0) {
+      setSelectedArchetype(category.defaultArchetypes[0]);
+    }
+    if (typoStyle === 'auto_harmony' && category.defaultTypoStyle) {
+      setTypoStyle(category.defaultTypoStyle);
+    }
+
     try {
       const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
 
@@ -1757,10 +1774,76 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
           console.warn('Scene direction was truncated. Using partial result.');
         }
 
-        // Combine research + scene description
-        const combinedResearch = sceneDescription
-          ? `${researchText}\n\n🎬 READY-TO-USE SCENE DIRECTION:\n${sceneDescription}`
+        // Step 4: Visual DNA & Art Direction Brief
+        // Condense everything into a focused, concise brief for the image generation model
+        const fullResearch = sceneDescription
+          ? `${researchText}\n\n🎬 SCENE DIRECTION:\n${sceneDescription}`
           : researchText;
+
+        const artDirectionPayload = {
+          contents: [{
+            parts: [{
+              text: `You are a senior Art Director creating a thumbnail brief. Read ALL the research and scene direction below, then produce a CONCISE art direction brief.
+
+FULL RESEARCH:
+${fullResearch}
+
+TOPIC: "${topic}"
+${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
+
+YOUR TASK: Distill everything above into a focused ART DIRECTION BRIEF. Write in English.
+
+FORMAT (follow EXACTLY):
+
+🎨 VISUAL DNA:
+- Art style: [e.g., "dark fantasy oil painting", "hyper-realistic cinematic", "cel-shaded anime", "gritty photorealistic"]
+- Color palette: [list 4-5 specific hex colors that define this topic's visual identity, e.g., "#1a0a2e deep void purple, #c9a227 ancient gold, #8b0000 blood crimson"]
+- Lighting: [specific lighting setup, e.g., "harsh orange rim light from left, cool blue fill, volumetric fog"]
+- Texture feel: [e.g., "weathered stone, oxidized metal, rough leather" or "glossy plastic, chrome, LED glow"]
+- Reference look: [describe what this should look like, e.g., "like a Dark Souls boss intro cinematic" or "like a Netflix documentary poster"]
+
+🎬 SCENE BRIEF (max 3 sentences):
+[The exact scene to render - background, environment, atmosphere. Be specific and visual.]
+
+👤 CHARACTER BRIEF (max 3 sentences):
+[Person's costume, pose, expression, items they hold. Be EXACT about weapons/props - type, size, quantity.]
+
+⛔ DO NOT:
+[3-5 specific things that must NOT appear - wrong weapons, anachronisms, wrong flags, etc.]
+
+RULES:
+- Be SPECIFIC, not generic. "Dark moody lighting" is BAD. "Harsh amber key light from upper-left with deep teal shadows and volumetric dust particles" is GOOD.
+- Use the ACTUAL visual identity from the research - real colors, real art style, real atmosphere
+- The brief must be under 250 words total
+- Every word must add visual value - no filler`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1500
+          }
+        };
+
+        let artDirectionBrief = null;
+        try {
+          const artResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(artDirectionPayload)
+            }
+          );
+          const artData = await artResponse.json();
+          artDirectionBrief = artData.candidates?.[0]?.content?.parts?.[0]?.text;
+        } catch (e) {
+          console.warn('Art direction brief failed, using full research:', e);
+        }
+
+        // Combine: full research for display + art direction brief for generation
+        const combinedResearch = artDirectionBrief
+          ? `${fullResearch}\n\n🎯 ART DIRECTION BRIEF (USE THIS FOR IMAGE GENERATION):\n${artDirectionBrief}`
+          : fullResearch;
 
         setTopicResearch(combinedResearch);
       } else {
@@ -1821,37 +1904,40 @@ ${topicDescription}
 Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
 ` : ''}
 
-${topicResearch ? `
-📋 EXPERT RESEARCH & VISUAL DIRECTION (VERY IMPORTANT - FOLLOW THIS):
-A visual design expert has researched "${topic}" and provided the following detailed information.
-YOU MUST USE THIS INFORMATION to create an authentic, visually accurate thumbnail:
+${topicResearch ? (() => {
+  // If Art Direction Brief exists, use it as primary direction (more focused)
+  const hasArtBrief = topicResearch.includes('ART DIRECTION BRIEF');
+  if (hasArtBrief) {
+    const briefStart = topicResearch.indexOf('🎯 ART DIRECTION BRIEF');
+    const artBrief = briefStart > -1 ? topicResearch.substring(briefStart) : '';
+    return `
+📋 VISUAL RESEARCH COMPLETED FOR "${topic}".
 
+${artBrief}
+
+⚠️ THE ART DIRECTION BRIEF ABOVE IS YOUR PRIMARY GUIDE. Follow it precisely:
+- VISUAL DNA section defines the exact art style, colors (use the hex codes!), lighting, and texture
+- SCENE BRIEF is the exact environment to create
+- CHARACTER BRIEF defines costume, pose, and items (follow weapon types/sizes EXACTLY)
+- DO NOT section lists forbidden elements - zero tolerance
+
+The brief was created by analyzing real visual references for "${topic}".
+Your thumbnail must look AUTHENTIC to fans of this content.
+`;
+  }
+  // Fallback: use full research if no art brief
+  return `
+📋 EXPERT RESEARCH & VISUAL DIRECTION (FOLLOW THIS):
 ${topicResearch}
 
-⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
-This is not generic - it's specific to "${topic}" and must look authentic to fans/followers of this content.
-
-🎬 SCENE DIRECTION (HIGHEST PRIORITY - FOLLOW EXACTLY, DO NOT OVERRIDE):
-The research above contains a "READY-TO-USE SCENE DIRECTION" section.
-This is the MOST IMPORTANT part of the entire prompt. Every field below OVERRIDES your own ideas:
-
-- **SCENE_DESCRIPTION**: Use this EXACT description for the background/environment. Do NOT substitute your own idea!
-- **COLOR_PALETTE**: Use these exact colors for the scene.
-- **PERSON_COSTUME**: Dress the person in THIS specific outfit. Do NOT change it!
-- **CHARACTER_ITEMS**: ⚠️⚠️⚠️ THIS IS CRITICAL! The character MUST hold/carry EXACTLY the items listed here.
-  * If it says "two short axes" → draw exactly TWO SHORT AXES, not one large axe
-  * If it says "curved scimitar" → draw a curved blade, not a straight sword
-  * Pay attention to QUANTITY, SIZE, and TYPE - do not generalize or substitute!
-  * This is the #1 most common mistake: AI draws generic/wrong weapons. DO NOT do this!
-- **CAMERA_ANGLE / CAMERA_POSITION**: Follow for viewing angle and composition.
-- **KEY_EFFECTS**: Apply these visual effects.
-- **ATTACKER/DEFENDER_DESCRIPTION**: If present, follow for armies/factions.
-- **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance. If an item is listed here, it CANNOT appear in any form.
-
-For HISTORICAL scenes: Do NOT use modern city names (e.g., "Istanbul" draws modern city).
-Build the scene from architectural descriptions only.
-For Ottoman scenes: Use DARK CRIMSON banner + GOLDEN crescent + GOLDEN 8-pointed star (NOT modern Turkish flag).
-` : ''}
+⚠️ Follow the SCENE DIRECTION section EXACTLY:
+- SCENE_DESCRIPTION → exact background
+- COLOR_PALETTE → exact colors
+- PERSON_COSTUME → exact outfit
+- CHARACTER_ITEMS → exact weapons/props (correct type, size, quantity!)
+- ABSOLUTELY_NOT → zero tolerance for listed items
+`;
+})() : ''}
 
 ${conceptAnalysis ? `
 🎨🎨🎨 REFERENCE IMAGE STYLE (CRITICAL - YOU MUST MATCH THIS STYLE):
@@ -1953,15 +2039,14 @@ VISUAL STYLE: ${selectedTypo.prompt}
 
 VISUAL MOOD FOR THIS CONTENT: ${contentCategory.visualMood}
 
-CINEMATIC QUALITY DIRECTIVES (CRITICAL - THIS IS WHAT SEPARATES AMATEUR FROM PRO):
-- LIGHTING: Use 3-point lighting setup. Strong key light from one side creating dramatic shadows. Soft fill light on the opposite side. Rim/back light creating a glowing edge separation from background. The lighting should feel INTENTIONAL and PROFESSIONAL, not flat.
-- DEPTH: Shallow depth of field with natural bokeh on background elements. The person should be TACK SHARP while background has gentle blur.
-- COLOR GRADING: Apply professional LUT-style color grading. Crushed blacks (shadows slightly lifted to dark gray, not pure black). Highlights should have warmth or cool tint based on mood. Consistent color temperature throughout.
-- TEXTURE & DETAIL: Micro-detail on skin pores, fabric weave, metal reflections. NO smooth/plastic/waxy AI look. Skin should have natural subsurface scattering. Materials should look REAL - rough surfaces scatter light, smooth surfaces reflect it.
-- ATMOSPHERE: Volumetric god rays, dust particles caught in light beams, subtle haze/fog for depth separation. These atmospheric elements add CINEMATIC REALISM.
-- FILM LOOK: Subtle organic film grain (ISO 400-800 aesthetic). Very slight chromatic aberration on edges. Natural vignette drawing eye to center. The image should feel like it was SHOT, not generated.
-- CONTRAST: High dynamic range feel - deep shadows with detail, bright highlights with controlled bloom. The overall image should POP when viewed at thumbnail size (120px).
-- COMPOSITION: Rule of thirds, leading lines toward the subject, visual hierarchy that guides the eye. Negative space used intentionally. Background elements should FRAME the subject, not compete with it.
+PRO QUALITY (NON-NEGOTIABLE):
+- 3-point dramatic lighting (key + fill + rim light for edge separation). NO flat lighting.
+- Shallow depth of field: subject tack sharp, background bokeh
+- Professional color grading with crushed blacks and controlled highlights
+- Real textures: skin pores, fabric weave, metal reflections. NO plastic/waxy AI look
+- Atmospheric depth: volumetric light, particles, subtle haze
+- Film aesthetic: subtle grain, natural vignette, cinematic contrast
+- Must POP at 120px thumbnail size - high contrast, clear focal point
 
 ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
