@@ -1412,32 +1412,51 @@ Be concise. 1-2 sentences per point.`
   };
 
   // Fetch an image via CORS proxy and convert to base64
-  const fetchImageAsBase64 = async (imageUrl, timeout = 8000) => {
-    try {
-      // Use images.weserv.nl as CORS proxy - it's reliable and optimizes images
-      const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=512&h=512&fit=contain&output=jpg&q=80`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+  // Tries multiple proxy services for reliability
+  const fetchImageAsBase64 = async (imageUrl, timeout = 10000) => {
+    // Multiple CORS proxies for fallback - if one fails, try the next
+    const proxyStrategies = [
+      // Strategy 1: images.weserv.nl (best for images, resizes/optimizes)
+      (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=768&h=768&fit=contain&output=jpg&q=85`,
+      // Strategy 2: corsproxy.io (general CORS proxy)
+      (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      // Strategy 3: Try direct fetch (works for some CDNs that allow CORS)
+      (url) => url,
+    ];
 
-      const response = await fetch(proxyUrl, { signal: controller.signal });
-      clearTimeout(timeoutId);
+    for (const makeProxyUrl of proxyStrategies) {
+      try {
+        const proxyUrl = makeProxyUrl(imageUrl);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-      if (!response.ok) return null;
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
 
-      const blob = await response.blob();
-      // Verify it's actually an image
-      if (!blob.type.startsWith('image/')) return null;
+        if (!response.ok) continue;
 
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      console.warn('Failed to fetch reference image:', imageUrl, e.message);
-      return null;
+        const blob = await response.blob();
+        // Verify it's actually an image (not an error page)
+        if (!blob.type.startsWith('image/') || blob.size < 1000) continue;
+
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+
+        if (base64) {
+          console.log(`✅ Fetched reference image via proxy: ${imageUrl.substring(0, 80)}...`);
+          return base64;
+        }
+      } catch (e) {
+        // Try next proxy
+        continue;
+      }
     }
+    console.warn(`❌ All proxies failed for: ${imageUrl.substring(0, 80)}...`);
+    return null;
   };
 
   // Research topic/concept using AI (gaming/lore knowledge)
@@ -1564,20 +1583,34 @@ ${searchResult}
 
 YOUR TASK:
 1. SEARCH for images of the MAIN characters, creatures, bosses, items, or entities mentioned in this topic
-2. Search queries to try:
+2. Search queries to try (TRY ALL OF THEM):
    - "${topic} official artwork"
-   - "${topic} in-game screenshot"
-   - "${topic} character design render"
-   - "${topic} concept art"
-   - "${topic} wiki fandom"
+   - "${topic} in-game screenshot render"
+   - "${topic} wiki fandom image"
+   - "${topic} concept art character design"
+   - "${topic} total war warhammer" (if gaming)
+   - "site:static.wikia.nocookie.net ${topic}"
+   - "site:fandom.com ${topic}"
 3. For EACH key character/creature/entity, write TWO things:
 
-PART A - IMAGE URLS (CRITICAL!):
-Find direct image URLs (.jpg, .png, .webp) showing the character from official artwork, wiki pages, or game screenshots.
-List them as:
-IMAGE_URL: [direct url to image file]
-IMAGE_URL: [direct url to image file]
-(Find 2-4 image URLs per entity from different sources: wiki, official art, in-game)
+PART A - IMAGE URLS (CRITICAL! We will download these images):
+Find DIRECT image file URLs showing the character. These URLs should point directly to image files.
+
+BEST SOURCES for direct image URLs:
+- Fandom/Wiki: Look for URLs like https://static.wikia.nocookie.net/.../filename.png
+- Official game sites: Look for URLs ending in .png, .jpg, .webp
+- Steam store pages: Game artwork/screenshots
+- Reddit posts with direct image links
+
+List them as (one per line):
+IMAGE_URL: https://static.wikia.nocookie.net/example/images/X/XX/Character.png
+IMAGE_URL: https://cdn.example.com/artwork/character_render.jpg
+
+⚠️ IMPORTANT URL RULES:
+- URLs MUST be direct image files (ending in .png, .jpg, .jpeg, .webp, .gif)
+- Do NOT give page URLs (like https://warhammer.fandom.com/wiki/Taurox) - give the ACTUAL IMAGE file URL
+- Fandom wiki image URLs typically look like: https://static.wikia.nocookie.net/WIKI_NAME/images/X/XX/FILENAME.png
+- Find 3-5 image URLs per entity from different angles/sources
 
 PART B - VISUAL DESCRIPTION:
 For each entity, write a VISUAL_REFERENCE block:
@@ -2155,6 +2188,12 @@ RULES:
         if (visualReferenceGuide) {
           combinedResearch += `\n\n🎨 CHARACTER/ENTITY VISUAL REFERENCES (MUST FOLLOW!):\n${visualReferenceGuide}`;
         }
+        // Show reference image status to user
+        if (fetchedRefImages.length > 0) {
+          combinedResearch += `\n\n🖼️ ${fetchedRefImages.length} REFERANS GÖRSEL BULUNDU VE İNDİRİLDİ - Thumbnail üretiminde kullanılacak.`;
+        } else if (visualReferenceGuide) {
+          combinedResearch += `\n\n⚠️ Referans görseller indirilemedi - sadece metin açıklamaları kullanılacak.`;
+        }
         if (artDirectionBrief) {
           combinedResearch += `\n\n🎯 ART DIRECTION BRIEF (USE THIS FOR IMAGE GENERATION):\n${artDirectionBrief}`;
         }
@@ -2464,12 +2503,34 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       }
       // Send character/entity reference images so the model can SEE what the character actually looks like
       if (characterRefImages && characterRefImages.length > 0) {
-        // Add a text label before reference images
-        promptParts.push({ text: `\n\n🖼️ CHARACTER/ENTITY REFERENCE IMAGES (${characterRefImages.length} images attached):\nThe following images show the ACTUAL appearance of the characters/creatures mentioned in the topic. You MUST match their visual design EXACTLY - body shape, colors, armor, proportions, unique features. These are from the official source material.\n` });
-        characterRefImages.forEach((imgBase64, idx) => {
+        promptParts.push({ text: `
+
+🖼️🖼️🖼️ CRITICAL: CHARACTER/ENTITY REFERENCE IMAGES (${characterRefImages.length} images attached below)
+
+LOOK AT THESE IMAGES CAREFULLY. They show the REAL, OFFICIAL appearance of the characters/creatures/entities in this thumbnail topic. These are from the actual game/source material.
+
+You MUST replicate the character design from these reference images with HIGH FIDELITY:
+- FACE/HEAD SHAPE: Copy the EXACT head structure, jaw shape, eye placement, horns/features from the reference
+- BODY PROPORTIONS: Match the exact body type - if bipedal, draw bipedal. If massive, draw massive. Match the proportions
+- SURFACE/SKIN MATERIAL: Copy the exact texture - if brass metal, draw brass metal. If corroded, draw corroded. Match the color tone
+- ARMOR/CLOTHING DESIGN: Replicate the exact armor pattern, coverage areas, damage, decorations from the reference
+- UNIQUE IDENTIFYING FEATURES: These are what make THIS character recognizable - glowing cracks, mechanical parts, specific markings, etc. COPY THEM
+- COLOR PALETTE: Use the SAME colors you see in the reference images, not brighter/cleaner versions
+
+⚠️ COMMON AI MISTAKE: Drawing a "clean", "shiny", "polished" version of a character that should be dark, grimy, corroded, or battle-worn. MATCH THE REFERENCE TONE.
+
+THE REFERENCE IMAGES:
+` });
+        characterRefImages.forEach((imgBase64) => {
           promptParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
         });
-        promptParts.push({ text: `\n⚠️ The reference images above are your GROUND TRUTH for character appearance. Your generated thumbnail MUST accurately depict these characters as shown. DO NOT default to generic versions.\n` });
+        promptParts.push({ text: `
+
+⚠️⚠️⚠️ YOU HAVE NOW SEEN THE ACTUAL CHARACTER REFERENCE IMAGES.
+Your generated thumbnail MUST depict these characters as they ACTUALLY LOOK in the references above.
+If your output character looks significantly different from the references (wrong face, wrong body type, wrong colors, wrong armor), THE TASK HAS FAILED.
+Fans of this content will IMMEDIATELY notice if the character looks wrong.
+` });
       }
 
       const payload = {
@@ -2667,10 +2728,11 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       }
       // Include character reference images for accurate entity rendering
       if (characterRefImages && characterRefImages.length > 0) {
-        optimizeParts.push({ text: `\n🖼️ CHARACTER REFERENCE IMAGES - match these characters' appearance EXACTLY:\n` });
+        optimizeParts.push({ text: `\n🖼️🖼️🖼️ CHARACTER REFERENCE IMAGES - these show the REAL appearance of the characters. REPLICATE their face, body, armor, colors, and unique features with HIGH FIDELITY. Do NOT draw a generic/clean version - match the exact look:\n` });
         characterRefImages.forEach((imgBase64) => {
           optimizeParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
         });
+        optimizeParts.push({ text: `\n⚠️ Character accuracy is NON-NEGOTIABLE. Fans will notice if the character looks wrong.\n` });
       }
 
       const payload = {
