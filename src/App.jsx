@@ -1712,6 +1712,7 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
         const topicLower = `${topic} ${topicDescription || ''}`.toLowerCase();
         const isHistorical = historicalKeywords.some(kw => topicLower.includes(kw));
 
+        const hasPhoto = !!base64Image;
         const scenePromptBase = `You are a SCENE DIRECTOR. Read the research below and write a CONCRETE, DETAILED scene description for a YouTube thumbnail.
 
 RESEARCH:
@@ -1719,7 +1720,11 @@ ${researchText}
 
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
-
+${!hasPhoto ? `
+⚠️ IMPORTANT: The user has NOT uploaded a photo. Do NOT include any human person/face in the scene.
+Instead, make the ENVIRONMENT, CREATURES, OBJECTS, or ICONIC ELEMENTS the hero of the frame.
+In PERSON_PLACEMENT_AND_COSTUME section, describe the MAIN FOCAL SUBJECT instead (a creature, weapon, object, vehicle, building, etc.)
+` : ''}
 Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
 
         const scenePromptGeneral = `${scenePromptBase}
@@ -1909,6 +1914,7 @@ ${fullResearch}
 
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
+${!hasPhoto ? `⚠️ NO PHOTO UPLOADED: Do NOT include any human person/face. The CHARACTER BRIEF section should describe the MAIN FOCAL SUBJECT (creature, object, weapon, vehicle, etc.) instead of a person.` : ''}
 
 YOUR TASK: Distill everything above into a focused ART DIRECTION BRIEF. Write in English.
 Think like a FILM DIRECTOR creating a MOVIE POSTER, not a flat collage.
@@ -2068,7 +2074,7 @@ ${topicResearch}
 ⚠️ Follow the SCENE DIRECTION section EXACTLY:
 - SCENE_DESCRIPTION → exact background
 - COLOR_PALETTE → exact colors
-- PERSON_COSTUME → exact outfit
+${base64Image ? '- PERSON_COSTUME → exact outfit' : '- No human person in the scene (no photo uploaded)'}
 - CHARACTER_ITEMS → exact weapons/props (correct type, size, quantity!)
 - ABSOLUTELY_NOT → zero tolerance for listed items
 `;
@@ -2147,14 +2153,29 @@ IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
 - Enhance it with professional lighting, color grading, and atmospheric effects
 - Add dramatic visual elements that make it thumbnail-worthy (glow, contrast, depth)
 - You may rearrange or enhance elements but keep the subject matter recognizable
-` : `⚠️ NO REFERENCE IMAGE PROVIDED - CREATE FROM SCRATCH:
+` : `⚠️ NO REFERENCE IMAGE PROVIDED - CREATE FROM SCRATCH (NO RANDOM PEOPLE!):
 Create a thumbnail purely from the topic description. Design original visuals that represent "${topic}" in the most compelling way.
+
+🚫 ABSOLUTELY NO RANDOM/GENERIC HUMAN FACES OR PEOPLE:
+- Do NOT generate any human faces, people, or characters in the thumbnail
+- The user chose NOT to include their photo - respect that choice
+- A random AI-generated person looks fake and generic - it RUINS the thumbnail
+- Instead, make the SCENE, ENVIRONMENT, CREATURES, or OBJECTS the hero of the frame
+
+✅ WHAT TO DO INSTEAD:
+- Make the ENVIRONMENT itself the main subject (epic landscape, dramatic scene, powerful creature/monster)
+- If the topic involves a game character/boss/creature → make THAT the focal point (NOT a human viewer/player)
+- Use iconic objects, weapons, items, or symbols as the midground hero element
+- Create dramatic SCALE: massive architecture, towering creatures, vast landscapes
+- The thumbnail should feel like a cinematic ESTABLISHING SHOT or a MOVIE POSTER without the actor
+
+COMPOSITION WITHOUT A PERSON:
 - Think like a FILM DIRECTOR composing a MOVIE POSTER, not generic AI art
 - DEPTH IS MANDATORY: foreground particles/elements (slightly blurred) + sharp midground subject + atmospheric background with scale
 - Create a NARRATIVE MOMENT: something is HAPPENING in this frame (action, tension, discovery)
 - Use dramatic 3-point lighting with specific direction and color temperature
 - Atmospheric effects between layers: fog, embers, dust, rain, energy particles
-- The thumbnail must look like a real YouTube thumbnail with cinematic quality
+- The midground hero can be: a creature, a weapon, an explosion, a vehicle, food, a building, a symbolic object
 - Make the composition compelling enough to make viewers want to click
 `}
 
@@ -2346,7 +2367,7 @@ ${photoAnalysis ? `
 ${photoAnalysis}
 ` : ''}
 
-UPLOADED IMAGE INTEGRATION:
+${base64Image ? `UPLOADED IMAGE INTEGRATION:
 If the image contains a person:
 - Face should take up 40-50% of the frame HEIGHT - make it BIG
 - Transform clothing to match theme
@@ -2355,7 +2376,11 @@ If the image contains a person:
 - NEVER crop the head - leave headroom above
 If the image is not a person (screenshot, product, etc.):
 - Use it as the primary visual element, enhanced with professional effects
-- Integrate its colors, style, and elements into a compelling thumbnail
+- Integrate its colors, style, and elements into a compelling thumbnail` : `🚫 NO PHOTO UPLOADED - NO RANDOM PEOPLE:
+- Do NOT add any human faces or people to the thumbnail
+- Make the SCENE, CREATURES, OBJECTS, or ENVIRONMENT the hero
+- The focal point should be: epic landscapes, powerful creatures/monsters, iconic objects, dramatic architecture
+- A random AI-generated person looks FAKE and ruins the thumbnail`}
 
 ${optimizedText ? `
 TEXT: "${optimizedText}"
