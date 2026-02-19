@@ -1245,21 +1245,31 @@ VIBE: Professional, clean, gaming channel style`
     }
   ];
 
-  const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
+  const fetchWithRetry = async (url, options, retries = 3, backoff = 2000) => {
     try {
-      const response = await fetch(url, options);
+      // Add a 120s timeout to each fetch call so it never hangs indefinitely
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+      const fetchOptions = { ...options, signal: controller.signal };
+
+      const response = await fetch(url, fetchOptions);
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        if (response.status === 429 && retries > 0) throw new Error('Rate limit');
         const errorBody = await response.json().catch(() => ({}));
-        throw new Error(errorBody?.error?.message || `Error ${response.status}`);
+        const errorMsg = errorBody?.error?.message || `Error ${response.status}`;
+        // Only retry on rate limit (429) or server errors (500+)
+        if ((response.status === 429 || response.status >= 500) && retries > 0) {
+          throw new Error(errorMsg);
+        }
+        throw Object.assign(new Error(errorMsg), { noRetry: true });
       }
       return await response.json();
     } catch (err) {
-      if (retries > 0) {
-        await new Promise(r => setTimeout(r, backoff));
-        return fetchWithRetry(url, options, retries - 1, backoff * 2);
-      }
-      throw err;
+      if (err.noRetry || retries <= 0) throw err;
+      console.warn(`Retrying API call (${retries} left, waiting ${backoff}ms):`, err.message);
+      await new Promise(r => setTimeout(r, backoff));
+      return fetchWithRetry(url, options, retries - 1, backoff * 2);
     }
   };
 
@@ -1413,7 +1423,7 @@ Be concise. 1-2 sentences per point.`
 
   // Fetch an image via CORS proxy and convert to base64
   // Tries multiple proxy services for reliability
-  const fetchImageAsBase64 = async (imageUrl, timeout = 10000) => {
+  const fetchImageAsBase64 = async (imageUrl, timeout = 5000) => {
     // Multiple CORS proxies for fallback - if one fails, try the next
     const proxyStrategies = [
       // Strategy 1: images.weserv.nl (best for images, resizes/optimizes)
@@ -1645,14 +1655,19 @@ RULES:
           }
         };
 
+        // Timeout for visual reference API call (30s max - it shouldn't block the pipeline)
+        const visualRefController = new AbortController();
+        const visualRefTimeoutId = setTimeout(() => visualRefController.abort(), 30000);
         const visualRefResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(visualRefPayload)
+            body: JSON.stringify(visualRefPayload),
+            signal: visualRefController.signal
           }
         );
+        clearTimeout(visualRefTimeoutId);
 
         if (visualRefResponse.ok) {
           const visualRefData = await visualRefResponse.json();
@@ -1691,10 +1706,19 @@ RULES:
             console.log(`Found ${allImageUrls.length} character reference image URLs`);
 
             if (allImageUrls.length > 0) {
-              // Fetch images in parallel via CORS proxy, with timeout
+              // Fetch images in parallel via CORS proxy, with a GLOBAL timeout of 15s
+              // so it never blocks the whole pipeline for too long
+              const globalTimeout = new Promise((resolve) => setTimeout(() => resolve('TIMEOUT'), 15000));
               const imagePromises = allImageUrls.map(url => fetchImageAsBase64(url));
-              const imageResults = await Promise.all(imagePromises);
-              fetchedRefImages = imageResults.filter(img => img !== null).slice(0, 3);
+              const raceResult = await Promise.race([
+                Promise.all(imagePromises),
+                globalTimeout
+              ]);
+              if (raceResult === 'TIMEOUT') {
+                console.warn('⏰ Global timeout: reference image fetching took too long, skipping');
+              } else {
+                fetchedRefImages = raceResult.filter(img => img !== null).slice(0, 3);
+              }
               console.log(`Successfully fetched ${fetchedRefImages.length} reference images`);
             }
           } else {
