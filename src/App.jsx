@@ -1025,6 +1025,8 @@ const App = () => {
   // Topic/Concept research states
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
+  const [researchImageBase64, setResearchImageBase64] = useState(null);
+  const [researchImageUrl, setResearchImageUrl] = useState(null);
 
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
@@ -1260,6 +1262,30 @@ VIBE: Professional, clean, gaming channel style`
     }
   };
 
+  // Fetch an image URL and convert to base64, with CORS proxy fallback
+  const fetchImageAsBase64 = async (url) => {
+    const targets = [
+      url,
+      `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    ];
+    for (const target of targets) {
+      try {
+        const res = await fetch(target, { signal: AbortSignal.timeout(12000) });
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        if (!blob.type.startsWith('image/')) continue;
+        if (blob.size > 10 * 1024 * 1024) continue; // skip >10MB
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch { continue; }
+    }
+    return null;
+  };
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1414,6 +1440,8 @@ Be concise. 1-2 sentences per point.`
 
     setIsResearchingTopic(true);
     setTopicResearch(null);
+    setResearchImageBase64(null);
+    setResearchImageUrl(null);
 
     // Smart content detection
     const category = detectContentCategory(topic, topicDescription);
@@ -1499,6 +1527,46 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .map(chunk => `${chunk.web.title}: ${chunk.web.uri}`)
         .slice(0, 5)
         .join('\n');
+
+      // Background: Find reference image for the topic (runs parallel to analysis)
+      const imageSearchPromise = (async () => {
+        try {
+          const imageSearchPayload = {
+            contents: [{
+              parts: [{
+                text: `Search for "${topic}" and find official/promotional images.
+Return ONLY 3 direct image URLs (ending in .jpg, .jpeg, .png, .webp) on separate lines.
+Prefer: official artwork, promotional art, high-quality screenshots, character renders.
+NO text, NO explanation, ONLY URLs. One URL per line.`
+              }]
+            }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 500 }
+          };
+
+          const imageRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(imageSearchPayload) }
+          );
+          const imageData = await imageRes.json();
+          const imageText = imageData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+
+          // Extract direct image URLs from response text
+          const urlRegex = /https?:\/\/[^\s"'<>\)]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>\)]*)?/gi;
+          const urls = [...new Set(imageText.match(urlRegex) || [])].slice(0, 5);
+
+          for (const url of urls) {
+            const base64 = await fetchImageAsBase64(url);
+            if (base64) {
+              setResearchImageBase64(base64);
+              setResearchImageUrl(url);
+              return;
+            }
+          }
+        } catch (e) {
+          console.log('Reference image search failed (non-critical):', e.message);
+        }
+      })();
 
       // Step 2: Deep visual analysis combining search results + AI creativity
       const analysisPayload = {
@@ -1954,6 +2022,8 @@ ${conceptAnalysis ? `REFERENCE STYLE (match this exactly):
 ${conceptAnalysis}
 The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
+${researchImageBase64 ? `TOPIC REFERENCE IMAGE: A reference image of "${topic}" is attached. Study this image carefully - it shows what the topic ACTUALLY looks like. Use this as your primary visual reference for accuracy (colors, shapes, style, distinctive features).
+` : ''}
 ${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
 ${selectedArchetype ? `COMPOSITION PATTERN: ${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
@@ -1982,6 +2052,10 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       // Send concept/reference image to the model so it can SEE the reference style
       if (conceptBase64) {
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+      // Send research-found reference image so the model knows what the topic looks like
+      if (researchImageBase64) {
+        promptParts.push({ inlineData: { mimeType: "image/png", data: researchImageBase64 } });
       }
 
       const payload = {
@@ -2172,6 +2246,9 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       }
       if (conceptBase64) {
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+      if (researchImageBase64) {
+        optimizeParts.push({ inlineData: { mimeType: "image/png", data: researchImageBase64 } });
       }
 
       const payload = {
@@ -3079,7 +3156,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                   <input
                     type="text"
                     value={topic}
-                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); }}
+                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); setResearchImageBase64(null); setResearchImageUrl(null); }}
                     placeholder={t('topicPlaceholder')}
                     className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
@@ -3100,13 +3177,28 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
                       <Gamepad2 className="w-3 h-3" /> {t('aiResearch')}: {topic}
                     </p>
-                    <button onClick={() => setTopicResearch(null)} className="text-slate-500 hover:text-white">
+                    <button onClick={() => { setTopicResearch(null); setResearchImageBase64(null); setResearchImageUrl(null); }} className="text-slate-500 hover:text-white">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
                     {topicResearch}
                   </div>
+                  {researchImageBase64 && (
+                    <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
+                      <img
+                        src={`data:image/png;base64,${researchImageBase64}`}
+                        alt="Reference"
+                        className="w-16 h-16 object-cover rounded-lg border border-amber-500/30"
+                      />
+                      <p className="text-[10px] text-cyan-400 flex-1">
+                        Referans görsel bulundu — thumbnail üretiminde kullanılacak
+                      </p>
+                      <button onClick={() => { setResearchImageBase64(null); setResearchImageUrl(null); }} className="text-slate-500 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                   <p className="text-[10px] text-green-400 flex items-center gap-1 pt-1 border-t border-amber-500/20">
                     <Check className="w-3 h-3" /> {t('researchWillBeUsed')}
                   </p>
