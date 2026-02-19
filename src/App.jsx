@@ -1271,27 +1271,40 @@ VIBE: Professional, clean, gaming channel style`
     }
   };
 
-  // Fetch an image URL and convert to base64, with CORS proxy fallback
+  // Fetch an image URL and convert to base64, with multiple CORS proxy fallbacks
   const fetchImageAsBase64 = async (url) => {
     const targets = [
-      url,
-      `https://corsproxy.io/?${encodeURIComponent(url)}`,
+      { label: 'direct', url: url },
+      { label: 'wsrv.nl', url: `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=800&output=jpg` },
+      { label: 'corsproxy', url: `https://corsproxy.io/?${encodeURIComponent(url)}` },
     ];
     for (const target of targets) {
       try {
-        const res = await fetch(target, { signal: AbortSignal.timeout(12000) });
-        if (!res.ok) continue;
+        const res = await fetch(target.url, { signal: AbortSignal.timeout(12000) });
+        if (!res.ok) {
+          console.log(`[RefImage] ⚠️ fetch ${target.label}: HTTP ${res.status} for`, url.substring(0, 80));
+          continue;
+        }
         const blob = await res.blob();
-        if (!blob.type.startsWith('image/')) continue;
-        if (blob.size > 10 * 1024 * 1024) continue; // skip >10MB
+        if (!blob.type.startsWith('image/')) {
+          console.log(`[RefImage] ⚠️ fetch ${target.label}: not image (${blob.type}) for`, url.substring(0, 80));
+          continue;
+        }
+        if (blob.size > 10 * 1024 * 1024) { console.log(`[RefImage] ⚠️ fetch ${target.label}: too large ${blob.size}`); continue; }
+        if (blob.size < 1000) { console.log(`[RefImage] ⚠️ fetch ${target.label}: suspiciously small ${blob.size}b`); continue; }
+        console.log(`[RefImage] ✅ fetch ${target.label}: ${Math.round(blob.size / 1024)}KB ${blob.type}`);
         return await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result.split(',')[1]);
           reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
-      } catch { continue; }
+      } catch (e) {
+        console.log(`[RefImage] ❌ fetch ${target.label}: ${e.message} for`, url.substring(0, 80));
+        continue;
+      }
     }
+    console.log('[RefImage] 🚫 fetchImageAsBase64 ALL proxies failed for:', url.substring(0, 100));
     return null;
   };
 
@@ -1543,12 +1556,30 @@ YOU MUST search the web. Do NOT guess or make up information.`
           console.log('[RefImage] 🔍 Searching for reference image:', topic);
 
           // Extract smart search terms from topic
+          // "WARHAMMER 3 TAUROX" → ["TAUROX", "WARHAMMER TAUROX", "WARHAMMER 3 TAUROX"]
           // "Total war warhammer 3 : Taurox" → ["Taurox", "Total war warhammer 3 Taurox"]
-          const cleanTopic = topic.replace(/[:\-–—|]/g, ' ').replace(/\s+/g, ' ').trim();
-          const searchTerms = [cleanTopic];
+          const rawClean = topic.replace(/[:\-–—|]/g, ' ').replace(/\s+/g, ' ').trim();
+          const searchTerms = [];
+          // Part after separator is usually the specific subject
           const separatorMatch = topic.match(/[:|\-–—]\s*(.+)/);
-          if (separatorMatch) searchTerms.unshift(separatorMatch[1].trim());
-          console.log('[RefImage] 🔤 Search terms:', searchTerms);
+          if (separatorMatch) searchTerms.push(separatorMatch[1].trim());
+          // Last meaningful word(s) — likely the character name (TAUROX, Malenia, etc.)
+          const words = rawClean.split(' ').filter(w => w.length > 2);
+          if (words.length >= 2) {
+            searchTerms.push(words[words.length - 1]); // "TAUROX"
+            if (words.length >= 3) searchTerms.push(words.slice(-2).join(' ')); // "3 TAUROX" → skip if has number
+          }
+          // Full topic
+          searchTerms.push(rawClean);
+          // Deduplicate case-insensitive
+          const seen = new Set();
+          const uniqueTerms = searchTerms.filter(t => {
+            const key = t.toLowerCase().trim();
+            if (!key || key.length < 2 || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          console.log('[RefImage] 🔤 Search terms:', uniqueTerms);
 
           // Helper: try to get an image from a Fandom wiki page (3 methods)
           const tryFandomImage = async (wiki, pageTitle) => {
@@ -1743,7 +1774,7 @@ YOU MUST search the web. Do NOT guess or make up information.`
           console.log('[RefImage] 🎮 Wikis to search:', wikis, '(matched:', matchedWikis.length, 'category:', category?.id, ')');
 
           for (const wiki of wikis.slice(0, 5)) {
-            for (const term of searchTerms) {
+            for (const term of uniqueTerms) {
               try {
                 console.log(`[RefImage] 🔍 Fandom search: ${wiki} → "${term}"`);
                 const res = await fetch(
@@ -1771,7 +1802,7 @@ YOU MUST search the web. Do NOT guess or make up information.`
           }
 
           // Strategy 3: Wikipedia REST API (CORS-enabled)
-          for (const term of searchTerms) {
+          for (const term of uniqueTerms) {
             try {
               console.log('[RefImage] 🔗 Wikipedia summary:', term);
               const searchRes = await fetch(
@@ -1796,7 +1827,7 @@ YOU MUST search the web. Do NOT guess or make up information.`
           }
 
           // Strategy 4: Wikimedia Commons search (always CORS-enabled, huge image library)
-          for (const term of searchTerms) {
+          for (const term of uniqueTerms) {
             try {
               const commonsQuery = `${term} ${category?.id === 'gaming' ? 'game' : ''}`.trim();
               console.log('[RefImage] 🌐 Wikimedia Commons search:', commonsQuery);
