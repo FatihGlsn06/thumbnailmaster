@@ -1027,6 +1027,7 @@ const App = () => {
   // Topic/Concept research states
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
+  const [characterRefImages, setCharacterRefImages] = useState([]); // base64 reference images of characters/entities
 
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
@@ -1410,6 +1411,35 @@ Be concise. 1-2 sentences per point.`
     }
   };
 
+  // Fetch an image via CORS proxy and convert to base64
+  const fetchImageAsBase64 = async (imageUrl, timeout = 8000) => {
+    try {
+      // Use images.weserv.nl as CORS proxy - it's reliable and optimizes images
+      const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=512&h=512&fit=contain&output=jpg&q=80`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) return null;
+
+      const blob = await response.blob();
+      // Verify it's actually an image
+      if (!blob.type.startsWith('image/')) return null;
+
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('Failed to fetch reference image:', imageUrl, e.message);
+      return null;
+    }
+  };
+
   // Research topic/concept using AI (gaming/lore knowledge)
   const researchTopic = async () => {
     if (!topic || !apiKey) return;
@@ -1517,13 +1547,14 @@ YOU MUST search the web. Do NOT guess or make up information.`
 
       // Step 1.5: Character/Entity Visual Reference Search
       // Uses Google Search to find ACTUAL IMAGES of specific characters, creatures, items
-      // and creates an extremely detailed visual description for the image generation model
+      // Creates detailed text description AND fetches actual reference images
       let visualReferenceGuide = '';
+      let fetchedRefImages = [];
       try {
         const visualRefPayload = {
           contents: [{
             parts: [{
-              text: `You are a VISUAL REFERENCE RESEARCHER. Your job is to find and describe the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
+              text: `You are a VISUAL REFERENCE RESEARCHER. Your job is to find the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
 
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
@@ -1536,11 +1567,19 @@ YOUR TASK:
 2. Search queries to try:
    - "${topic} official artwork"
    - "${topic} in-game screenshot"
-   - "${topic} character design"
+   - "${topic} character design render"
    - "${topic} concept art"
-   - "${topic} wiki"
-3. For EACH key character/creature/entity you find, describe their visual appearance in EXTREME detail
+   - "${topic} wiki fandom"
+3. For EACH key character/creature/entity, write TWO things:
 
+PART A - IMAGE URLS (CRITICAL!):
+Find direct image URLs (.jpg, .png, .webp) showing the character from official artwork, wiki pages, or game screenshots.
+List them as:
+IMAGE_URL: [direct url to image file]
+IMAGE_URL: [direct url to image file]
+(Find 2-4 image URLs per entity from different sources: wiki, official art, in-game)
+
+PART B - VISUAL DESCRIPTION:
 For each entity, write a VISUAL_REFERENCE block:
 
 **VISUAL_REFERENCE: [Entity Name]**
@@ -1556,11 +1595,11 @@ For each entity, write a VISUAL_REFERENCE block:
 - ⚠️ COMMON MISTAKES: What does AI typically get WRONG about this character? (e.g., "AI draws a normal bull, but Taurox is a BIPEDAL brass-plated Minotaur who stands UPRIGHT")
 
 RULES:
-- Be based on what you ACTUALLY FIND from searching, not guessing
-- If the topic has NO specific characters/creatures (e.g., "cooking tips", "travel vlog"), write: "NO_SPECIFIC_ENTITIES: This topic has no specific characters or creatures to reference"
-- Focus on what makes each entity VISUALLY UNIQUE - the details that AI image models typically get WRONG
+- ALWAYS include IMAGE_URL lines with direct image file URLs (ending in .jpg, .png, .webp or from wiki/fandom image pages)
+- If the topic has NO specific characters/creatures (e.g., "cooking tips", "travel vlog"), write: "NO_SPECIFIC_ENTITIES"
+- Focus on what makes each entity VISUALLY UNIQUE
 - Use #hex color codes where possible
-- Include 1-3 entities maximum (the most important ones for the thumbnail)
+- Include 1-3 entities maximum
 - Write in ENGLISH`
             }]
           }],
@@ -1585,9 +1624,46 @@ RULES:
         if (visualRefResponse.ok) {
           const visualRefData = await visualRefResponse.json();
           const visualRefText = visualRefData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
+
+          // Also extract image URLs from grounding metadata
+          const refGroundingChunks = visualRefData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+          const groundingImageUrls = refGroundingChunks
+            .filter(chunk => chunk.web?.uri)
+            .map(chunk => chunk.web.uri)
+            .filter(url => /\.(jpg|jpeg|png|webp|gif)/i.test(url));
+
           if (visualRefText && !visualRefText.includes('NO_SPECIFIC_ENTITIES')) {
             visualReferenceGuide = visualRefText;
             console.log('Visual reference guide generated successfully');
+
+            // Extract IMAGE_URL lines from the response text
+            const imageUrlRegex = /IMAGE_URL:\s*(https?:\/\/[^\s\)>\]]+)/gi;
+            const textImageUrls = [];
+            let urlMatch;
+            while ((urlMatch = imageUrlRegex.exec(visualRefText)) !== null) {
+              textImageUrls.push(urlMatch[1]);
+            }
+
+            // Also find any other URLs that look like direct image links
+            const inlineImageRegex = /https?:\/\/[^\s\)>\]]+\.(jpg|jpeg|png|webp)/gi;
+            let inlineMatch;
+            while ((inlineMatch = inlineImageRegex.exec(visualRefText)) !== null) {
+              if (!textImageUrls.includes(inlineMatch[0])) {
+                textImageUrls.push(inlineMatch[0]);
+              }
+            }
+
+            // Combine all found image URLs (text URLs + grounding URLs), deduplicate
+            const allImageUrls = [...new Set([...textImageUrls, ...groundingImageUrls])].slice(0, 5);
+            console.log(`Found ${allImageUrls.length} character reference image URLs`);
+
+            if (allImageUrls.length > 0) {
+              // Fetch images in parallel via CORS proxy, with timeout
+              const imagePromises = allImageUrls.map(url => fetchImageAsBase64(url));
+              const imageResults = await Promise.all(imagePromises);
+              fetchedRefImages = imageResults.filter(img => img !== null).slice(0, 3);
+              console.log(`Successfully fetched ${fetchedRefImages.length} reference images`);
+            }
           } else {
             console.log('No specific entities found for visual reference');
           }
@@ -1597,6 +1673,9 @@ RULES:
       } catch (visualRefErr) {
         console.warn('Visual reference search error (non-critical):', visualRefErr.message);
       }
+
+      // Store reference images for use in generation
+      setCharacterRefImages(fetchedRefImages);
 
       // Step 2: Deep visual analysis combining search results + AI creativity
       const analysisPayload = {
@@ -2352,6 +2431,15 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       if (conceptBase64) {
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
+      // Send character/entity reference images so the model can SEE what the character actually looks like
+      if (characterRefImages && characterRefImages.length > 0) {
+        // Add a text label before reference images
+        promptParts.push({ text: `\n\n🖼️ CHARACTER/ENTITY REFERENCE IMAGES (${characterRefImages.length} images attached):\nThe following images show the ACTUAL appearance of the characters/creatures mentioned in the topic. You MUST match their visual design EXACTLY - body shape, colors, armor, proportions, unique features. These are from the official source material.\n` });
+        characterRefImages.forEach((imgBase64, idx) => {
+          promptParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
+        });
+        promptParts.push({ text: `\n⚠️ The reference images above are your GROUND TRUTH for character appearance. Your generated thumbnail MUST accurately depict these characters as shown. DO NOT default to generic versions.\n` });
+      }
 
       const payload = {
         contents: [{
@@ -2545,6 +2633,13 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       }
       if (conceptBase64) {
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+      // Include character reference images for accurate entity rendering
+      if (characterRefImages && characterRefImages.length > 0) {
+        optimizeParts.push({ text: `\n🖼️ CHARACTER REFERENCE IMAGES - match these characters' appearance EXACTLY:\n` });
+        characterRefImages.forEach((imgBase64) => {
+          optimizeParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
+        });
       }
 
       const payload = {
