@@ -1576,6 +1576,11 @@ Lütfen Türkçe olarak çok detaylı yaz:
    - **SİLAHLAR ve SAVAŞ TEKNOLOJİSİ**:
      * O dönemde kullanılan başlıca silahlar (yakın dövüş, uzak menzil, kuşatma)
      * Barut var mıydı? Topçuluk? Ok/yay mı arbalet mi tüfek mi?
+     * ⚠️ KARAKTER SİLAHLARI (ÇOK KRİTİK!): Eğer belirli bir karakter varsa, O KARAKTERİN kullandığı spesifik silahları yaz:
+       - DOĞRU TİP: Kılıç mı, balta mı, mızrak mı, yay mı? Tam tipi yaz (pala, kılıç, çift balta, kısa balta vb.)
+       - DOĞRU BOYUT: Büyük mü küçük mü? Tek el mi çift el mi?
+       - DOĞRU ADET: Kaç tane? (örn: "İKİ ADET kısa balta" veya "TEK kılıç")
+       - YANLIŞ SİLAH NE OLUR? (örn: "Büyük savaş baltası YANLIŞ - bu karakter iki küçük el baltası kullanır")
 
    - **MİMARİ ve ÇEVRE**:
      * O dönemin ve medeniyetin mimari stili (kubbe, kemer, sütun, gotik, pagoda vb.)
@@ -1605,6 +1610,11 @@ Lütfen Türkçe olarak çok detaylı yaz:
    - En iyi kompozisyon önerisi (kişi nerede durmalı, arka plan nasıl olmalı)
    - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare, bokeh, duman vb.)
    - Kostüm/kıyafet önerisi (kişi ne giymeli - İÇERİĞE UYGUN olmalı!)
+   - ⚠️ KARAKTER EŞYALARI/SİLAHLARI: Eğer karakterin spesifik silahları/eşyaları varsa ÇOK DETAYLI yaz:
+     * Tam silah tipi (kılıç mı balta mı yay mı? Ne tür bir kılıç/balta?)
+     * Boyut (küçük, orta, büyük)
+     * Adet (kaç tane taşıyor?)
+     * YANLIŞ olan ne olur? (örn: "Büyük savaş baltası YANLIŞ, karakter 2 küçük el baltası kullanır")
    - Kaçınılması gereken hatalar
    - Örnek yazı önerileri (2-3 kelime, Türkçe ve İngilizce seçenekler)
 
@@ -1664,9 +1674,19 @@ FORMAT (write each section completely):
 
 **PERSON_COSTUME**: What should the person in the thumbnail wear? Match the theme. (e.g., "futuristic tactical suit with glowing blue accents" or "casual gaming hoodie with headphones around neck")
 
+**CHARACTER_ITEMS**: What specific items, weapons, tools, or props should the character hold or have visible? Be EXTREMELY precise about:
+- Exact type (e.g., "TWO short hand-axes" NOT "an axe", "katana with curved blade" NOT "a sword")
+- Size (small, medium, large, oversized)
+- Quantity (exactly how many)
+- Position (in right hand, on back, holstered at hip, etc.)
+- Style details from the research (ornamental, battle-worn, glowing, etc.)
+⚠️ This section is CRITICAL - the AI image model will default to generic weapons if not specified precisely!
+
 **CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at subject, dramatic perspective, wide-angle lens feel")
 
 **KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
+
+**ABSOLUTELY_NOT**: Things that must NOT appear. List specific wrong items that the AI might incorrectly add (e.g., "NO large battle axe - character uses TWO SMALL hand-axes only", "NO shield - this character fights dual-wielding")
 
 Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
 
@@ -1692,8 +1712,18 @@ NEVER use: "Turkish flag", "flag of Turkey", white crescent, 5-pointed star, bri
 
 **PERSON_COSTUME**: What should the thumbnail person wear? Match the era.
 
-**ABSOLUTELY_NOT**: Things that MUST NOT appear. For Ottoman scenes ALWAYS include:
-"NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
+**CHARACTER_ITEMS**: What specific weapons, tools, or items should the character hold or wear?
+⚠️ Be EXTREMELY PRECISE - the AI defaults to generic/wrong weapons if not told exactly:
+- Exact weapon type and size (e.g., "TWO short hand-axes (NOT a large battle axe)" or "a curved scimitar (kilij), NOT a straight European longsword")
+- Exact quantity (one, two, etc.)
+- Which hand holds what
+- Style details (ornamental, plain, jeweled hilt, leather-wrapped grip, etc.)
+- Any shield, bow, or secondary items
+List what they MUST have AND what they must NOT have.
+
+**ABSOLUTELY_NOT**: Things that MUST NOT appear. Be very specific about wrong weapons/items too.
+For Ottoman scenes ALWAYS include: "NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
+Example: "NO large two-handed battle axe - this character carries TWO SMALL one-handed axes"
 
 Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
 
@@ -1801,17 +1831,22 @@ ${topicResearch}
 ⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
 This is not generic - it's specific to "${topic}" and must look authentic to fans/followers of this content.
 
-🎬 SCENE DIRECTION (CRITICAL - FOLLOW EXACTLY):
+🎬 SCENE DIRECTION (HIGHEST PRIORITY - FOLLOW EXACTLY, DO NOT OVERRIDE):
 The research above contains a "READY-TO-USE SCENE DIRECTION" section.
-If present, this is the MOST IMPORTANT part to follow:
+This is the MOST IMPORTANT part of the entire prompt. Every field below OVERRIDES your own ideas:
 
 - **SCENE_DESCRIPTION**: Use this EXACT description for the background/environment. Do NOT substitute your own idea!
 - **COLOR_PALETTE**: Use these exact colors for the scene.
-- **PERSON_COSTUME**: Dress the person in THIS specific outfit.
+- **PERSON_COSTUME**: Dress the person in THIS specific outfit. Do NOT change it!
+- **CHARACTER_ITEMS**: ⚠️⚠️⚠️ THIS IS CRITICAL! The character MUST hold/carry EXACTLY the items listed here.
+  * If it says "two short axes" → draw exactly TWO SHORT AXES, not one large axe
+  * If it says "curved scimitar" → draw a curved blade, not a straight sword
+  * Pay attention to QUANTITY, SIZE, and TYPE - do not generalize or substitute!
+  * This is the #1 most common mistake: AI draws generic/wrong weapons. DO NOT do this!
 - **CAMERA_ANGLE / CAMERA_POSITION**: Follow for viewing angle and composition.
 - **KEY_EFFECTS**: Apply these visual effects.
 - **ATTACKER/DEFENDER_DESCRIPTION**: If present, follow for armies/factions.
-- **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance.
+- **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance. If an item is listed here, it CANNOT appear in any form.
 
 For HISTORICAL scenes: Do NOT use modern city names (e.g., "Istanbul" draws modern city).
 Build the scene from architectural descriptions only.
@@ -2049,10 +2084,12 @@ ${topicResearch ? `
 ${topicResearch}
 Apply the visual identity, colors, and atmosphere described above!
 
-🏛️ HISTORICAL SCENE (IF APPLICABLE):
-If the research contains "READY-TO-USE SCENE DIRECTION", follow it EXACTLY:
+🏛️ SCENE DIRECTION (FOLLOW EXACTLY - DO NOT OVERRIDE):
+If the research contains "READY-TO-USE SCENE DIRECTION", follow EVERY field EXACTLY:
 - Use SCENE_DESCRIPTION for background (do NOT substitute modern city visuals!)
 - Use PERSON_COSTUME for the person's outfit
+- Use CHARACTER_ITEMS for weapons/props - draw EXACTLY what is listed (correct type, size, quantity!)
+  ⚠️ If it says "two short axes" = TWO SHORT AXES, not one big axe!
 - Follow ABSOLUTELY_NOT list strictly - zero tolerance for listed items
 - Do NOT use modern city names internally - build scene from architectural descriptions only
 ` : ''}
