@@ -1631,7 +1631,6 @@ ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : '
 ${searchResult}
 
 ${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
-${visualReferenceGuide ? `\n🎨 KARAKTER/VARLIK GÖRSEL REFERANS REHBERİ (KRİTİK!):\n${visualReferenceGuide}\n⚠️ Yukarıdaki görsel referansları MUTLAKA kullan! Bu karakterlerin/varlıkların GERÇEK görünüşleri böyle.\n` : ''}
 
 ⚠️ ÖNEMLİ: Yukarıdaki internet araştırması sonuçlarını TEMEL AL.
 "${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
@@ -2119,46 +2118,64 @@ Use this information to accurately represent the game/topic's visual style, atmo
 ` : ''}
 
 ${topicResearch ? (() => {
-  // Truncate research if too long - Gemini image generation fails with huge prompts
-  // "content not available resource was not cached" error happens when prompt is too large
-  let research = topicResearch;
-  if (research.length > 8000) {
-    // Keep the most important parts: Art Direction Brief + Visual References + Scene Direction
-    const artBriefIdx = research.indexOf('🎯 ART DIRECTION BRIEF');
-    const visualRefIdx = research.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
-    const sceneIdx = research.indexOf('🎬 SCENE DIRECTION');
+  // CRITICAL: Only send CONCISE sections to image generation model.
+  // Sending full research (10,000+ chars) causes "Content unavailable" errors.
+  // Extract only: Art Direction Brief + Scene Direction + Visual References
 
-    // Prioritize: Art Brief > Scene Direction > Visual Refs > beginning of research
-    let truncated = '';
-    if (artBriefIdx > -1) {
-      truncated += research.substring(artBriefIdx) + '\n\n';
-    }
-    if (sceneIdx > -1 && artBriefIdx > -1) {
-      truncated = research.substring(sceneIdx, artBriefIdx).substring(0, 3000) + '\n\n' + truncated;
-    } else if (sceneIdx > -1) {
-      truncated += research.substring(sceneIdx).substring(0, 3000) + '\n\n';
-    }
-    if (visualRefIdx > -1) {
-      const visualEnd = sceneIdx > visualRefIdx ? sceneIdx : (artBriefIdx > visualRefIdx ? artBriefIdx : research.length);
-      truncated = research.substring(visualRefIdx, visualEnd).substring(0, 2000) + '\n\n' + truncated;
-    }
-    // If no sections found, just take the last 6000 chars (most relevant)
-    research = truncated || research.substring(research.length - 6000);
+  // 1. Extract Art Direction Brief (most important - concise visual instructions)
+  const artBriefIdx = topicResearch.indexOf('🎯 ART DIRECTION BRIEF');
+  const artBrief = artBriefIdx > -1 ? topicResearch.substring(artBriefIdx) : '';
+
+  // 2. Extract Scene Direction (structured scene description)
+  const sceneIdx = topicResearch.indexOf('🎬 SCENE DIRECTION');
+  let sceneSection = '';
+  if (sceneIdx > -1) {
+    // Scene direction ends at visual references or art brief or end of text
+    const visualRefIdx = topicResearch.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
+    const sceneEnd = visualRefIdx > sceneIdx ? visualRefIdx : (artBriefIdx > sceneIdx ? artBriefIdx : topicResearch.length);
+    sceneSection = topicResearch.substring(sceneIdx, sceneEnd).substring(0, 4000);
   }
 
+  // 3. Extract Visual References (character descriptions)
+  const visualRefIdx = topicResearch.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
+  let visualRefSection = '';
+  if (visualRefIdx > -1) {
+    const visualEnd = artBriefIdx > visualRefIdx ? artBriefIdx : topicResearch.length;
+    visualRefSection = topicResearch.substring(visualRefIdx, visualEnd).substring(0, 2500);
+  }
+
+  // If we found structured sections, use only those (like the old working version)
+  if (artBrief || sceneSection) {
+    return `
+📋 VISUAL DIRECTION FOR "${topic}":
+
+${visualRefSection ? `${visualRefSection}
+
+⚠️ CHARACTER/ENTITY ACCURACY - Follow visual descriptions PRECISELY:
+- Body type, proportions, posture → draw EXACTLY as described
+- Skin/surface material and colors → use the EXACT #hex colors
+- Unique features → these make the character RECOGNIZABLE to fans
+- COMMON MISTAKES section → AVOID these errors
+` : ''}
+${sceneSection}
+
+${artBrief}
+
+⚠️ THE ART DIRECTION BRIEF IS YOUR PRIMARY GUIDE:
+- VISUAL DNA → art style, colors (use hex codes!), lighting, texture
+- DEPTH COMPOSITION → foreground→midground→background layering, NOT flat
+- NARRATIVE MOMENT → what is HAPPENING (action, not static pose)
+- CHARACTER BRIEF → costume, pose, expression, items (type/size/quantity)
+- DO NOT → zero tolerance for listed items
+`;
+  }
+
+  // Fallback: no structured sections found, use truncated research
   return `
-📋 VISUAL RESEARCH & SCENE DIRECTION FOR "${topic}":
+📋 VISUAL DIRECTION FOR "${topic}":
+${topicResearch.substring(0, 4000)}
 
-${research}
-
-⚠️ FOLLOW THE SCENE DIRECTION AND ART DIRECTION BRIEF PRECISELY:
-- VISUAL DNA defines art style, colors (use hex codes!), lighting, texture
-- DEPTH COMPOSITION is CRITICAL: foreground→midground→background layering, NOT a flat image
-- NARRATIVE MOMENT defines what is HAPPENING - frozen moment of action
-- CHARACTER BRIEF defines costume, pose, expression, items (type/size/quantity EXACTLY)
-- ICONIC DETAILS make this AUTHENTIC to fans
-- DO NOT / ABSOLUTELY_NOT → zero tolerance for listed items
-- The final image MUST have CINEMATIC DEPTH - foreground particles, sharp midground, atmospheric background. NEVER flat collage.
+⚠️ Follow SCENE DIRECTION sections EXACTLY. Create CINEMATIC DEPTH.
 `;
 })() : ''}
 
