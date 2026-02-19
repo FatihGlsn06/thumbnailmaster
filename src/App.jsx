@@ -1529,6 +1529,45 @@ Lütfen Türkçe olarak çok detaylı yaz:
    - Işık tipi ve yönü (doğal, stüdyo, neon, altın saat, dramatik, yumuşak vb.)
    - Parçacık/efekt önerileri (bokeh, lens flare, duman, konfeti, ışık sızması vb.)
 
+2b. **OYUN/FRANCHİSE GÖRSEL KİMLİĞİ** (OYUN veya FRANCHİSE İÇERİĞİ İSE ÇOK DETAYLI DOLDUR, DEĞİLSE GEÇ):
+   Bu konu bir VIDEO OYUNU, oyun franchise'ı, oyun karakteri veya oyun dünyasıyla ilgiliyse:
+
+   - **OYUN ART STYLE**: Bu oyunun görsel stili nedir? (grimdark, cel-shaded, realistic, stylized, pixel art, anime vb.)
+     Oyunun genel renk paleti ve atmosferi nedir? (karanlık ve kasvetli, renkli ve canlı, pastel vb.)
+
+   - **KARAKTERLERİN GÖRSEL DETAYLARI** (ÇOK KRİTİK - EN ÇOK HATA YAPILAN KISIM):
+     * Thumbnail'da görünmesi muhtemel ANA karakter(ler) kimler?
+     * Her karakter için ÇOK DETAYLI fiziksel tanım:
+       - Yüz: Ten rengi, yüz şekli, gözler (renk, şekil, özellik - örn: parlayan gözler, cybernetic göz), burun, ağız
+       - Saç: Renk, uzunluk, stil, özellik (örn: beyaz uzun saç, kısa siyah mohawk, kel, kapüşonlu)
+       - Vücut: Boy, yapı, özel özellikler (örn: dev gibi, zayıf, kaslı, robot kol)
+       - Yüz işaretleri: Yara izleri, dövmeler, boyalar, maskeler, cybernetic implantlar
+     * Her karakter için KIYAFET/ZIRH detayları:
+       - Zırh tipi ve rengi (power armor, plate armor, robe, casual vb.)
+       - Zırh üzerindeki semboller, işaretler, renkler
+       - Başlık/miğfer (varsa detaylı tanımla)
+       - Silah(lar): Hangi silahı tutuyor? (kılıç tipi, tüfek modeli, büyü asası vb.) - SİLAHIN GÖRSEL DETAYI
+     * ⚠️ ÖNEMLİ: Genel "bir savaşçı" değil, O OYUNUN O KARAKTERİNE ÖZGÜ detayları yaz!
+       Örn: "Geralt of Rivia" → "Beyaz uzun saç, sarı kedi gözleri, sol yanakta yara izi, siyah zırh üzerine gümüş kurt madalyonu"
+       Örn: "Space Marine Ultramarine" → "Mavi power armor, sol omuzda beyaz Omega sembolü, kırmızı göz lensleri, gold trim"
+
+   - **FACTION/GRUP DETAYLARI**:
+     * Hangi faction/takım/grup? (Space Marines Ultramarines, Horde, Brotherhood of Steel vb.)
+     * Faction renkleri: Ana renk + ikincil renk + aksanlar (HEX kodlarıyla)
+     * Faction sembolü/logosu: Tam görsel tanım (şekil, renk, nereye yerleştirilir)
+     * Faction'a özgü mimari/teknoloji/araçlar
+
+   - **OYUN LOGOSU ve İKONİK ELEMENTLER**:
+     * Oyunun logosunun görsel tanımı (font stili, renk, efektler)
+     * Oyunun en ikonik görsel elementleri (Warhammer: Aquila kartalı, Elden Ring: Erdtree, Dark Souls: bonfire vb.)
+     * Oyunun signature efektleri (Warhammer: warp energy, Elden Ring: golden glow, Cyberpunk: glitch efekti)
+
+   - **SAHNE/ENVIRONMENT**:
+     * Bu oyunun dünyasında tipik ortamlar nasıl görünür?
+     * Mimari stil (gothic, futuristic, fantasy castle, wasteland vb.)
+     * Gökyüzü/atmosfer (karanlık bulutlar, çift güneş, yeşil warp fırtınası, kırmızı gökyüzü vb.)
+     * Zemin/arazi tipi
+
 3. **TARİHSEL DOĞRULUK ANALİZİ** (BU BÖLÜM HER ZAMAN DOLDURULMALI):
    Bu konu tarihsel bir dönem, imparatorluk, medeniyet, savaş veya tarihsel bir oyunla (Age of Empires, Civilization, Total War, Crusader Kings, Europa Universalis, Mount & Blade, Kingdom Come, Assassin's Creed, Ghost of Tsushima, For Honor vb.) İLGİLİYSE aşağıdakileri DETAYLI doldur.
    Tarihsel içerik DEĞİLSE "Bu konu tarihsel değildir" yaz ve geç.
@@ -1643,6 +1682,7 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
         const historicalKeywords = ['tarih', 'history', 'historical', 'savaş', 'war', 'battle', 'empire', 'imparatorluk', 'osmanlı', 'ottoman', 'byzantine', 'bizans', 'medieval', 'ortaçağ', 'antik', 'ancient', 'roma', 'roman', 'kingdom', 'krallık', 'sultan', 'fetih', 'conquest', 'dynasty', 'hanedan'];
         const topicLower = `${topic} ${topicDescription || ''}`.toLowerCase();
         const isHistorical = historicalKeywords.some(kw => topicLower.includes(kw));
+        const isGaming = category.id === 'gaming';
 
         const scenePromptBase = `You are a SCENE DIRECTOR. Read the research below and write a CONCRETE, DETAILED scene description for a YouTube thumbnail.
 
@@ -1669,6 +1709,51 @@ FORMAT (write each section completely):
 **KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
 
 Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
+
+        const scenePromptGaming = `${scenePromptBase}
+
+IMPORTANT: This is a VIDEO GAME topic. The research above contains detailed character and faction information.
+You MUST use that information to create an AUTHENTIC game-accurate scene. DO NOT invent generic fantasy/sci-fi visuals.
+
+FORMAT (write each section completely):
+
+**SCENE_DESCRIPTION**: Describe the game world environment in vivid detail. Use the ACTUAL game's environment style from the research.
+Include: specific location from the game, lighting style matching the game's aesthetic, atmosphere, iconic game elements in the background.
+e.g. for Warhammer 40K: "A ruined cathedral-fortress on a war-torn hive world, gothic architecture with massive stone pillars, skull motifs carved into every surface, the sky torn apart by warp storms glowing sickly purple-green, Imperial Aquila banners hanging torn from the walls, distant explosions lighting up the smog-filled horizon"
+NOT just: "a dark sci-fi background"
+
+**COLOR_PALETTE**: Use the EXACT colors from the game/faction. List 4-6 colors with purpose.
+e.g. "Ultramarine blue (#0A2B6E) for armor, gold (#C5A028) for trim and aquila, dark red (#5C0A0A) for eye lenses and wax seals, black (#1A1A1A) for joints and undersuit, bone white (#E8DCC8) for skull decorations"
+
+**CHARACTER_VISUAL**: EXTREMELY detailed description of the game character that will appear in the thumbnail.
+This is the MOST IMPORTANT section - describe the character as if writing for a concept artist:
+- Face: skin tone, eye color/glow, facial hair, scars, markings, expression
+- Hair: color, length, style, special features
+- Armor/Clothing: EXACT type, color, material, every distinctive marking/symbol on it
+- Helmet (if any): on head or held? Exact design.
+- Weapon(s): EXACT weapon name and visual description, how they hold it
+- Pose: what pose for the thumbnail? (battle-ready, charging, looking over shoulder, etc.)
+⚠️ This must be the SPECIFIC game character, not a generic warrior/soldier!
+
+**FACTION_ELEMENTS**: Faction-specific visual details to include in the scene:
+- Faction symbol/logo: exact shape, color, where it appears (on shoulder pad, banner, etc.)
+- Faction-specific objects: banners, standards, vehicles, structures
+- Faction art style: clean vs battle-damaged, ornate vs utilitarian
+
+**GAME_IDENTITY**: Elements that make this INSTANTLY recognizable as THIS specific game:
+- Game's signature visual motifs (skulls for 40K, runes for Elden Ring, etc.)
+- Game's art style description (grimdark, high fantasy, cel-shaded, etc.)
+- Iconic HUD/UI elements that could subtly appear (optional)
+- Game logo style description (for text overlay inspiration)
+
+**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at the character, dramatic perspective, the character fills 60% of the frame with the game world behind")
+
+**KEY_EFFECTS**: Game-appropriate visual effects:
+- Particle effects from the game (magic particles, sparks, embers, energy, warp lightning)
+- Lighting effects (glowing weapons, eye glow, energy auras)
+- Atmospheric effects (fog, smoke, dust, rain) matching the game world
+
+Keep each section 3-5 sentences. Be SPECIFIC to THIS game. Be COMPLETE - finish every sentence.`;
 
         const scenePromptHistorical = `${scenePromptBase}
 
@@ -1700,7 +1785,7 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
         const scenePayload = {
           contents: [{
             parts: [{
-              text: isHistorical ? scenePromptHistorical : scenePromptGeneral
+              text: isHistorical ? scenePromptHistorical : isGaming ? scenePromptGaming : scenePromptGeneral
             }]
           }],
           generationConfig: {
@@ -1813,6 +1898,12 @@ If present, this is the MOST IMPORTANT part to follow:
 - **ATTACKER/DEFENDER_DESCRIPTION**: If present, follow for armies/factions.
 - **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance.
 
+For GAME/FRANCHISE content (CRITICAL):
+- **CHARACTER_VISUAL**: This describes the EXACT game character appearance. Follow EVERY detail - armor color, symbols, weapons, face features. Do NOT substitute with a generic warrior/soldier!
+- **FACTION_ELEMENTS**: Include faction-specific symbols, banners, colors. These are what fans will recognize.
+- **GAME_IDENTITY**: Use the game's actual art style and signature visual motifs.
+- The character must be RECOGNIZABLE to fans of this game. Generic fantasy/sci-fi is NOT acceptable.
+
 For HISTORICAL scenes: Do NOT use modern city names (e.g., "Istanbul" draws modern city).
 Build the scene from architectural descriptions only.
 For Ottoman scenes: Use DARK CRIMSON banner + GOLDEN crescent + GOLDEN 8-pointed star (NOT modern Turkish flag).
@@ -1864,6 +1955,7 @@ IF THE IMAGE CONTAINS A PERSON/FACE:
 - The person should look like they BELONG in this world
 - TRANSFORM the person's clothing to match the scene's theme and universe
 - Do NOT keep their original casual clothes in themed scenes (use armor, suits, gear as appropriate)
+- For GAME content: If CHARACTER_VISUAL is provided in the research, dress the person in THAT EXACT outfit/armor with those EXACT colors and symbols. The person should look like they ARE that game character (with their own face).
 - Face and facial features must remain unchanged, only transform the body/clothing
 - The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
 - Show from chest-up or shoulders-up so the face is LARGE
@@ -1883,6 +1975,7 @@ Create a thumbnail purely from the topic description. Design original visuals th
 - The thumbnail must look like a real YouTube thumbnail, not generic AI art
 - Include relevant visual elements that represent the topic
 - Make the composition compelling enough to make viewers want to click
+- For GAME content: If CHARACTER_VISUAL is in the research, draw that character with EXACT visual details (armor, weapons, colors, symbols). The character must be recognizable to fans of the game. Do NOT draw a generic warrior - draw THE specific character described.
 `}
 
 ${overlayText ? `
