@@ -37,6 +37,15 @@ const CONTENT_CATEGORIES = {
       'oynuyorum', 'oynadım', 'oynuyoruz', 'oynanış',
       // Platforms (strong gaming signal)
       'steam', 'playstation', 'xbox', 'nintendo', 'ps5', 'epic games', 'gamepass',
+      // Popular game franchises (ensures correct category detection)
+      'warhammer', 'total war', 'elden ring', 'dark souls', 'demon souls', 'bloodborne', 'sekiro',
+      'witcher', 'cyberpunk', 'minecraft', 'fortnite', 'valorant', 'league of legends',
+      'call of duty', 'warzone', 'counter strike', 'cs2', 'apex legends', 'overwatch',
+      'destiny', 'world of warcraft', 'diablo', 'starfield', 'baldurs gate',
+      'gta', 'red dead', 'skyrim', 'elder scrolls', 'fallout', 'resident evil',
+      'god of war', 'zelda', 'mario', 'pokemon', 'genshin', 'monster hunter',
+      'armored core', 'final fantasy', 'assassins creed', 'far cry', 'tomb raider',
+      'horizon', 'halo', 'starcraft', 'dota', 'palworld', 'helldivers', 'lethal company',
     ],
     temperature: 0.7,
     defaultArchetypes: ['shocked_threat', 'power_fantasy', 'scale_contrast', 'almost_fail'],
@@ -1578,14 +1587,69 @@ YOU MUST search the web. Do NOT guess or make up information.`
             }
           }
 
-          // Strategy 2: Fandom search API (always runs, tries category wikis)
+          // Strategy 2: Fandom search API (always runs)
+          // First: detect wikis directly from topic keywords (most reliable)
+          const topicLower = topic.toLowerCase();
+          const topicWikiMap = [
+            { patterns: ['total war'], wikis: ['totalwar'] },
+            { patterns: ['warhammer 40', '40k'], wikis: ['warhammer40k'] },
+            { patterns: ['warhammer'], wikis: ['warhammer', 'totalwar'] },
+            { patterns: ['elden ring'], wikis: ['eldenring'] },
+            { patterns: ['dark souls', 'demon souls', 'bloodborne', 'sekiro'], wikis: ['darksouls'] },
+            { patterns: ['witcher'], wikis: ['witcher'] },
+            { patterns: ['elder scrolls', 'skyrim', 'oblivion', 'morrowind'], wikis: ['elderscrolls'] },
+            { patterns: ['league of legends', 'lol'], wikis: ['leagueoflegends'] },
+            { patterns: ['minecraft'], wikis: ['minecraft'] },
+            { patterns: ['zelda', 'breath of the wild', 'tears of the kingdom'], wikis: ['zelda'] },
+            { patterns: ['genshin'], wikis: ['genshin-impact'] },
+            { patterns: ['call of duty', 'warzone'], wikis: ['callofduty'] },
+            { patterns: ['fortnite'], wikis: ['fortnite'] },
+            { patterns: ['destiny'], wikis: ['destiny'] },
+            { patterns: ['world of warcraft', 'wow'], wikis: ['wowpedia'] },
+            { patterns: ['diablo'], wikis: ['diablo'] },
+            { patterns: ['starfield', 'fallout'], wikis: ['starfield', 'fallout'] },
+            { patterns: ['baldurs gate', "baldur's gate"], wikis: ['baldursgate3'] },
+            { patterns: ['cyberpunk'], wikis: ['cyberpunk'] },
+            { patterns: ['gta', 'grand theft auto'], wikis: ['gta'] },
+            { patterns: ['red dead'], wikis: ['reddead'] },
+            { patterns: ['god of war'], wikis: ['godofwar'] },
+            { patterns: ['monster hunter'], wikis: ['monsterhunter'] },
+            { patterns: ['final fantasy'], wikis: ['finalfantasy'] },
+            { patterns: ['resident evil'], wikis: ['residentevil'] },
+            { patterns: ['assassins creed', "assassin's creed"], wikis: ['assassinscreed'] },
+            { patterns: ['pokemon', 'pokémon'], wikis: ['pokemon'] },
+            { patterns: ['mario'], wikis: ['mario'] },
+            { patterns: ['halo'], wikis: ['halo'] },
+            { patterns: ['overwatch'], wikis: ['overwatch'] },
+            { patterns: ['apex legends', 'apex'], wikis: ['apexlegends'] },
+            { patterns: ['valorant'], wikis: ['valorant'] },
+            { patterns: ['dota'], wikis: ['dota2'] },
+            { patterns: ['palworld'], wikis: ['palworld'] },
+            { patterns: ['helldivers'], wikis: ['helldivers'] },
+            { patterns: ['counter strike', 'cs2', 'csgo'], wikis: ['counterstrike'] },
+            { patterns: ['horizon'], wikis: ['horizon'] },
+            { patterns: ['starcraft'], wikis: ['starcraft'] },
+            { patterns: ['tomb raider'], wikis: ['tombraider'] },
+          ];
+          // Find wikis matching topic keywords
+          const matchedWikis = [];
+          for (const entry of topicWikiMap) {
+            if (entry.patterns.some(p => topicLower.includes(p))) {
+              matchedWikis.push(...entry.wikis);
+            }
+          }
+          // Fallback: category-based wikis
           const categoryWikis = {
             gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher', 'callofduty', 'fortnite', 'minecraft', 'genshin-impact', 'zelda'],
             food: ['recipes'],
             music: ['music'],
             historical: ['assassinscreed', 'civilization'],
           };
-          const wikis = categoryWikis[category?.id] || [];
+          const fallbackWikis = categoryWikis[category?.id] || [];
+          // Combine: topic-matched first, then category fallback (deduplicated)
+          const wikis = [...new Set([...matchedWikis, ...fallbackWikis])];
+          console.log('[RefImage] 🎮 Wikis to search:', wikis, '(matched:', matchedWikis.length, 'category:', category?.id, ')');
+
           for (const wiki of wikis.slice(0, 5)) {
             for (const term of searchTerms) {
               try {
