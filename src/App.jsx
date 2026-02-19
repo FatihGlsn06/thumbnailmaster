@@ -1561,19 +1561,34 @@ Karar verirken:
 
    - **KARAKTERLERİN GÖRSEL DETAYLARI** (ÇOK KRİTİK - EN ÇOK HATA YAPILAN KISIM):
      * Thumbnail'da görünmesi muhtemel ANA karakter(ler) kimler?
+
+     * ⚠️⚠️⚠️ İLK ÖNCE BELİRLE - CHARACTER_TYPE: human / non-human / monster
+       - Bu karakter İNSAN mı? (Geralt, Master Chief, Mario vb.)
+       - Bu karakter İNSAN-DIŞI mı? (Minotaur, ejderha, uzaylı, robot, canavar, demon vb.)
+       - Bu ÇOK KRİTİK çünkü AI görsel modeli "bull" deyince GERÇEK bir boğa çizer.
+         Oysa Taurox bir Minotaur'dur = İNSAN VÜCUTLU + BOĞA BAŞLI DEV yaratık. Gerçek bir boğa DEĞİL!
+       - HAYVAN İSMİ KULLANMA! Yaratığın tam anatomik tanımını yaz:
+         YANLIŞ: "Taurox is a brass bull" (AI gerçek boğa çizer!)
+         DOĞRU: "Taurox is a massive Minotaur - stands upright on two legs like a human, 3 meters tall, humanoid muscular body, bull-shaped head with huge curved horns, entire body covered in living brass metal plates"
+         YANLIŞ: "Deathwing is a dragon" (AI generic ejderha çizer!)
+         DOĞRU: "Deathwing is a colossal black dragon with molten lava glowing between cracked armor plates bolted onto his body, massive jaw with molten orange glow, torn wings with metal reinforcements"
+
      * Her karakter için ÇOK DETAYLI fiziksel tanım:
-       - Yüz: Ten rengi, yüz şekli, gözler (renk, şekil, özellik - örn: parlayan gözler, cybernetic göz), burun, ağız
-       - Saç: Renk, uzunluk, stil, özellik (örn: beyaz uzun saç, kısa siyah mohawk, kel, kapüşonlu)
-       - Vücut: Boy, yapı, özel özellikler (örn: dev gibi, zayıf, kaslı, robot kol)
-       - Yüz işaretleri: Yara izleri, dövmeler, boyalar, maskeler, cybernetic implantlar
+       - Tür: İnsan mı, humanoid mi, yaratık mı, robot mu? İki ayak üzerinde mi, dört ayak mı?
+       - Boyut: Normal insan boyutu? Dev mi? Küçük mü? (metre cinsinden yaklaşık boy)
+       - Baş/Yüz: İnsan yüzü mü? Hayvan başı mı? Miğfer mi? Maske mi? Detaylı tanımla
+       - Vücut: İnsan anatomisi mi? Kas yapısı, özel uzuvlar (kanatlar, kuyruk, ekstra kollar?)
+       - Deri/Kaplama: Normal deri? Pullu? Metal? Taş? Renk ve doku
+       - Gözler: Renk, parlaklık, sayı, özel özellik (parlayan, ateşli, boş vb.)
      * Her karakter için KIYAFET/ZIRH detayları:
        - Zırh tipi ve rengi (power armor, plate armor, robe, casual vb.)
        - Zırh üzerindeki semboller, işaretler, renkler
        - Başlık/miğfer (varsa detaylı tanımla)
        - Silah(lar): Hangi silahı tutuyor? (kılıç tipi, tüfek modeli, büyü asası vb.) - SİLAHIN GÖRSEL DETAYI
-     * ⚠️ ÖNEMLİ: Genel "bir savaşçı" değil, O OYUNUN O KARAKTERİNE ÖZGÜ detayları yaz!
-       Örn: "Geralt of Rivia" → "Beyaz uzun saç, sarı kedi gözleri, sol yanakta yara izi, siyah zırh üzerine gümüş kurt madalyonu"
-       Örn: "Space Marine Ultramarine" → "Mavi power armor, sol omuzda beyaz Omega sembolü, kırmızı göz lensleri, gold trim"
+     * ⚠️ ÖNEMLİ: Genel "bir savaşçı" veya "bir canavar" DEĞİL, O OYUNUN O KARAKTERİNE ÖZGÜ detayları yaz!
+       Örn: "Geralt of Rivia" → "CHARACTER_TYPE: human. Beyaz uzun saç, sarı kedi gözleri, sol yanakta yara izi, siyah zırh üzerine gümüş kurt madalyonu"
+       Örn: "Space Marine" → "CHARACTER_TYPE: human (in power armor). Mavi power armor, sol omuzda beyaz Omega sembolü, kırmızı göz lensleri, gold trim"
+       Örn: "Taurox" → "CHARACTER_TYPE: non-human (Minotaur). Dev boyutlu (3m), iki ayak üzerinde dik duran humanoid vücut, boğa başı, devasa kıvrık boynuzlar, tüm vücut canlı pirinç/bronz metal plakalarla kaplı, kızıl parlayan gözler, Khorne runik sembolleri kazınmış"
 
    - **FACTION/GRUP DETAYLARI**:
      * Hangi faction/takım/grup? (Space Marines Ultramarines, Horde, Brotherhood of Steel vb.)
@@ -1762,14 +1777,44 @@ NOT just: "a dark sci-fi background"
 e.g. "Ultramarine blue (#0A2B6E) for armor, gold (#C5A028) for trim and aquila, dark red (#5C0A0A) for eye lenses and wax seals, black (#1A1A1A) for joints and undersuit, bone white (#E8DCC8) for skull decorations"
 
 **CHARACTER_VISUAL**: EXTREMELY detailed description of the game character that will appear in the thumbnail.
-This is the MOST IMPORTANT section - describe the character as if writing for a concept artist:
+This is the MOST IMPORTANT section.
+
+FIRST, state: CHARACTER_TYPE: human / non-human / monster
+This changes EVERYTHING about how the character is drawn!
+
+For NON-HUMAN characters (monsters, creatures, demons, minotaurs, dragons, aliens, robots):
+⚠️⚠️⚠️ DO NOT use simple animal names! AI image models will draw REAL animals!
+WRONG: "Taurox is a brass bull" → AI draws a literal bull (4 legs, animal)
+RIGHT: "Taurox is a massive bipedal Minotaur creature standing upright on two legs, 3 meters tall, humanoid muscular torso and arms, bull-shaped head with enormous curved horns, entire body surface covered in fused brass metal plates, glowing red eyes"
+
+Describe the EXACT anatomy:
+- How many legs? Stands upright like human or on all fours?
+- Body shape: humanoid? beast? hybrid? Size compared to a human?
+- Head: what shape? Horns? Tusks? Eyes (how many, color, glow)?
+- Special features: wings, tail, extra arms, tentacles?
+- Surface: skin, scales, metal, stone, fur? Color and texture?
+- What makes it DIFFERENT from the real-world animal it resembles?
+
+For HUMAN characters:
 - Face: skin tone, eye color/glow, facial hair, scars, markings, expression
 - Hair: color, length, style, special features
-- Armor/Clothing: EXACT type, color, material, every distinctive marking/symbol on it
-- Helmet (if any): on head or held? Exact design.
+- Armor/Clothing: EXACT type, color, material, every distinctive marking/symbol
+- Helmet (if any): on head or held? Exact design
 - Weapon(s): EXACT weapon name and visual description, how they hold it
-- Pose: what pose for the thumbnail? (battle-ready, charging, looking over shoulder, etc.)
+- Pose: what pose for the thumbnail?
 ⚠️ This must be the SPECIFIC game character, not a generic warrior/soldier!
+
+**THUMBNAIL_COMPOSITION**: How should the thumbnail be composed?
+If CHARACTER_TYPE is non-human:
+- The GAME CHARACTER (creature/monster) should be the DOMINANT visual element (50-70% of frame)
+- If a person (YouTuber) photo is uploaded, place the person SMALLER in the foreground corner (20-30% of frame), looking up at or reacting to the creature
+- The creature should be BEHIND and ABOVE the person, towering over them
+- Example: "Taurox the massive brass Minotaur fills the background, roaring with axes raised. The person is in the bottom-left corner, smaller, looking back in awe/fear"
+
+If CHARACTER_TYPE is human:
+- The person can BE dressed as the character (face stays same, body gets character's armor/outfit)
+- OR the game character can appear alongside the person
+- Person takes up 40-50% of frame as the main focal point
 
 **FACTION_ELEMENTS**: Faction-specific visual details to include in the scene:
 - Faction symbol/logo: exact shape, color, where it appears (on shoulder pad, banner, etc.)
@@ -1935,10 +1980,20 @@ If present, this is the MOST IMPORTANT part to follow:
 - **ABSOLUTELY_NOT**: Things that MUST NOT appear. Zero tolerance.
 
 For GAME/FRANCHISE content (CRITICAL):
-- **CHARACTER_VISUAL**: This describes the EXACT game character appearance. Follow EVERY detail - armor color, symbols, weapons, face features. Do NOT substitute with a generic warrior/soldier!
-- **FACTION_ELEMENTS**: Include faction-specific symbols, banners, colors. These are what fans will recognize.
+- **CHARACTER_VISUAL**: Follow EVERY detail about the game character's appearance.
+- **FACTION_ELEMENTS**: Include faction-specific symbols, banners, colors.
 - **GAME_IDENTITY**: Use the game's actual art style and signature visual motifs.
 - The character must be RECOGNIZABLE to fans of this game. Generic fantasy/sci-fi is NOT acceptable.
+
+- **THUMBNAIL_COMPOSITION**: If present, follow this EXACTLY for how to arrange person + game character.
+- ⚠️ If CHARACTER_TYPE says "non-human" or "monster":
+  * The GAME CREATURE must be the BIG dominant element (background/center, 50-70% of frame)
+  * Draw the creature with its EXACT anatomy from CHARACTER_VISUAL (bipedal minotaur ≠ regular bull!)
+  * DO NOT dress the uploaded person AS the creature. Person stays human.
+  * Person appears SMALLER in a corner, reacting to the creature (awe, fear, excitement)
+  * ⚠️ DO NOT use simple animal words like "bull", "dragon", "wolf" - use the FULL anatomical description
+- ⚠️ If CHARACTER_TYPE says "human":
+  * You CAN dress the person as that character (face unchanged, body gets character's outfit)
 
 For HISTORICAL scenes: Do NOT use modern city names (e.g., "Istanbul" draws modern city).
 Build the scene from architectural descriptions only.
@@ -1983,19 +2038,30 @@ ${base64Image ? `⚠️ CRITICAL - UPLOADED IMAGE INTEGRATION:
 The user has uploaded an image. First determine what it contains:
 
 IF THE IMAGE CONTAINS A PERSON/FACE:
-- THE FACE MUST BE BIG: The person's face should take up 40-50% of the frame HEIGHT
-- Position the person CENTERED or slightly below center in the frame
-- The face is the MAIN FOCAL POINT - everything else is secondary
 - SEAMLESSLY BLEND the person into the scene with matching lighting and color grading
 - Add dramatic colored rim lighting/glow on the person (green, red, blue, orange based on theme)
 - The person should look like they BELONG in this world
-- TRANSFORM the person's clothing to match the scene's theme and universe
-- Do NOT keep their original casual clothes in themed scenes (use armor, suits, gear as appropriate)
-- For GAME content: If CHARACTER_VISUAL is provided in the research, dress the person in THAT EXACT outfit/armor with those EXACT colors and symbols. The person should look like they ARE that game character (with their own face).
-- Face and facial features must remain unchanged, only transform the body/clothing
+- Face and facial features must remain unchanged
 - The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
-- Show from chest-up or shoulders-up so the face is LARGE
 - Leave adequate space above the head (headroom)
+
+- FOR GAME CONTENT - Check CHARACTER_TYPE in the research:
+  * If CHARACTER_TYPE is "non-human" or "monster" (creature, minotaur, dragon, demon, robot etc.):
+    → DO NOT dress the person as the creature! Person stays HUMAN with their own face.
+    → Person should be SMALLER (25-35% of frame), positioned in bottom-left or bottom-right corner
+    → The GAME CREATURE is the MAIN visual (50-70% of frame), drawn from CHARACTER_VISUAL description
+    → Person reacts to the creature: looking up at it in awe, fear, or excitement
+    → Draw the creature with EXACT anatomy from research (e.g. bipedal minotaur ≠ regular bull on four legs!)
+  * If CHARACTER_TYPE is "human":
+    → Person face takes 40-50% of frame HEIGHT, CENTERED
+    → TRANSFORM clothing to match the character's EXACT armor/outfit from CHARACTER_VISUAL
+    → Person looks like they ARE that game character (their face + character's body/armor)
+
+- FOR NON-GAME CONTENT (default):
+  → THE FACE MUST BE BIG: 40-50% of frame HEIGHT, CENTERED or slightly below center
+  → The face is the MAIN FOCAL POINT
+  → TRANSFORM clothing to match the scene's theme
+  → Show from chest-up or shoulders-up so the face is LARGE
 
 IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
 - Use the image as a REFERENCE or BASE for the thumbnail composition
@@ -2011,7 +2077,10 @@ Create a thumbnail purely from the topic description. Design original visuals th
 - The thumbnail must look like a real YouTube thumbnail, not generic AI art
 - Include relevant visual elements that represent the topic
 - Make the composition compelling enough to make viewers want to click
-- For GAME content: If CHARACTER_VISUAL is in the research, draw that character with EXACT visual details (armor, weapons, colors, symbols). The character must be recognizable to fans of the game. Do NOT draw a generic warrior - draw THE specific character described.
+- For GAME content: If CHARACTER_VISUAL is in the research, draw that character with EXACT visual details.
+  * For non-human characters: Draw the creature with EXACT anatomy (bipedal minotaur ≠ regular bull!). Use the full anatomical description, NOT simple animal names. The creature should be the DOMINANT element.
+  * For human characters: Draw the character with exact armor, weapons, colors, symbols. Must be recognizable to fans.
+  * Follow THUMBNAIL_COMPOSITION from research for layout.
 `}
 
 ${overlayText ? `
