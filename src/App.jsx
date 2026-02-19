@@ -1704,29 +1704,60 @@ Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT s
 
         const scenePromptGeneral = `${scenePromptBase}
 
+⚠️ YOU ARE A CINEMATOGRAPHER, NOT A DECORATOR. Think like a film director composing a MOVIE POSTER - not a flat collage.
+
 FORMAT (write each section completely):
 
-**SCENE_DESCRIPTION**: Describe the background environment in vivid detail. Include: setting, lighting, colors, atmosphere, key objects, mood. Be very specific - e.g. "A dark, rain-soaked cyberpunk alley with neon signs reflecting off wet pavement, holographic advertisements flickering overhead, steam rising from grates" NOT just "a city street".
+**NARRATIVE_MOMENT**: What is HAPPENING in this frame? Describe a specific dramatic moment, NOT a static pose.
+BAD: "A person standing in front of a monster"
+GOOD: "The person turns to face the camera in terror as Taurox the Brass Bull charges through a burning village wall behind them, debris and embers flying past the person's face"
+- What emotion is the viewer supposed to feel? (awe, fear, excitement, curiosity)
+- What just happened 1 second before this frame? What happens 1 second after?
 
-**COLOR_PALETTE**: List 3-5 dominant colors for the scene (e.g., "deep crimson, electric blue, dark charcoal, golden amber")
+**DEPTH_LAYERS** (CRITICAL - creates cinematic depth, NOT a flat image):
+- FOREGROUND (closest to camera): Objects that are partially visible at the edges/bottom of frame, creating depth. Examples: burning debris, sparks, weapon tips, smoke wisps, grass blades, rain drops. These should be SLIGHTLY BLURRED.
+- MIDGROUND (main subject): The person/main subject. Sharp focus. This is the hero of the frame.
+- BACKGROUND (far): The environment, secondary characters (like game bosses/monsters), landscapes. Slightly soft. Should feel MASSIVE in scale compared to the person.
+- ATMOSPHERIC LAYER: What fills the AIR between layers? Fog, dust particles, embers, rain, magical energy, heat distortion? This is what makes the scene feel REAL and 3D.
 
-**PERSON_COSTUME**: What should the person in the thumbnail wear? Match the theme. (e.g., "futuristic tactical suit with glowing blue accents" or "casual gaming hoodie with headphones around neck")
+**SCENE_ENVIRONMENT**: The background world in vivid detail. Include:
+- Specific setting (not "a battlefield" but "a shattered stone bridge over a lava river, with obsidian cliffs and a blood-red sky filled with circling carrion birds")
+- Time of day and weather conditions
+- Scale indicators (how BIG is the environment compared to the person?)
 
-**CHARACTER_ITEMS**: What specific items, weapons, tools, or props should the character hold or have visible? Be EXTREMELY precise about:
-- Exact type (e.g., "TWO short hand-axes" NOT "an axe", "katana with curved blade" NOT "a sword")
-- Size (small, medium, large, oversized)
-- Quantity (exactly how many)
-- Position (in right hand, on back, holstered at hip, etc.)
+**COLOR_PALETTE**: List 4-5 dominant colors with their role:
+- Primary (60% of frame): e.g., "deep crimson #8B0000 - the burning sky and lava"
+- Secondary (25%): e.g., "obsidian black #1a1a1a - the scorched earth and shadows"
+- Accent (10%): e.g., "molten gold #FFD700 - the magical energy and rim lighting"
+- Highlight (5%): e.g., "pale bone white #F5F5DC - the skull trophies and teeth"
+
+**PERSON_PLACEMENT_AND_COSTUME**:
+- WHERE in the frame is the person? (e.g., "Left third, slightly below center, body angled 30° right, face turned toward camera")
+- What SIZE relative to frame? (e.g., "Head at 40% from top, showing chest-up, face fills 35% of frame height")
+- What are they WEARING? Match the theme universe. Transform their clothes.
+- What is their EXPRESSION? (Must be dramatic: terrified, awe-struck, battle-ready, determined, maniacal grin)
+- How does the scene's lighting HIT their face? (e.g., "Orange firelight from the left illuminates the left side of their face, right side in deep shadow, rim light from the explosion behind creates a golden edge on their hair and shoulders")
+
+**CHARACTER_ITEMS**: Specific items, weapons, tools, or props. Be EXTREMELY precise:
+- Exact type (e.g., "TWO short hand-axes" NOT "an axe")
+- Size, quantity, position (in right hand, on back, etc.)
 - Style details from the research (ornamental, battle-worn, glowing, etc.)
-⚠️ This section is CRITICAL - the AI image model will default to generic weapons if not specified precisely!
+⚠️ The AI image model defaults to generic weapons if not specified precisely!
 
-**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at subject, dramatic perspective, wide-angle lens feel")
+**CAMERA_AND_COMPOSITION**:
+- Camera angle (e.g., "Low angle, 15° below eye level, making subject look powerful")
+- Lens feel (e.g., "Wide-angle 24mm feel - exaggerates foreground, makes background feel vast")
+- Rule of thirds placement
+- Leading lines (e.g., "Diagonal crack in ground leads eye from bottom-left to the person's face")
 
-**KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
+**KEY_EFFECTS**: Atmospheric and post-processing effects:
+- Practical effects: sparks, embers, rain, snow, debris, energy particles
+- Light effects: god rays, volumetric fog, lens flare, caustics
+- Color grading: "Teal and orange grade" or "desaturated with selective color pop"
 
-**ABSOLUTELY_NOT**: Things that must NOT appear. List specific wrong items that the AI might incorrectly add (e.g., "NO large battle axe - character uses TWO SMALL hand-axes only", "NO shield - this character fights dual-wielding")
+**ABSOLUTELY_NOT**: Things that must NOT appear. Be specific.
 
-Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
+Each section should be 2-5 sentences. Be COMPLETE - finish every sentence.`;
 
         const scenePromptHistorical = `${scenePromptBase}
 
@@ -1813,29 +1844,39 @@ TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
 
 YOUR TASK: Distill everything above into a focused ART DIRECTION BRIEF. Write in English.
+Think like a FILM DIRECTOR creating a MOVIE POSTER, not a flat collage.
 
 FORMAT (follow EXACTLY):
 
 🎨 VISUAL DNA:
 - Art style: [e.g., "dark fantasy oil painting", "hyper-realistic cinematic", "cel-shaded anime", "gritty photorealistic"]
 - Color palette: [list 4-5 specific hex colors that define this topic's visual identity, e.g., "#1a0a2e deep void purple, #c9a227 ancient gold, #8b0000 blood crimson"]
-- Lighting: [specific lighting setup, e.g., "harsh orange rim light from left, cool blue fill, volumetric fog"]
+- Lighting: [SPECIFIC 3-point setup, e.g., "Harsh amber key light from upper-left casting long shadows, cool teal fill from right at 30% intensity, hot orange rim light from behind creating edge separation. Volumetric dust particles catching the key light."]
 - Texture feel: [e.g., "weathered stone, oxidized metal, rough leather" or "glossy plastic, chrome, LED glow"]
 - Reference look: [describe what this should look like, e.g., "like a Dark Souls boss intro cinematic" or "like a Netflix documentary poster"]
 
-🎬 SCENE BRIEF (max 3 sentences):
-[The exact scene to render - background, environment, atmosphere. Be specific and visual.]
+📐 DEPTH COMPOSITION (CRITICAL):
+- Foreground: [Blurred elements closest to camera - debris, sparks, weapon tips, particles]
+- Midground: [The person - placement, size, pose. This is the HERO of the frame]
+- Background: [Environment, secondary characters/creatures, scale. Should feel MASSIVE]
+- Atmosphere: [What fills the air between layers? Fog, embers, rain, dust, magical energy?]
+
+🎬 NARRATIVE MOMENT (max 2 sentences):
+[What is HAPPENING? Not a static description but a frozen moment of ACTION/TENSION. e.g., "The person braces as Taurox smashes through the fortress wall behind them, stone fragments and fire erupting outward"]
 
 👤 CHARACTER BRIEF (max 3 sentences):
 [Person's costume, pose, expression, items they hold. Be EXACT about weapons/props - type, size, quantity.]
+[CRITICAL: How does the scene's lighting hit the person's face? e.g., "warm firelight on left cheek, deep shadow on right, golden rim light on hair from explosion behind"]
 
 ⛔ DO NOT:
 [3-5 specific things that must NOT appear - wrong weapons, anachronisms, wrong flags, etc.]
+[ALSO: "NO flat/collage look - scene must have DEPTH with foreground-midground-background separation"]
 
 RULES:
 - Be SPECIFIC, not generic. "Dark moody lighting" is BAD. "Harsh amber key light from upper-left with deep teal shadows and volumetric dust particles" is GOOD.
 - Use the ACTUAL visual identity from the research - real colors, real art style, real atmosphere
-- The brief must be under 250 words total
+- DEPTH IS MANDATORY: foreground particles/elements + sharp midground subject + atmospheric background
+- The brief must be under 350 words total
 - Every word must add visual value - no filler`
             }]
           }],
@@ -1938,12 +1979,14 @@ ${artBrief}
 
 ⚠️ THE ART DIRECTION BRIEF ABOVE IS YOUR PRIMARY GUIDE. Follow it precisely:
 - VISUAL DNA section defines the exact art style, colors (use the hex codes!), lighting, and texture
-- SCENE BRIEF is the exact environment to create
-- CHARACTER BRIEF defines costume, pose, and items (follow weapon types/sizes EXACTLY)
+- DEPTH COMPOSITION is CRITICAL: create foreground→midground→background layering, NOT a flat image
+- NARRATIVE MOMENT defines what is HAPPENING - this is a frozen moment of action, not a static pose
+- CHARACTER BRIEF defines costume, pose, expression, and items (follow weapon types/sizes EXACTLY)
 - DO NOT section lists forbidden elements - zero tolerance
 
 The brief was created by analyzing real visual references for "${topic}".
 Your thumbnail must look AUTHENTIC to fans of this content.
+⚠️ The final image MUST have CINEMATIC DEPTH - foreground particles/elements, sharp midground subject, atmospheric background. NEVER create a flat collage look.
 `;
   }
   // Fallback: use full research if no art brief
@@ -2001,15 +2044,30 @@ IF THE IMAGE CONTAINS A PERSON/FACE:
 - THE FACE MUST BE BIG: The person's face should take up 40-50% of the frame HEIGHT
 - Position the person CENTERED or slightly below center in the frame
 - The face is the MAIN FOCAL POINT - everything else is secondary
-- SEAMLESSLY BLEND the person into the scene with matching lighting and color grading
-- Add dramatic colored rim lighting/glow on the person (green, red, blue, orange based on theme)
-- The person should look like they BELONG in this world
-- TRANSFORM the person's clothing to match the scene's theme and universe
-- Do NOT keep their original casual clothes in themed scenes (use armor, suits, gear as appropriate)
-- Face and facial features must remain unchanged, only transform the body/clothing
-- The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
 - Show from chest-up or shoulders-up so the face is LARGE
+- The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
 - Leave adequate space above the head (headroom)
+- Face and facial features must remain unchanged, only transform the body/clothing
+
+⚠️ CRITICAL - CINEMATIC FACE INTEGRATION (NOT a flat paste/collage):
+- The person must look like they were PHOTOGRAPHED INSIDE the scene, not pasted on top
+- LIGHTING MATCH: The scene's light sources must illuminate the person's face realistically:
+  * If there's fire/explosion on the left → warm orange light on the left side of their face, shadow on the right
+  * If there's a cool blue environment → cool blue fill light reflecting off their skin
+  * Always add a STRONG RIM LIGHT from behind (from the brightest background element) creating an edge glow on hair and shoulders
+  * The person's skin tone must be COLOR GRADED to match the scene's overall color temperature
+- ATMOSPHERIC INTEGRATION: Scene particles/effects must pass IN FRONT of the person too:
+  * If there are embers → some embers should float between camera and person (foreground layer)
+  * If there's fog → subtle fog/haze should partially wrap around the person's lower body
+  * If there's rain → rain should be visible on both sides of the person
+  * This creates DEPTH - the person is IN the scene, not ON TOP of it
+- CLOTHING TRANSFORMATION: Transform their clothing to match the scene's theme and universe
+  * Do NOT keep original casual clothes in themed scenes
+  * Use armor, gear, robes, suits as appropriate to the universe
+- SCALE AND PERSPECTIVE: If there's a large creature/character behind the person:
+  * The creature should feel MASSIVE - towering over the person
+  * Use perspective tricks: creature slightly out of focus, leaning forward/toward camera
+  * The person should appear to be REACTING to the creature (not ignoring it)
 
 IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
 - Use the image as a REFERENCE or BASE for the thumbnail composition
@@ -2020,10 +2078,12 @@ IF THE IMAGE IS NOT A PERSON (game screenshot, product, food, landscape, etc.):
 - You may rearrange or enhance elements but keep the subject matter recognizable
 ` : `⚠️ NO REFERENCE IMAGE PROVIDED - CREATE FROM SCRATCH:
 Create a thumbnail purely from the topic description. Design original visuals that represent "${topic}" in the most compelling way.
-- Create an eye-catching, professional composition for a YouTube thumbnail
-- Use dramatic lighting, vibrant colors, and cinematic atmosphere
-- The thumbnail must look like a real YouTube thumbnail, not generic AI art
-- Include relevant visual elements that represent the topic
+- Think like a FILM DIRECTOR composing a MOVIE POSTER, not generic AI art
+- DEPTH IS MANDATORY: foreground particles/elements (slightly blurred) + sharp midground subject + atmospheric background with scale
+- Create a NARRATIVE MOMENT: something is HAPPENING in this frame (action, tension, discovery)
+- Use dramatic 3-point lighting with specific direction and color temperature
+- Atmospheric effects between layers: fog, embers, dust, rain, energy particles
+- The thumbnail must look like a real YouTube thumbnail with cinematic quality
 - Make the composition compelling enough to make viewers want to click
 `}
 
@@ -2062,12 +2122,15 @@ VISUAL MOOD FOR THIS CONTENT: ${contentCategory.visualMood}
 
 PRO QUALITY (NON-NEGOTIABLE):
 - 3-point dramatic lighting (key + fill + rim light for edge separation). NO flat lighting.
-- Shallow depth of field: subject tack sharp, background bokeh
+- Shallow depth of field: subject tack sharp, background slightly soft, foreground elements blurred
 - Professional color grading with crushed blacks and controlled highlights
 - Real textures: skin pores, fabric weave, metal reflections. NO plastic/waxy AI look
-- Atmospheric depth: volumetric light, particles, subtle haze
+- CINEMATIC DEPTH LAYERS: foreground particles/debris (blurred) → sharp midground subject → atmospheric background
+- Atmospheric effects BETWEEN layers: volumetric light, particles, fog, haze connecting all depth planes
+- Scene lighting must consistently illuminate ALL elements (person's face lit by same sources as environment)
 - Film aesthetic: subtle grain, natural vignette, cinematic contrast
 - Must POP at 120px thumbnail size - high contrast, clear focal point
+- ⚠️ THE IMAGE MUST NOT LOOK LIKE A FLAT COLLAGE. It must look like a PHOTOGRAPH taken inside the scene.
 
 ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
