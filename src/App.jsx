@@ -1027,7 +1027,6 @@ const App = () => {
   // Topic/Concept research states
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
-  const [characterRefImages, setCharacterRefImages] = useState([]); // base64 reference images of characters/entities
 
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
@@ -1421,60 +1420,6 @@ Be concise. 1-2 sentences per point.`
     }
   };
 
-  // Fetch an image via CORS proxy and convert to base64
-  // Tries multiple proxy services for reliability
-  const fetchImageAsBase64 = async (imageUrl, timeout = 6000) => {
-    // Clean up URL - remove /revision/latest params from fandom wikis
-    let cleanUrl = imageUrl.replace(/\/revision\/latest.*$/, '');
-    // Remove scale-to-width params
-    cleanUrl = cleanUrl.replace(/\/scale-to-width-down\/\d+/, '');
-
-    // Multiple CORS proxies for fallback
-    const proxyStrategies = [
-      // Strategy 1: images.weserv.nl (best for images, resizes/optimizes)
-      (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=768&h=768&fit=contain&output=jpg&q=85`,
-      // Strategy 2: allorigins.win (reliable general proxy)
-      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      // Strategy 3: corsproxy.io
-      (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-      // Strategy 4: Try direct fetch (works for CDNs that allow CORS)
-      (url) => url,
-    ];
-
-    for (const makeProxyUrl of proxyStrategies) {
-      try {
-        const proxyUrl = makeProxyUrl(cleanUrl);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-        const response = await fetch(proxyUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!response.ok) continue;
-
-        const blob = await response.blob();
-        // Verify it's actually an image (not an error page)
-        if (!blob.type.startsWith('image/') || blob.size < 1000) continue;
-
-        const base64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result.split(',')[1]);
-          reader.onerror = () => resolve(null);
-          reader.readAsDataURL(blob);
-        });
-
-        if (base64) {
-          console.log(`✅ Fetched reference image: ${cleanUrl.substring(0, 80)}...`);
-          return base64;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-    console.warn(`❌ All proxies failed for: ${cleanUrl.substring(0, 80)}...`);
-    return null;
-  };
-
   // Research topic/concept using AI (gaming/lore knowledge)
   const researchTopic = async () => {
     if (!topic || !apiKey) return null;
@@ -1581,15 +1526,14 @@ YOU MUST search the web. Do NOT guess or make up information.`
         .join('\n');
 
       // Step 1.5: Character/Entity Visual Reference Search
-      // Uses Google Search to find ACTUAL IMAGES of specific characters, creatures, items
-      // Creates detailed text description AND fetches actual reference images
+      // Uses Google Search to find images and create ULTRA-DETAILED text descriptions
+      // that an image generation AI can follow pixel-by-pixel
       let visualReferenceGuide = '';
-      let fetchedRefImages = [];
       try {
         const visualRefPayload = {
           contents: [{
             parts: [{
-              text: `You are a VISUAL REFERENCE RESEARCHER. Your job is to find the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
+              text: `You are a VISUAL REFERENCE EXPERT. Your job is to search for and DESCRIBE the EXACT visual appearance of specific characters, creatures, items, or entities mentioned in the topic.
 
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
@@ -1599,37 +1543,12 @@ ${searchResult}
 
 YOUR TASK:
 1. SEARCH for images of the MAIN characters, creatures, bosses, items, or entities mentioned in this topic
-2. Search queries to try (TRY ALL OF THEM):
-   - "${topic} official artwork"
-   - "${topic} in-game screenshot render"
-   - "${topic} wiki fandom image"
-   - "${topic} concept art character design"
-   - "${topic} total war warhammer" (if gaming)
-   - "site:static.wikia.nocookie.net ${topic}"
-   - "site:fandom.com ${topic}"
-3. For EACH key character/creature/entity, write TWO things:
-
-PART A - IMAGE URLS (CRITICAL! We will download these images):
-Find DIRECT image file URLs showing the character. These URLs should point directly to image files.
-
-BEST SOURCES for direct image URLs:
-- Fandom/Wiki: Look for URLs like https://static.wikia.nocookie.net/.../filename.png
-- Official game sites: Look for URLs ending in .png, .jpg, .webp
-- Steam store pages: Game artwork/screenshots
-- Reddit posts with direct image links
-
-List them as (one per line):
-IMAGE_URL: https://static.wikia.nocookie.net/example/images/X/XX/Character.png
-IMAGE_URL: https://cdn.example.com/artwork/character_render.jpg
-
-⚠️ IMPORTANT URL RULES:
-- URLs MUST be direct image files (ending in .png, .jpg, .jpeg, .webp, .gif)
-- Do NOT give page URLs (like https://warhammer.fandom.com/wiki/Taurox) - give the ACTUAL IMAGE file URL
-- Fandom wiki image URLs typically look like: https://static.wikia.nocookie.net/WIKI_NAME/images/X/XX/FILENAME.png
-- Find 3-5 image URLs per entity from different angles/sources
-
-PART B - VISUAL DESCRIPTION:
-For each entity, write a VISUAL_REFERENCE block:
+2. Search queries to try:
+   - "${topic} official artwork render"
+   - "${topic} wiki fandom"
+   - "${topic} in-game model screenshot"
+3. LOOK at the images you find in search results carefully
+4. For EACH key character/creature/entity (max 2), write TWO sections:
 
 **VISUAL_REFERENCE: [Entity Name]**
 - BODY TYPE: Exact body shape, proportions, posture (bipedal? quadrupedal? humanoid? how tall relative to humans?)
@@ -1637,18 +1556,26 @@ For each entity, write a VISUAL_REFERENCE block:
 - SKIN/SURFACE: Exact material (flesh? metal? stone? fur?), color (#hex), texture (smooth? rough? scarred? plated?)
 - ARMOR/CLOTHING: Exact armor type, coverage areas, material, color, decorations, damage/wear
 - WEAPONS/ITEMS: Exact weapons held, size relative to body, which hand, material, special features
-- UNIQUE FEATURES: What makes this character VISUALLY DISTINCT from generic versions? (e.g., "Taurox is NOT a normal bull - he is a BIPEDAL Minotaur whose flesh has been replaced by LIVING BRASS METAL, standing upright like a man")
+- UNIQUE FEATURES: What makes this character VISUALLY DISTINCT from generic versions?
 - SIGNATURE COLORS: The 3-4 colors most associated with this character (#hex values)
-- SIZE/SCALE: How big compared to a normal human? (e.g., "3x the height of a human", "towering 15 feet tall")
-- POSE/STANCE: Typical combat pose or stance from the source material
-- ⚠️ COMMON MISTAKES: What does AI typically get WRONG about this character? (e.g., "AI draws a normal bull, but Taurox is a BIPEDAL brass-plated Minotaur who stands UPRIGHT")
+- SIZE/SCALE: How big compared to a normal human?
+- ⚠️ COMMON MISTAKES: What does AI typically get WRONG about this character?
+
+**GENERATION_PROMPT: [Entity Name]**
+Write ONE highly detailed paragraph (200+ words) describing EXACTLY how to draw this character for an AI image generator. Include:
+- Exact skin/surface material and color (not just "brass" but "dark oxidized brass with green patina, #8B7355 base with #4A6741 oxidation patches, surface covered in dents and battle scars")
+- Exact face structure (jaw shape, eye type/color/glow, mouth/teeth visibility, forehead plates, nose bridge)
+- Any mechanical or magical features (glowing cracks, runes, prosthetics, embedded objects)
+- Armor piece by piece: shoulder guards, chest plate, gauntlets, leg armor - material, damage, decoration
+- Weapon details: type, size relative to body, material, engravings, magical effects
+- Proportions: exact height multiplier vs human, muscle mass, limb thickness
+
+This paragraph will be fed DIRECTLY to an AI image generator as its PRIMARY instruction for drawing the character. Make it so precise that someone who has NEVER seen this character could draw it PERFECTLY.
 
 RULES:
-- ALWAYS include IMAGE_URL lines with direct image file URLs (ending in .jpg, .png, .webp or from wiki/fandom image pages)
 - If the topic has NO specific characters/creatures (e.g., "cooking tips", "travel vlog"), write: "NO_SPECIFIC_ENTITIES"
-- Focus on what makes each entity VISUALLY UNIQUE
-- Use #hex color codes where possible
-- Include 1-3 entities maximum
+- Focus on what makes each entity VISUALLY UNIQUE and DIFFERENT from generic versions
+- Use #hex color codes everywhere possible
 - Write in ENGLISH`
             }]
           }],
@@ -1657,11 +1584,10 @@ RULES:
           }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 3000
+            maxOutputTokens: 4000
           }
         };
 
-        // Timeout for visual reference API call (30s max - it shouldn't block the pipeline)
         const visualRefController = new AbortController();
         const visualRefTimeoutId = setTimeout(() => visualRefController.abort(), 30000);
         const visualRefResponse = await fetch(
@@ -1679,54 +1605,9 @@ RULES:
           const visualRefData = await visualRefResponse.json();
           const visualRefText = visualRefData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
 
-          // Also extract image URLs from grounding metadata
-          const refGroundingChunks = visualRefData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-          const groundingImageUrls = refGroundingChunks
-            .filter(chunk => chunk.web?.uri)
-            .map(chunk => chunk.web.uri)
-            .filter(url => /\.(jpg|jpeg|png|webp|gif)/i.test(url));
-
           if (visualRefText && !visualRefText.includes('NO_SPECIFIC_ENTITIES')) {
             visualReferenceGuide = visualRefText;
-            console.log('Visual reference guide generated successfully');
-
-            // Extract IMAGE_URL lines from the response text
-            const imageUrlRegex = /IMAGE_URL:\s*(https?:\/\/[^\s\)>\]]+)/gi;
-            const textImageUrls = [];
-            let urlMatch;
-            while ((urlMatch = imageUrlRegex.exec(visualRefText)) !== null) {
-              textImageUrls.push(urlMatch[1]);
-            }
-
-            // Also find any other URLs that look like direct image links
-            const inlineImageRegex = /https?:\/\/[^\s\)>\]]+\.(jpg|jpeg|png|webp)/gi;
-            let inlineMatch;
-            while ((inlineMatch = inlineImageRegex.exec(visualRefText)) !== null) {
-              if (!textImageUrls.includes(inlineMatch[0])) {
-                textImageUrls.push(inlineMatch[0]);
-              }
-            }
-
-            // Combine all found image URLs (text URLs + grounding URLs), deduplicate
-            const allImageUrls = [...new Set([...textImageUrls, ...groundingImageUrls])].slice(0, 5);
-            console.log(`Found ${allImageUrls.length} character reference image URLs`);
-
-            if (allImageUrls.length > 0) {
-              // Fetch images in parallel via CORS proxy, with a GLOBAL timeout of 15s
-              // so it never blocks the whole pipeline for too long
-              const globalTimeout = new Promise((resolve) => setTimeout(() => resolve('TIMEOUT'), 15000));
-              const imagePromises = allImageUrls.map(url => fetchImageAsBase64(url));
-              const raceResult = await Promise.race([
-                Promise.all(imagePromises),
-                globalTimeout
-              ]);
-              if (raceResult === 'TIMEOUT') {
-                console.warn('⏰ Global timeout: reference image fetching took too long, skipping');
-              } else {
-                fetchedRefImages = raceResult.filter(img => img !== null).slice(0, 3);
-              }
-              console.log(`Successfully fetched ${fetchedRefImages.length} reference images`);
-            }
+            console.log('✅ Visual reference guide with generation prompts created');
           } else {
             console.log('No specific entities found for visual reference');
           }
@@ -1736,71 +1617,6 @@ RULES:
       } catch (visualRefErr) {
         console.warn('Visual reference search error (non-critical):', visualRefErr.message);
       }
-
-      // FALLBACK: If no images could be downloaded, ask Gemini to describe them
-      // in extreme detail as an "image generation prompt" since it SAW the images during search
-      if (fetchedRefImages.length === 0 && visualReferenceGuide && !visualReferenceGuide.includes('NO_SPECIFIC_ENTITIES')) {
-        try {
-          console.log('🔄 No images downloaded - requesting ultra-detailed visual description from Gemini...');
-          const fallbackPayload = {
-            contents: [{
-              parts: [{
-                text: `You previously searched for images of characters/creatures related to "${topic}".
-
-EXISTING VISUAL NOTES:
-${visualReferenceGuide}
-
-NOW: I could NOT download any reference images due to CORS restrictions. So I need you to search AGAIN and this time provide an ULTRA-DETAILED visual description that an image generation AI can use as a substitute for the actual image.
-
-Search for: "${topic} official render", "${topic} in-game model", "${topic} artwork"
-
-For EACH character/entity, write an IMAGE GENERATION PROMPT that captures EXACTLY what you see in the search results. Be so specific that someone who has NEVER seen this character could draw it perfectly:
-
-**GENERATION_PROMPT: [Entity Name]**
-Describe in ONE detailed paragraph (200+ words): exact pose, camera angle, every visible body part and its exact appearance (material, color, texture, damage, glow effects), armor piece by piece, weapon details, facial expression, background elements. Use specific colors (#hex).
-
-CRITICAL DETAILS TO INCLUDE:
-- Exact skin/surface material and color (not "brass" but "dark oxidized brass with green patina, #8B7355 base with #4A6741 oxidation patches")
-- Exact face structure (jaw shape, eye type and color, mouth/teeth visibility, forehead details)
-- Any mechanical or magical features (glowing cracks, embedded runes, prosthetics)
-- Armor damage and wear patterns (dents, scratches, missing pieces)
-- Proportions relative to a human (exact height multiplier)
-
-This description will be fed DIRECTLY to an AI image generator so make it as visually precise as humanly possible.`
-              }]
-            }],
-            tools: [{ google_search: {} }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 3000 }
-          };
-
-          const fallbackController = new AbortController();
-          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 25000);
-          const fallbackResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(fallbackPayload),
-              signal: fallbackController.signal
-            }
-          );
-          clearTimeout(fallbackTimeoutId);
-
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json();
-            const fallbackText = fallbackData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n');
-            if (fallbackText) {
-              visualReferenceGuide += `\n\n🎯 ULTRA-DETAILED VISUAL GENERATION PROMPTS (use these since no reference images available):\n${fallbackText}`;
-              console.log('✅ Got ultra-detailed fallback description');
-            }
-          }
-        } catch (fallbackErr) {
-          console.warn('Fallback description error (non-critical):', fallbackErr.message);
-        }
-      }
-
-      // Store reference images for use in generation
-      setCharacterRefImages(fetchedRefImages);
 
       // Step 2: Deep visual analysis combining search results + AI creativity
       const analysisPayload = {
@@ -2280,18 +2096,12 @@ RULES:
         if (visualReferenceGuide) {
           combinedResearch += `\n\n🎨 CHARACTER/ENTITY VISUAL REFERENCES (MUST FOLLOW!):\n${visualReferenceGuide}`;
         }
-        // Show reference image status to user
-        if (fetchedRefImages.length > 0) {
-          combinedResearch += `\n\n🖼️ ${fetchedRefImages.length} REFERANS GÖRSEL BULUNDU VE İNDİRİLDİ - Thumbnail üretiminde kullanılacak.`;
-        } else if (visualReferenceGuide) {
-          combinedResearch += `\n\n⚠️ Referans görseller indirilemedi - sadece metin açıklamaları kullanılacak.`;
-        }
         if (artDirectionBrief) {
           combinedResearch += `\n\n🎯 ART DIRECTION BRIEF (USE THIS FOR IMAGE GENERATION):\n${artDirectionBrief}`;
         }
 
         setTopicResearch(combinedResearch);
-        return { research: combinedResearch, refImages: fetchedRefImages };
+        return { research: combinedResearch };
       }
     } catch (err) {
       console.error('Research pipeline error:', err);
@@ -2330,7 +2140,6 @@ RULES:
     // This allows single-click generation: photo analysis + research + generate
     let effectivePhotoAnalysis = photoAnalysis;
     let effectiveTopicResearch = topicResearch;
-    let effectiveCharacterRefImages = characterRefImages;
 
     // Auto-analyze photo if uploaded but not yet analyzed
     if (base64Image && !effectivePhotoAnalysis && !isAnalyzingPhoto) {
@@ -2344,7 +2153,6 @@ RULES:
       const researchResult = await researchTopic();
       if (researchResult) {
         effectiveTopicResearch = researchResult.research;
-        effectiveCharacterRefImages = researchResult.refImages || [];
       }
     }
 
@@ -2352,7 +2160,6 @@ RULES:
     // This ensures the prompts use the just-fetched data even before React re-renders
     const topicResearch = effectiveTopicResearch;
     const photoAnalysis = effectivePhotoAnalysis;
-    const characterRefImages = effectiveCharacterRefImages;
     // ═══ END AUTO-PREREQUISITE ═══
 
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
@@ -2593,52 +2400,25 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
       if (conceptBase64) {
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
-      // Send character/entity reference images so the model can SEE what the character actually looks like
-      if (characterRefImages && characterRefImages.length > 0) {
+      // If research contains detailed visual descriptions (GENERATION_PROMPT / VISUAL_REFERENCE),
+      // emphasize them in the generation prompt so the model follows them precisely
+      if (research && (research.includes('GENERATION_PROMPT:') || research.includes('VISUAL_REFERENCE:'))) {
         promptParts.push({ text: `
 
-🖼️🖼️🖼️ CRITICAL: CHARACTER/ENTITY REFERENCE IMAGES (${characterRefImages.length} images attached below)
+⚠️⚠️⚠️ CRITICAL: CHARACTER/ENTITY VISUAL ACCURACY
 
-LOOK AT THESE IMAGES CAREFULLY. They show the REAL, OFFICIAL appearance of the characters/creatures/entities in this thumbnail topic. These are from the actual game/source material.
-
-You MUST replicate the character design from these reference images with HIGH FIDELITY:
-- FACE/HEAD SHAPE: Copy the EXACT head structure, jaw shape, eye placement, horns/features from the reference
-- BODY PROPORTIONS: Match the exact body type - if bipedal, draw bipedal. If massive, draw massive. Match the proportions
-- SURFACE/SKIN MATERIAL: Copy the exact texture - if brass metal, draw brass metal. If corroded, draw corroded. Match the color tone
-- ARMOR/CLOTHING DESIGN: Replicate the exact armor pattern, coverage areas, damage, decorations from the reference
-- UNIQUE IDENTIFYING FEATURES: These are what make THIS character recognizable - glowing cracks, mechanical parts, specific markings, etc. COPY THEM
-- COLOR PALETTE: Use the SAME colors you see in the reference images, not brighter/cleaner versions
-
-⚠️ COMMON AI MISTAKE: Drawing a "clean", "shiny", "polished" version of a character that should be dark, grimy, corroded, or battle-worn. MATCH THE REFERENCE TONE.
-
-THE REFERENCE IMAGES:
-` });
-        characterRefImages.forEach((imgBase64) => {
-          promptParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
-        });
-        promptParts.push({ text: `
-
-⚠️⚠️⚠️ YOU HAVE NOW SEEN THE ACTUAL CHARACTER REFERENCE IMAGES.
-Your generated thumbnail MUST depict these characters as they ACTUALLY LOOK in the references above.
-If your output character looks significantly different from the references (wrong face, wrong body type, wrong colors, wrong armor), THE TASK HAS FAILED.
-Fans of this content will IMMEDIATELY notice if the character looks wrong.
-` });
-      } else if (research && (research.includes('GENERATION_PROMPT:') || research.includes('VISUAL_REFERENCE:'))) {
-        // No reference images but we have detailed text descriptions - emphasize them heavily
-        promptParts.push({ text: `
-
-⚠️⚠️⚠️ NO REFERENCE IMAGES AVAILABLE - YOU MUST RELY ON TEXT DESCRIPTIONS BELOW.
-
-The research section above contains VISUAL_REFERENCE and/or GENERATION_PROMPT blocks that describe EXACTLY how the characters/creatures should look. These descriptions were written by an AI that SAW the actual official artwork/screenshots.
+The research section above contains VISUAL_REFERENCE and GENERATION_PROMPT blocks that describe EXACTLY how the characters/creatures should look. These descriptions were written after searching and analyzing ACTUAL official artwork/screenshots from the source material.
 
 READ EVERY WORD of those visual descriptions and follow them with PIXEL-PERFECT accuracy:
-- If the description says "dark oxidized brass with green patina" → draw EXACTLY that, NOT clean shiny gold
-- If it says "mechanical jaw plates" → draw mechanical parts on the jaw, NOT an organic beast mouth
-- If it says "glowing orange cracks in chest armor" → draw visible glowing cracks, NOT solid armor
-- Match EVERY color, material, and texture mentioned in the descriptions
-- Pay special attention to UNIQUE FEATURES that distinguish this character from generic versions
+- Match EVERY color (#hex codes provided), material, and texture mentioned
+- Follow the exact BODY TYPE and PROPORTIONS described
+- Include ALL UNIQUE FEATURES (glowing cracks, mechanical parts, specific markings, etc.)
+- Pay attention to COMMON MISTAKES section - AVOID those errors
+- The GENERATION_PROMPT paragraph is your PRIMARY blueprint for drawing the character
 
-DO NOT fall back to your training data's generic version of this character. The text descriptions are your ONLY source of truth.
+⚠️ COMMON AI MISTAKE: Drawing a "clean", "shiny", "polished" version of a character that should be dark, grimy, corroded, or battle-worn. If the description says "oxidized", "corroded", "battle-worn" → draw it EXACTLY that way.
+
+DO NOT fall back to your training data's generic version. The text descriptions are your ONLY source of truth. Fans will INSTANTLY notice if the character looks wrong.
 ` });
       }
 
@@ -2834,14 +2614,6 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       }
       if (conceptBase64) {
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
-      }
-      // Include character reference images for accurate entity rendering
-      if (characterRefImages && characterRefImages.length > 0) {
-        optimizeParts.push({ text: `\n🖼️🖼️🖼️ CHARACTER REFERENCE IMAGES - these show the REAL appearance of the characters. REPLICATE their face, body, armor, colors, and unique features with HIGH FIDELITY. Do NOT draw a generic/clean version - match the exact look:\n` });
-        characterRefImages.forEach((imgBase64) => {
-          optimizeParts.push({ inlineData: { mimeType: "image/jpeg", data: imgBase64 } });
-        });
-        optimizeParts.push({ text: `\n⚠️ Character accuracy is NON-NEGOTIABLE. Fans will notice if the character looks wrong.\n` });
       }
 
       const payload = {
