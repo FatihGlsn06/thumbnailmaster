@@ -1750,6 +1750,21 @@ GOOD: "The person turns to face the camera in terror as Taurox the Brass Bull ch
 - Rule of thirds placement
 - Leading lines (e.g., "Diagonal crack in ground leads eye from bottom-left to the person's face")
 
+**ICONIC_ELEMENTS** (CRITICAL for authenticity - fans will notice!):
+Extract from the research any LORE-SPECIFIC, FRANCHISE-SPECIFIC, or BRAND-SPECIFIC visual details. These are what separate a GENERIC thumbnail from an AUTHENTIC one.
+Examples of what to look for and include:
+- FACTION/TEAM symbols, banners, flags, emblems (e.g., Khorne's skull rune, Beastmen's horned skull totem, a football club's crest)
+- CHARACTER-SPECIFIC iconic items (e.g., Taurox's brass/bronze body plating, Archaon's Crown of Domination, a streamer's signature item)
+- UNIVERSE-SPECIFIC visual language (e.g., Warhammer Chaos corruption tendrils, Star Wars lightsaber glow color, anime-specific energy auras)
+- FACTION COLORS that fans recognize (e.g., Khorne = brass/red/black, Nurgle = green/brown/rot, Ultramarines = blue/gold)
+- Environmental storytelling props (e.g., faction banners on poles in background, skull piles for Khorne, specific architectural style)
+For EACH iconic element specify:
+1. WHAT it is (exact description from the lore/research)
+2. WHERE to place it (foreground prop? background banner? on the person's armor? floating in the sky?)
+3. HOW PROMINENT it should be (subtle background detail or major visual element?)
+⚠️ These details are what make fans say "this person KNOWS the content" vs "generic AI slop". Do NOT skip this section.
+⚠️ If the research doesn't mention specific lore/franchise details, write "N/A - original content, no established iconography" and move on.
+
 **KEY_EFFECTS**: Atmospheric and post-processing effects:
 - Practical effects: sparks, embers, rain, snow, debris, energy particles
 - Light effects: god rays, volumetric fog, lens flare, caustics
@@ -1790,11 +1805,22 @@ NEVER use: "Turkish flag", "flag of Turkey", white crescent, 5-pointed star, bri
 - Any shield, bow, or secondary items
 List what they MUST have AND what they must NOT have.
 
+**ICONIC_ELEMENTS** (CRITICAL for historical authenticity):
+Extract from the research PERIOD-SPECIFIC and FACTION-SPECIFIC visual details that make the scene historically convincing:
+- FACTION/EMPIRE banners, standards, symbols (exact description: colors, emblems, shapes - NOT modern equivalents)
+- PERIOD-SPECIFIC architectural details (column styles, wall construction, gate designs)
+- ARMY-SPECIFIC equipment details (specific helmet types, shield patterns, armor styles that identify the faction)
+- CULTURAL PROPS (religious symbols, royal insignia, trade goods, siege equipment specific to the era)
+- ENVIRONMENTAL storytelling (battle damage, siege marks, weather conditions appropriate to the historical event)
+For EACH element: WHAT it is, WHERE to place it, HOW prominent.
+⚠️ These details separate "generic medieval scene" from "THIS specific historical event". Fans will notice accuracy.
+⚠️ If this is a HISTORICAL GAME (Total War, Crusader Kings, etc.), include BOTH game-specific AND historical visual elements.
+
 **ABSOLUTELY_NOT**: Things that MUST NOT appear. Be very specific about wrong weapons/items too.
 For Ottoman scenes ALWAYS include: "NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
 Example: "NO large two-handed battle axe - this character carries TWO SMALL one-handed axes"
 
-Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
+Keep each section 2-5 sentences. Be COMPLETE - finish every sentence.`;
 
         const scenePayload = {
           contents: [{
@@ -1867,6 +1893,10 @@ FORMAT (follow EXACTLY):
 👤 CHARACTER BRIEF (max 3 sentences):
 [Person's costume, pose, expression, items they hold. Be EXACT about weapons/props - type, size, quantity.]
 [CRITICAL: How does the scene's lighting hit the person's face? e.g., "warm firelight on left cheek, deep shadow on right, golden rim light on hair from explosion behind"]
+
+🏆 ICONIC DETAILS (max 3 bullet points):
+[Lore/franchise/era-specific visual elements that make this AUTHENTIC - faction banners, character-specific items, universe-specific visual language, faction colors. These go into specific layers: foreground props, background banners, armor details, etc.]
+[If no established franchise/lore, write "Original content - no franchise iconography"]
 
 ⛔ DO NOT:
 [3-5 specific things that must NOT appear - wrong weapons, anachronisms, wrong flags, etc.]
@@ -1982,10 +2012,11 @@ ${artBrief}
 - DEPTH COMPOSITION is CRITICAL: create foreground→midground→background layering, NOT a flat image
 - NARRATIVE MOMENT defines what is HAPPENING - this is a frozen moment of action, not a static pose
 - CHARACTER BRIEF defines costume, pose, expression, and items (follow weapon types/sizes EXACTLY)
+- ICONIC DETAILS are what make this thumbnail AUTHENTIC to fans - faction banners, character-specific items, universe-specific visual elements. Include them in the correct layers (foreground props, background details, armor elements)
 - DO NOT section lists forbidden elements - zero tolerance
 
 The brief was created by analyzing real visual references for "${topic}".
-Your thumbnail must look AUTHENTIC to fans of this content.
+Your thumbnail must look AUTHENTIC to fans of this content - they should see details that prove you KNOW the source material.
 ⚠️ The final image MUST have CINEMATIC DEPTH - foreground particles/elements, sharp midground subject, atmospheric background. NEVER create a flat collage look.
 `;
   }
