@@ -2119,29 +2119,37 @@ Use this information to accurately represent the game/topic's visual style, atmo
 ` : ''}
 
 ${topicResearch ? (() => {
-  // Extract visual reference guide if present
-  const hasVisualRef = topicResearch.includes('CHARACTER/ENTITY VISUAL REFERENCES');
-  const visualRefStart = topicResearch.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
-  const visualRefSection = hasVisualRef && visualRefStart > -1
-    ? topicResearch.substring(visualRefStart).trim()
-    : '';
+  // Truncate research if too long - Gemini image generation fails with huge prompts
+  // "content not available resource was not cached" error happens when prompt is too large
+  let research = topicResearch;
+  if (research.length > 8000) {
+    // Keep the most important parts: Art Direction Brief + Visual References + Scene Direction
+    const artBriefIdx = research.indexOf('🎯 ART DIRECTION BRIEF');
+    const visualRefIdx = research.indexOf('🎨 CHARACTER/ENTITY VISUAL REFERENCES');
+    const sceneIdx = research.indexOf('🎬 SCENE DIRECTION');
+
+    // Prioritize: Art Brief > Scene Direction > Visual Refs > beginning of research
+    let truncated = '';
+    if (artBriefIdx > -1) {
+      truncated += research.substring(artBriefIdx) + '\n\n';
+    }
+    if (sceneIdx > -1 && artBriefIdx > -1) {
+      truncated = research.substring(sceneIdx, artBriefIdx).substring(0, 3000) + '\n\n' + truncated;
+    } else if (sceneIdx > -1) {
+      truncated += research.substring(sceneIdx).substring(0, 3000) + '\n\n';
+    }
+    if (visualRefIdx > -1) {
+      const visualEnd = sceneIdx > visualRefIdx ? sceneIdx : (artBriefIdx > visualRefIdx ? artBriefIdx : research.length);
+      truncated = research.substring(visualRefIdx, visualEnd).substring(0, 2000) + '\n\n' + truncated;
+    }
+    // If no sections found, just take the last 6000 chars (most relevant)
+    research = truncated || research.substring(research.length - 6000);
+  }
 
   return `
 📋 VISUAL RESEARCH & SCENE DIRECTION FOR "${topic}":
 
-${topicResearch}
-
-${visualRefSection ? `
-⚠️⚠️⚠️ CRITICAL - CHARACTER/ENTITY ACCURACY:
-The VISUAL REFERENCES above describe the EXACT appearance of characters/creatures from ACTUAL source material images.
-You MUST follow these descriptions PRECISELY:
-- Body type, proportions, posture → draw EXACTLY as described
-- Skin/surface material and colors → use the EXACT colors and textures
-- Armor/clothing details → follow EVERY detail
-- Unique features → these are what make the character RECOGNIZABLE to fans
-- ⚠️ COMMON MISTAKES section → AVOID these specific errors
-DO NOT default to generic versions. A fan should INSTANTLY recognize the character.
-` : ''}
+${research}
 
 ⚠️ FOLLOW THE SCENE DIRECTION AND ART DIRECTION BRIEF PRECISELY:
 - VISUAL DNA defines art style, colors (use hex codes!), lighting, texture
@@ -2358,10 +2366,51 @@ DO NOT fall back to your training data's generic version. The text descriptions 
       );
 
       const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+      const textResponse = result.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || '';
 
       if (generatedBase64) {
         setResultImage(`data:image/png;base64,${generatedBase64}`);
         incrementDailyUsage(); // Günlük kullanım sayacını artır
+      } else if (textResponse.includes('not available') || textResponse.includes('not cached')) {
+        // Gemini sometimes returns "content not available resource was not cached"
+        // This means the image generation failed internally - retry with simpler prompt
+        console.warn('Gemini image generation returned cache error, retrying with simplified prompt...');
+        const retryParts = [
+          { text: `Create a HORIZONTAL LANDSCAPE YouTube thumbnail (1280x720, 16:9) for "${topic}".
+${topicDescription ? `Context: ${topicDescription}` : ''}
+Style: Cinematic, dramatic lighting, depth with foreground-midground-background layers.
+${overlayText ? `Text on image: "${overlayText}" in bold, large, readable font.` : 'NO text on the image.'}
+${base64Image ? 'Include the person from the uploaded photo in the scene.' : 'No human person in the scene.'}` }
+        ];
+        if (base64Image) {
+          retryParts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
+        }
+
+        const retryResult = await fetchWithRetry(
+          `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: retryParts }],
+              generationConfig: { responseModalities: ['TEXT', 'IMAGE'], temperature: 0.7 },
+              safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+              ]
+            })
+          }
+        );
+
+        const retryBase64 = retryResult.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+        if (retryBase64) {
+          setResultImage(`data:image/png;base64,${retryBase64}`);
+          incrementDailyUsage();
+        } else {
+          throw new Error('Görsel üretimi başarısız oldu. Lütfen tekrar deneyin veya farklı bir konu/model seçin.');
+        }
       } else {
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
