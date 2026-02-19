@@ -1535,10 +1535,12 @@ YOU MUST search the web. Do NOT guess or make up information.`
           const imageSearchPayload = {
             contents: [{
               parts: [{
-                text: `Search for "${topic}" and find official/promotional images.
-Return ONLY 3 direct image URLs (ending in .jpg, .jpeg, .png, .webp) on separate lines.
-Prefer: official artwork, promotional art, high-quality screenshots, character renders.
-NO text, NO explanation, ONLY URLs. One URL per line.`
+                text: `Search for "${topic}" and find official images or artwork.
+I need DIRECT image file URLs. Examples of good URLs:
+- https://static.wikia.nocookie.net/warhammer/images/a/ab/Taurox.png
+- https://cdna.artstation.com/p/assets/images/images/012/345/large/name.jpg
+
+Return 3-5 direct image URLs, one per line. NO text, NO explanation. ONLY URLs.`
               }]
             }],
             tools: [{ google_search: {} }],
@@ -1551,19 +1553,31 @@ NO text, NO explanation, ONLY URLs. One URL per line.`
           );
           const imageData = await imageRes.json();
           const imageText = imageData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
-          console.log('[RefImage] 📝 Gemini response:', imageText.substring(0, 300));
+          console.log('[RefImage] 📝 Full Gemini response:', imageText);
 
-          // Extract direct image URLs from response text
-          const urlRegex = /https?:\/\/[^\s"'<>\)]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>\)]*)?/gi;
-          const urls = [...new Set(imageText.match(urlRegex) || [])].slice(0, 5);
-          console.log('[RefImage] 🔗 Found URLs:', urls.length, urls);
+          // Strategy 1: URLs with image file extensions
+          const extRegex = /https?:\/\/[^\s"'<>\)\]]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s"'<>\)\]]*)?/gi;
+          const extUrls = imageText.match(extRegex) || [];
 
-          if (urls.length === 0) {
+          // Strategy 2: URLs from known image CDNs (even without extension)
+          const cdnRegex = /https?:\/\/(?:cdna?\.artstation\.com|static\.wikia\.nocookie\.net|upload\.wikimedia\.org|i\.imgur\.com|images\.igdb\.com|cdn\.akamai\.steamstatic\.com|steamcdn-a\.akamaihd\.net)[^\s"'<>\)\]]*/gi;
+          const cdnUrls = imageText.match(cdnRegex) || [];
+
+          // Strategy 3: Any remaining https URL as last resort
+          const anyUrlRegex = /https?:\/\/[^\s"'<>\)\]]{20,}/gi;
+          const anyUrls = (imageText.match(anyUrlRegex) || []).filter(u =>
+            /image|img|photo|art|asset|media|upload|static|cdn/i.test(u)
+          );
+
+          const allUrls = [...new Set([...extUrls, ...cdnUrls, ...anyUrls])].slice(0, 8);
+          console.log('[RefImage] 🔗 Found URLs:', allUrls.length, allUrls);
+
+          if (allUrls.length === 0) {
             console.log('[RefImage] ⚠️ No image URLs found in Gemini response');
             return;
           }
 
-          for (const url of urls) {
+          for (const url of allUrls) {
             console.log('[RefImage] ⬇️ Trying to fetch:', url);
             const base64 = await fetchImageAsBase64(url);
             if (base64) {
