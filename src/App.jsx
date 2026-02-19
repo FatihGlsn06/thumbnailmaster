@@ -1550,16 +1550,63 @@ YOU MUST search the web. Do NOT guess or make up information.`
           if (separatorMatch) searchTerms.unshift(separatorMatch[1].trim());
           console.log('[RefImage] 🔤 Search terms:', searchTerms);
 
-          // Helper: try Fandom pageimages API
+          // Helper: try to get an image from a Fandom wiki page
           const tryFandomImage = async (wiki, pageTitle) => {
-            const res = await fetch(
-              `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
-              { signal: AbortSignal.timeout(8000) }
-            );
-            if (!res.ok) return null;
-            const data = await res.json();
-            const page = Object.values(data.query?.pages || {})[0];
-            return page?.thumbnail?.source || null;
+            try {
+              // Method 1: pageimages API (fastest, but many pages don't have it set)
+              const res = await fetch(
+                `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              if (res.ok) {
+                const data = await res.json();
+                const page = Object.values(data.query?.pages || {})[0];
+                if (page?.thumbnail?.source) return page.thumbnail.source;
+              }
+            } catch {}
+
+            try {
+              // Method 2: list all images on the page, pick first meaningful one
+              const res = await fetch(
+                `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=images&format=json&imlimit=10&origin=*`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              if (!res.ok) return null;
+              const data = await res.json();
+              const page = Object.values(data.query?.pages || {})[0];
+              const images = page?.images || [];
+              // Filter out icons, logos, UI elements
+              const skip = ['icon', 'logo', 'button', 'banner', 'badge', 'flag', 'arrow', 'nav', 'wiki', '.svg', '.gif', 'placeholder'];
+              const goodImages = images.filter(img => {
+                const name = img.title.toLowerCase();
+                return !skip.some(s => name.includes(s));
+              });
+              console.log(`[RefImage] 📷 ${wiki}/${pageTitle}: ${images.length} images, ${goodImages.length} good`);
+
+              // Get URL for the best image via imageinfo
+              for (const img of goodImages.slice(0, 3)) {
+                try {
+                  const infoRes = await fetch(
+                    `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(img.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
+                    { signal: AbortSignal.timeout(8000) }
+                  );
+                  if (!infoRes.ok) continue;
+                  const infoData = await infoRes.json();
+                  const imgPage = Object.values(infoData.query?.pages || {})[0];
+                  const info = imgPage?.imageinfo?.[0];
+                  if (!info) continue;
+                  // Skip tiny images (likely icons)
+                  if (info.width < 200 || info.height < 200) continue;
+                  const imgUrl = info.thumburl || info.url;
+                  if (imgUrl) {
+                    console.log(`[RefImage] 🖼️ Found image via imageinfo: ${img.title} → ${imgUrl}`);
+                    return imgUrl;
+                  }
+                } catch { continue; }
+              }
+            } catch {}
+
+            return null;
           };
 
           // Strategy 1: Fandom pages directly from grounding metadata
