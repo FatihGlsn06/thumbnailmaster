@@ -1687,6 +1687,7 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
         }
 
         // Step 3: Convert research into a CONCRETE visual scene description
+        // Using gemini-2.5-pro for richer, more creative scene descriptions (flash is too generic)
         // Use a shorter prompt for non-historical content, detailed for historical
         const historicalKeywords = ['tarih', 'history', 'historical', 'savaş', 'war', 'battle', 'empire', 'imparatorluk', 'osmanlı', 'ottoman', 'byzantine', 'bizans', 'medieval', 'ortaçağ', 'antik', 'ancient', 'roma', 'roman', 'kingdom', 'krallık', 'sultan', 'fetih', 'conquest', 'dynasty', 'hanedan'];
         const topicLower = `${topic} ${topicDescription || ''}`.toLowerCase();
@@ -1829,13 +1830,13 @@ Keep each section 2-5 sentences. Be COMPLETE - finish every sentence.`;
             }]
           }],
           generationConfig: {
-            temperature: 0.3,
+            temperature: 0.7,
             maxOutputTokens: 8192
           }
         };
 
         const sceneResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
