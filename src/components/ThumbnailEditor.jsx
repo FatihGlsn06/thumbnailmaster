@@ -5,6 +5,7 @@ import {
   Upload, Palette, Bold, Italic, Layers, Eye, EyeOff, Copy,
   Search, Sparkles, Move, RotateCcw, ZoomIn, ZoomOut
 } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 // 2026 TREND FONTLARI - Kapsamlı Koleksiyon
 
@@ -165,6 +166,7 @@ const STYLE_PRESETS = [
 ];
 
 const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
+  const { t } = useI18n();
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const fontInputRef = useRef(null);
@@ -280,7 +282,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
     const newLayer = {
       id: Date.now(),
       type: 'text',
-      text: 'YAZI EKLE',
+      text: t('addTextPlaceholder'),
       x: 100,
       y: 500,
       width: 500,
@@ -482,8 +484,8 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
             <Type className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-white font-bold">Thumbnail Editör</h2>
-            <p className="text-xs text-white/40">Yazı, logo ve stil ekleyin</p>
+            <h2 className="text-white font-bold">{t('thumbnailEditor')}</h2>
+            <p className="text-xs text-white/40">{t('addTextLogoStyle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -491,7 +493,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
           {layers.length > 0 && (
             <button
               onClick={() => {
-                if (confirm(`${layers.length} katmanı silmek istediğinize emin misiniz?`)) {
+                if (confirm(`${layers.length} ${t('confirmDeleteLayers')}`)) {
                   setLayers([]);
                   setSelectedLayerId(null);
                 }
@@ -499,14 +501,14 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
               className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors border border-red-500/20"
             >
               <Trash2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Tümünü Sil ({layers.length})</span>
+              <span className="hidden sm:inline">{t('deleteAll')} ({layers.length})</span>
             </button>
           )}
           <button
             onClick={handleSave}
             className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
           >
-            Kaydet
+            {t('save')}
           </button>
           <button
             onClick={exportImage}
@@ -556,7 +558,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                 {selectedLayerId === layer.id && (
                   <div className="absolute -top-6 left-0 flex items-center gap-1 bg-purple-600 rounded px-2 py-0.5">
                     <Move className="w-3 h-3 text-white" />
-                    <span className="text-[10px] text-white font-medium">Sürükle</span>
+                    <span className="text-[10px] text-white font-medium">{t('drag')}</span>
                   </div>
                 )}
               </div>
@@ -569,10 +571,10 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
           {/* Tabs */}
           <div className="flex border-b border-white/10 bg-white/[0.02]">
             {[
-              { id: 'text', icon: Type, label: 'Yazı' },
-              { id: 'styles', icon: Sparkles, label: 'Stiller' },
-              { id: 'logo', icon: ImageIcon, label: 'Logo' },
-              { id: 'layers', icon: Layers, label: 'Katmanlar' }
+              { id: 'text', icon: Type, label: t('text') },
+              { id: 'styles', icon: Sparkles, label: t('styles') },
+              { id: 'logo', icon: ImageIcon, label: t('logo') },
+              { id: 'layers', icon: Layers, label: t('layers') }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -599,26 +601,26 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
                 >
                   <Plus className="w-4 h-4" />
-                  Yazı Ekle
+                  {t('addText')}
                 </button>
 
                 {/* Text Properties - Show first if text selected */}
                 {selectedLayer?.type === 'text' && (
                   <div className="space-y-3 p-3 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl border border-purple-500/20">
-                    <p className="text-xs text-purple-300 font-bold">✏️ Yazı Düzenle</p>
+                    <p className="text-xs text-purple-300 font-bold">✏️ {t('editText')}</p>
 
                     <input
                       type="text"
                       value={selectedLayer.text}
                       onChange={(e) => updateLayer(selectedLayerId, { text: e.target.value })}
                       className="w-full bg-black/40 border border-white/20 rounded-lg p-2.5 text-white font-medium focus:outline-none focus:border-purple-500"
-                      placeholder="Yazınızı girin..."
+                      placeholder={t('enterText')}
                     />
 
                     {/* Size & Rotation */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] text-slate-400 mb-1 block">Boyut: {selectedLayer.fontSize}px</label>
+                        <label className="text-[10px] text-slate-400 mb-1 block">{t('size')}: {selectedLayer.fontSize}px</label>
                         <input
                           type="range" min="20" max="200" value={selectedLayer.fontSize}
                           onChange={(e) => updateLayer(selectedLayerId, { fontSize: parseInt(e.target.value) })}
@@ -626,7 +628,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-400 mb-1 block">Döndür: {selectedLayer.rotation}°</label>
+                        <label className="text-[10px] text-slate-400 mb-1 block">{t('rotate')}: {selectedLayer.rotation}°</label>
                         <input
                           type="range" min="-45" max="45" value={selectedLayer.rotation}
                           onChange={(e) => updateLayer(selectedLayerId, { rotation: parseInt(e.target.value) })}
@@ -643,7 +645,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                           onChange={(e) => updateLayer(selectedLayerId, { color: e.target.value })}
                           className="w-8 h-8 rounded cursor-pointer border-0"
                         />
-                        <span className="text-[10px] text-slate-400">Renk</span>
+                        <span className="text-[10px] text-slate-400">{t('color')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <input
@@ -651,7 +653,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                           onChange={(e) => updateLayer(selectedLayerId, { strokeColor: e.target.value })}
                           className="w-8 h-8 rounded cursor-pointer border-0"
                         />
-                        <span className="text-[10px] text-slate-400">Kenar</span>
+                        <span className="text-[10px] text-slate-400">{t('stroke')}</span>
                       </div>
                       <div className="flex-1">
                         <input
@@ -683,7 +685,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                       <button
                         onClick={() => updateLayer(selectedLayerId, { rotation: 0 })}
                         className="flex-1 p-2 rounded-lg border bg-black/40 border-white/10 hover:bg-white/10 transition-colors"
-                        title="Sıfırla"
+                        title={t('reset')}
                       >
                         <RotateCcw className="w-4 h-4 mx-auto text-white" />
                       </button>
@@ -693,7 +695,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
 
                 {/* Popular Fonts - Quick Select */}
                 <div className="space-y-2">
-                  <p className="text-xs text-slate-400 font-medium">⭐ Popüler Fontlar</p>
+                  <p className="text-xs text-slate-400 font-medium">⭐ {t('popularFonts')}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {POPULAR_FONTS.map((font, i) => (
                       <button
@@ -716,7 +718,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
 
                 {/* All Fonts Section */}
                 <div className="space-y-2">
-                  <p className="text-xs text-slate-400 font-medium">🔤 Tüm Fontlar</p>
+                  <p className="text-xs text-slate-400 font-medium">🔤 {t('allFonts')}</p>
 
                   {/* Search */}
                   <div className="relative">
@@ -724,7 +726,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                     <input
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Font ara..."
+                      placeholder={t('searchFonts')}
                       className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
                     />
                   </div>
@@ -775,7 +777,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                 <details className="group">
                   <summary className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer hover:text-slate-400 py-2">
                     <Upload className="w-3 h-3" />
-                    <span>Kendi fontunu yükle (ileri düzey)</span>
+                    <span>{t('uploadOwnFont')}</span>
                   </summary>
                   <div className="pt-2 space-y-2">
                     <div
@@ -789,7 +791,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                     >
                       <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2" multiple hidden
                         onChange={(e) => handleFontUpload(e.target.files)} />
-                      <p className="text-[11px] text-slate-400">.ttf, .otf, .woff dosyası seçin</p>
+                      <p className="text-[11px] text-slate-400">{t('selectFontFile')}</p>
                     </div>
 
                     {/* Custom Fonts List */}
@@ -827,13 +829,13 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 mb-3">
                     <p className="text-xs text-amber-300">
                       {layers.filter(l => l.type === 'text').length === 0
-                        ? '⚠️ Önce "Yazı" sekmesinden bir yazı ekleyin'
-                        : '💡 Stil uygulamak için bir yazı katmanı seçin'}
+                        ? `⚠️ ${t('addTextFirst')}`
+                        : `💡 ${t('selectLayerForStyle')}`}
                     </p>
                   </div>
                 )}
 
-                <p className="text-xs text-slate-400 mb-2">Hızlı stil uygula:</p>
+                <p className="text-xs text-slate-400 mb-2">{t('quickApplyStyle')}</p>
 
                 <div className="grid grid-cols-2 gap-2">
                   {STYLE_PRESETS.map(preset => (
@@ -875,15 +877,15 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                   <input ref={logoInputRef} type="file" accept="image/*" hidden
                     onChange={(e) => { if (e.target.files[0]) handleLogoUpload(e.target.files[0]); }} />
                   <ImageIcon className="w-10 h-10 mx-auto mb-3 text-cyan-400" />
-                  <p className="text-cyan-300 font-medium">Logo veya İkon Yükle</p>
+                  <p className="text-cyan-300 font-medium">{t('uploadLogoIcon')}</p>
                   <p className="text-xs text-slate-500 mt-2">PNG, SVG, JPG</p>
-                  <p className="text-[10px] text-slate-600 mt-1">Şeffaf arka plan önerilir</p>
+                  <p className="text-[10px] text-slate-600 mt-1">{t('transparentBgRecommended')}</p>
                 </div>
 
                 {/* Image layers list */}
                 {layers.filter(l => l.type === 'image').length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs text-cyan-400 font-bold uppercase tracking-wider">Yüklenen Görseller</p>
+                    <p className="text-xs text-cyan-400 font-bold uppercase tracking-wider">{t('uploadedImages')}</p>
                     {layers.filter(l => l.type === 'image').map(layer => (
                       <div
                         key={layer.id}
@@ -905,10 +907,10 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                 {/* Image properties */}
                 {selectedLayer?.type === 'image' && (
                   <div className="space-y-3 p-3 bg-white/5 rounded-xl border border-white/10">
-                    <p className="text-xs text-slate-400 font-medium">Görsel Ayarları</p>
+                    <p className="text-xs text-slate-400 font-medium">{t('imageSettings')}</p>
 
                     <div>
-                      <label className="text-[10px] text-slate-500 mb-1 block">Boyut: {Math.round(selectedLayer.width)}px</label>
+                      <label className="text-[10px] text-slate-500 mb-1 block">{t('size')}: {Math.round(selectedLayer.width)}px</label>
                       <input
                         type="range" min="30" max="500" value={selectedLayer.width}
                         onChange={(e) => {
@@ -921,7 +923,7 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-slate-500 mb-1 block">Döndürme: {selectedLayer.rotation}°</label>
+                      <label className="text-[10px] text-slate-500 mb-1 block">{t('rotation')}: {selectedLayer.rotation}°</label>
                       <input
                         type="range" min="-180" max="180" value={selectedLayer.rotation}
                         onChange={(e) => updateLayer(selectedLayerId, { rotation: parseInt(e.target.value) })}
@@ -937,13 +939,13 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
             {activeTab === 'layers' && (
               <>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">Tüm Katmanlar ({layers.length})</p>
+                  <p className="text-xs text-slate-400 font-medium">{t('allLayers')} ({layers.length})</p>
                   {layers.length > 0 && (
                     <button
                       onClick={() => setLayers([])}
                       className="text-xs text-red-400 hover:text-red-300"
                     >
-                      Tümünü Sil
+                      {t('deleteAll')}
                     </button>
                   )}
                 </div>
@@ -952,8 +954,8 @@ const ThumbnailEditor = ({ thumbnail, onClose, onSave }) => {
                   {layers.length === 0 ? (
                     <div className="text-center py-8 text-slate-600">
                       <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Henüz katman yok</p>
-                      <p className="text-xs mt-1">Yazı veya logo ekleyin</p>
+                      <p className="text-sm">{t('noLayersYet')}</p>
+                      <p className="text-xs mt-1">{t('addTextOrLogo')}</p>
                     </div>
                   ) : (
                     layers.map((layer, index) => (

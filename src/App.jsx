@@ -7,73 +7,305 @@ import {
   ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
   Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
   Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3,
-  TrendingUp, Target, MousePointer, BarChart3
+  TrendingUp, Target, MousePointer, BarChart3, Send, MessageSquare
 } from 'lucide-react';
 import { WebGLShader } from '@/components/ui/web-gl-shader';
 import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
 import { Logo, LogoIcon, LogoMinimal } from '@/components/ui/logo';
 import ThumbnailEditor from '@/components/ThumbnailEditor';
+import PricingSection from '@/components/PricingSection';
+import LicenseKeyModal from '@/components/LicenseKeyModal';
+import { ProBadge, ProLockOverlay, UsageBadge } from '@/components/ProBadge';
+import { useI18n } from '@/lib/i18n';
+import {
+  getCurrentPlan, canGenerate, getRemainingGenerations,
+  incrementDailyUsage, getLicenseKey, validateLicenseKey,
+  PLANS, TEST_MODE,
+} from '@/lib/polar';
 
-// HIGH-CTR THUMBNAIL ARCHETYPES
+// =============================================================================
+// SMART CONTENT DETECTION - İçerik tipine göre otomatik parametre ayarı
+// =============================================================================
+const CONTENT_CATEGORIES = {
+  gaming: {
+    id: 'gaming',
+    keywords: [
+      // Generic gaming terms (fallback - AI classification is primary)
+      'game', 'oyun', 'gaming', 'gamer', 'gameplay', 'walkthrough', 'playthrough', 'lets play',
+      'fps', 'rpg', 'mmorpg', 'moba', 'rts', 'battle royale', 'roguelike', 'soulslike',
+      'boss fight', 'raid', 'pvp', 'speedrun', 'dlc', 'esport', 'esports',
+      'oynuyorum', 'oynadım', 'oynuyoruz', 'oynanış',
+      // Platforms (strong gaming signal)
+      'steam', 'playstation', 'xbox', 'nintendo', 'ps5', 'epic games', 'gamepass',
+      // Popular game franchises (ensures correct category detection)
+      'warhammer', 'total war', 'elden ring', 'dark souls', 'demon souls', 'bloodborne', 'sekiro',
+      'witcher', 'cyberpunk', 'minecraft', 'fortnite', 'valorant', 'league of legends',
+      'call of duty', 'warzone', 'counter strike', 'cs2', 'apex legends', 'overwatch',
+      'destiny', 'world of warcraft', 'diablo', 'starfield', 'baldurs gate',
+      'gta', 'red dead', 'skyrim', 'elder scrolls', 'fallout', 'resident evil',
+      'god of war', 'zelda', 'mario', 'pokemon', 'genshin', 'monster hunter',
+      'armored core', 'final fantasy', 'assassins creed', 'far cry', 'tomb raider',
+      'horizon', 'halo', 'starcraft', 'dota', 'palworld', 'helldivers', 'lethal company',
+    ],
+    temperature: 0.7,
+    defaultArchetypes: ['shocked_threat', 'power_fantasy', 'scale_contrast', 'almost_fail'],
+    promptStyle: 'epic',
+    visualMood: 'Cinematic, epic, high-energy, dramatic lighting with vibrant color accents',
+  },
+  education: {
+    id: 'education',
+    keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'bilim', 'science', 'matematik', 'tarih', 'history', 'fizik', 'kimya', 'biyoloji', 'edebiyat', 'felsefe', 'psikoloji', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'documentary', 'belgesel', 'araştırma', 'research', 'ramazan', 'namaz', 'ibadet', 'oruç', 'dua', 'kuran', 'quran', 'din', 'islam', 'hristiyanlık', 'budizm', 'meditasyon', 'meditation', 'spirituality', 'maneviyat', 'felsefe', 'philosophy', 'hadis', 'sünnet', 'cami', 'kilise', 'sinagog', 'bayram', 'iftar', 'sahur', 'teravih', 'zekat', 'hac', 'umre', 'mevlid', 'kandil', 'cuma', 'hutbe', 'vaaz', 'ilmihal', 'fıkıh', 'tefsir', 'siyer', 'peygamber', 'sahabe', 'kitap', 'book', 'okuma', 'reading', 'özet', 'summary', 'inceleme', 'review', 'motivasyon', 'motivation', 'kişisel gelişim', 'self improvement', 'psychology', 'mindset'],
+    temperature: 0.5,
+    defaultArchetypes: ['expert_authority', 'mystery_reveal', 'reaction_face'],
+    promptStyle: 'clean',
+    visualMood: 'Professional, clean, trustworthy, soft lighting with clear focal points',
+  },
+  vlog: {
+    id: 'vlog',
+    keywords: ['vlog', 'günlük', 'daily', 'storytime', 'story time', 'hayatım', 'life', 'reaction', 'tepki', 'challenge', 'denedim', 'tried', 'podcast', 'sohbet', 'chat', 'q&a', 'soru cevap', 'mukbang', 'unboxing', 'kutu açılımı', 'haul', 'alışveriş', 'shopping', 'day in my life', 'routine', 'rutin', 'grwm', 'get ready', 'hazırlan', 'tag', 'trend', 'tiktok'],
+    temperature: 0.6,
+    defaultArchetypes: ['reaction_face', 'challenge_fun', 'breaking_news'],
+    promptStyle: 'energetic',
+    visualMood: 'Bright, energetic, authentic, natural lighting with bold pops of color',
+  },
+  food: {
+    id: 'food',
+    keywords: ['yemek', 'food', 'tarif', 'recipe', 'cooking', 'pişir', 'mutfak', 'kitchen', 'chef', 'şef', 'restoran', 'restaurant', 'lezzet', 'taste', 'yedim', 'ate', 'eat', 'burger', 'pizza', 'pasta', 'tatlı', 'dessert', 'cake', 'kahvaltı', 'breakfast', 'dinner', 'lunch', 'street food', 'sokak lezzeti', 'mukbang', 'asmr food'],
+    temperature: 0.6,
+    defaultArchetypes: ['food_desire', 'reaction_face', 'transformation'],
+    promptStyle: 'warm',
+    visualMood: 'Warm tones, appetizing, close-up detail, golden-hour style lighting, steam and texture',
+  },
+  travel: {
+    id: 'travel',
+    keywords: ['seyahat', 'travel', 'gezi', 'trip', 'tur', 'tour', 'otel', 'hotel', 'havalimanı', 'airport', 'uçak', 'flight', 'ülke', 'country', 'şehir', 'city', 'plaj', 'beach', 'dağ', 'mountain', 'doğa', 'nature', 'kamp', 'camp', 'hiking', 'yürüyüş', 'backpack', 'manzara', 'landscape', 'keşfet', 'explore', 'adventure', 'macera'],
+    temperature: 0.7,
+    defaultArchetypes: ['travel_wonder', 'reaction_face', 'scale_contrast'],
+    promptStyle: 'cinematic',
+    visualMood: 'Breathtaking, wide-angle, golden hour, vivid natural colors, sense of awe and scale',
+  },
+  tech: {
+    id: 'tech',
+    keywords: ['teknoloji', 'tech', 'technology', 'telefon', 'phone', 'iphone', 'samsung', 'android', 'ios', 'apple', 'google', 'ai', 'yapay zeka', 'artificial intelligence', 'robot', 'software', 'yazılım', 'code', 'coding', 'programlama', 'programming', 'app', 'uygulama', 'review', 'inceleme', 'laptop', 'pc', 'bilgisayar', 'computer', 'gadget', 'gpu', 'cpu', 'setup', 'unboxing', 'comparison', 'karşılaştırma', 'benchmark', 'test'],
+    temperature: 0.5,
+    defaultArchetypes: ['expert_authority', 'reaction_face', 'mystery_reveal'],
+    promptStyle: 'futuristic',
+    visualMood: 'Sleek, modern, minimalist with neon accents, clean product showcase lighting',
+  },
+  music: {
+    id: 'music',
+    keywords: ['müzik', 'music', 'şarkı', 'song', 'albüm', 'album', 'konser', 'concert', 'rap', 'hip hop', 'pop', 'rock', 'metal', 'edm', 'dj', 'beat', 'cover', 'remix', 'karaoke', 'enstrüman', 'instrument', 'gitar', 'guitar', 'piyano', 'piano', 'davul', 'drums', 'dans', 'dance', 'choreography', 'koreografi', 'performans', 'performance', 'spotify', 'clip', 'klip'],
+    temperature: 0.8,
+    defaultArchetypes: ['music_energy', 'reaction_face', 'challenge_fun'],
+    promptStyle: 'neon',
+    visualMood: 'Neon-lit, high energy, sound wave visuals, concert atmosphere, vibrant and pulsing',
+  },
+  fitness: {
+    id: 'fitness',
+    keywords: ['fitness', 'spor', 'sport', 'gym', 'egzersiz', 'exercise', 'workout', 'antrenman', 'training', 'kas', 'muscle', 'diyet', 'diet', 'kilo', 'weight', 'zayıfla', 'bulk', 'protein', 'supplement', 'koşu', 'run', 'yoga', 'pilates', 'bodybuilding', 'crossfit', 'martial arts', 'dövüş', 'boks', 'boxing', 'mma', 'transformation', 'dönüşüm', 'before after', 'öncesi sonrası', 'motivation', 'motivasyon'],
+    temperature: 0.6,
+    defaultArchetypes: ['transformation', 'power_fantasy', 'expert_authority'],
+    promptStyle: 'bold',
+    visualMood: 'High contrast, motivational, powerful poses, dramatic side lighting, gritty texture',
+  },
+};
+
+// Genel/Varsayılan kategori - hiçbir kategoriye uymayan konular için
+const GENERAL_CATEGORY = {
+  id: 'general',
+  keywords: [],
+  temperature: 0.6,
+  defaultArchetypes: ['reaction_face', 'expert_authority', 'mystery_reveal'],
+  promptStyle: 'balanced',
+  visualMood: 'Professional, balanced, visually engaging, clean composition with purposeful lighting and natural color palette',
+};
+
+/**
+ * Akıllı İçerik Algılama - topic ve description'dan otomatik kategori belirle
+ */
+function detectContentCategory(topic, description = '') {
+  const text = `${topic} ${description}`.toLowerCase();
+  const scores = {};
+
+  // Keyword-based detection is just a FALLBACK - AI classification (from research) is primary
+  for (const [catId, cat] of Object.entries(CONTENT_CATEGORIES)) {
+    scores[catId] = 0;
+    for (const keyword of cat.keywords) {
+      if (text.includes(keyword.toLowerCase())) {
+        scores[catId] += keyword.length > 5 ? 3 : keyword.length > 3 ? 2 : 1;
+      }
+    }
+  }
+
+  // Find the category with the highest score
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+
+  // If top score is 0 or very low, use general/neutral category (NOT gaming!)
+  if (sorted[0][1] < 2) {
+    return GENERAL_CATEGORY;
+  }
+
+  return CONTENT_CATEGORIES[sorted[0][0]];
+}
+
+// HIGH-CTR THUMBNAIL ARCHETYPES - Gaming + Universal
 const CTR_ARCHETYPES = [
+  // --- GAMING ARCHETYPES ---
   {
     id: 'shocked_threat',
-    name: 'Şok Yüz + Tehdit',
-    desc: 'Büyük yüz ifadesi + arkada tehlike',
+    nameKey: 'arch_shocked_threat',
+    descKey: 'arch_shocked_threat_desc',
     icon: '😱',
     ctrBoost: 25,
+    category: 'gaming',
     prompt: 'SHOCKED FACE + THREAT COMPOSITION: The person\'s face must be LARGE - taking up 40-50% of the frame height. Face should be centered or slightly below center. Shocked/scared expression with wide eyes and open mouth. Threatening creatures or elements surrounding the person from all sides. The threats should frame the face but not cover it. Dramatic colored lighting (green, red, blue glow) illuminating the face. Text overlay at the BOTTOM of the image, large and bold.',
     bestFor: ['Horror', 'FPS', 'Boss fights', 'Jump scares']
   },
   {
     id: 'power_fantasy',
-    name: 'Güç Fantezisi',
-    desc: 'Dominant poz, aura efekti',
+    nameKey: 'arch_power_fantasy',
+    descKey: 'arch_power_fantasy_desc',
     icon: '⚔️',
     ctrBoost: 22,
+    category: 'gaming',
     prompt: 'POWER FANTASY COMPOSITION: The person should be prominent - taking up 40-50% of the frame. Centered or slightly off-center positioning. Confident, powerful expression. Glowing aura or energy effect around the subject. Epic background but blurred/subdued to make person pop. Heroic lighting with rim light. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['RPG', 'ARPG', 'Progression', 'Build showcases']
   },
   {
     id: 'mystery_object',
-    name: 'Gizemli Nesne',
-    desc: 'Tek ilginç obje, merak uyandırıcı',
+    nameKey: 'arch_mystery_object',
+    descKey: 'arch_mystery_object_desc',
     icon: '❓',
     ctrBoost: 20,
+    category: 'gaming',
     prompt: 'MYSTERY OBJECT COMPOSITION: Person\'s face large (35-45% of frame) showing curious/intrigued expression. A strange glowing object near them drawing attention. The person should be looking at or reacting to the mysterious object. Spotlight effect on the object. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Indie games', 'Mods', 'Weird mechanics', 'Easter eggs']
   },
   {
     id: 'almost_fail',
-    name: 'Neredeyse Başarısız',
-    desc: 'HP düşük, kritik an donmuş',
+    nameKey: 'arch_almost_fail',
+    descKey: 'arch_almost_fail_desc',
     icon: '💀',
     ctrBoost: 23,
+    category: 'gaming',
     prompt: 'ALMOST-FAIL COMPOSITION: Person\'s face large (40-50% of frame) showing panic/stress expression. Critical moment frozen - danger approaching. Red warning tints or indicators visible. The person should look like they\'re about to lose. Tension should be palpable. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Clutch moments', 'Speedruns', 'Challenge runs', 'PvP']
   },
   {
     id: 'scale_contrast',
-    name: 'Ölçek Kontrasti',
-    desc: 'Küçük oyuncu vs DEV düşman',
+    nameKey: 'arch_scale_contrast',
+    descKey: 'arch_scale_contrast_desc',
     icon: '🐜',
     ctrBoost: 21,
+    category: 'gaming',
     prompt: 'SCALE CONTRAST COMPOSITION: Show extreme size contrast. Either the person is small facing a MASSIVE threat that fills the background, OR the person\'s face is large (40-50%) with tiny enemies swarming around them. The scale difference must be immediately obvious and dramatic. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Boss fights', 'Mods', 'Glitches', 'Size comparison']
   },
   {
     id: 'before_after',
-    name: 'Önce / Sonra',
-    desc: 'İlerleme karşılaştırması',
+    nameKey: 'arch_before_after',
+    descKey: 'arch_before_after_desc',
     icon: '📊',
     ctrBoost: 18,
+    category: 'gaming',
     prompt: 'BEFORE/AFTER COMPOSITION: Clear left/right split showing transformation. Person can appear on both sides or just one side (40-50% of frame). Left side should look weak/poor/struggling. Right side should look powerful/rich/successful. Clear visual arrow or divider between sides. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Builds', 'Economy', 'Strategy', 'Tutorials']
-  }
+  },
+  // --- UNIVERSAL ARCHETYPES ---
+  {
+    id: 'reaction_face',
+    nameKey: 'arch_reaction_face',
+    descKey: 'arch_reaction_face_desc',
+    icon: '🤯',
+    ctrBoost: 24,
+    category: 'universal',
+    prompt: 'REACTION FACE COMPOSITION: The person\'s face must be EXTREMELY LARGE - taking up 50-60% of the frame height. Face front-and-center. EXAGGERATED expression: eyes wide open, mouth open in shock/excitement/disbelief. The background should support the reaction - showing whatever they are reacting TO. Use bright, contrasting colors. The expression is the STAR of this thumbnail. The viewer should instantly feel the emotion. Add a subtle colored glow/rim light on the face edges.',
+    bestFor: ['Vlog', 'Reaction', 'Unboxing', 'Challenge', 'News']
+  },
+  {
+    id: 'expert_authority',
+    nameKey: 'arch_expert_authority',
+    descKey: 'arch_expert_authority_desc',
+    icon: '🎓',
+    ctrBoost: 20,
+    category: 'universal',
+    prompt: 'EXPERT AUTHORITY COMPOSITION: The person positioned on one side (left or right third), taking up 40-45% of frame height. Confident, knowing expression - slight smile or serious expert look. Clean, professional background with subtle relevant visual elements (icons, diagrams, product shots) on the opposite side. Key information or the subject matter should be visually represented beside the person. Soft, professional lighting. The person should look TRUSTWORTHY and KNOWLEDGEABLE. Clean color palette - blues, whites, and one accent color.',
+    bestFor: ['Tutorial', 'Education', 'Tech review', 'How-to', 'Tips']
+  },
+  {
+    id: 'food_desire',
+    nameKey: 'arch_food_desire',
+    descKey: 'arch_food_desire_desc',
+    icon: '🍕',
+    ctrBoost: 21,
+    category: 'universal',
+    prompt: 'FOOD DESIRE COMPOSITION: Split focus between APPETIZING food close-up and the person. The food should look IRRESISTIBLE - glistening, steaming, perfectly lit with warm golden tones. The person (30-40% of frame) should show DESIRE or DELIGHT expression - eyes wide, mouth watering, reaching toward food. Use warm color temperature (golden, amber, rich browns). Shallow depth of field on food details. Steam, melting cheese, dripping sauce - make it MOUTHWATERING. The viewer must feel HUNGRY looking at this.',
+    bestFor: ['Food', 'Recipe', 'Restaurant', 'Mukbang', 'Cooking']
+  },
+  {
+    id: 'travel_wonder',
+    nameKey: 'arch_travel_wonder',
+    descKey: 'arch_travel_wonder_desc',
+    icon: '🌍',
+    ctrBoost: 22,
+    category: 'universal',
+    prompt: 'TRAVEL WONDER COMPOSITION: BREATHTAKING landscape or location filling most of the frame. The person positioned in the lower third (25-35% of frame), looking UP or OUT at the magnificent view with an expression of AWE and WONDER. Arms may be spread or pointing. The location should look SPECTACULAR - vivid colors, dramatic lighting (golden hour, blue hour, dramatic clouds). Use leading lines in the landscape pointing to the person. The scale contrast between the tiny person and VAST environment creates visual impact. The viewer should think "I WANT TO GO THERE!"',
+    bestFor: ['Travel', 'Nature', 'Adventure', 'Exploration', 'City tour']
+  },
+  {
+    id: 'transformation',
+    nameKey: 'arch_transformation',
+    descKey: 'arch_transformation_desc',
+    icon: '✨',
+    ctrBoost: 23,
+    category: 'universal',
+    prompt: 'TRANSFORMATION COMPOSITION: Clear LEFT/RIGHT or BEFORE/AFTER split. Use a diagonal or lightning-bolt divider line. LEFT side (before): Dull, muted colors, tired/sad expression, lower quality appearance. RIGHT side (after): Vibrant, glowing, confident expression, dramatically improved appearance. The person appears on BOTH sides showing the contrast. Add directional arrows or flow from left to right. The transformation should be DRAMATIC and immediately obvious. Color grading: desaturated left, vivid right. The viewer should think "HOW did they do that?!"',
+    bestFor: ['Fitness', 'Makeover', 'DIY', 'Before/After', 'Progress']
+  },
+  {
+    id: 'breaking_news',
+    nameKey: 'arch_breaking_news',
+    descKey: 'arch_breaking_news_desc',
+    icon: '🚨',
+    ctrBoost: 24,
+    category: 'universal',
+    prompt: 'BREAKING NEWS COMPOSITION: URGENT, NEWS-STYLE layout. Person\'s face large (40-50% of frame) with a serious/shocked/concerned expression. RED accent elements: red glow, red highlights, red banner areas. The background should show the SUBJECT of the news/drama - slightly blurred but recognizable. High contrast, slightly desaturated except for RED accents. Create a sense of URGENCY and IMPORTANCE. The viewer must feel "I need to know what happened!" Use dramatic shadows on the face with one strong light source.',
+    bestFor: ['News', 'Drama', 'Controversy', 'Updates', 'Announcements']
+  },
+  {
+    id: 'music_energy',
+    nameKey: 'arch_music_energy',
+    descKey: 'arch_music_energy_desc',
+    icon: '🎵',
+    ctrBoost: 21,
+    category: 'universal',
+    prompt: 'MUSIC ENERGY COMPOSITION: The person (40-50% of frame) in a PERFORMANCE pose - singing, playing instrument, dancing, or feeling the music with closed eyes. NEON and VIBRANT color palette - electric blue, hot pink, purple, cyan. Add visual SOUND ELEMENTS: equalizer bars, sound waves, music notes, light beams that pulse outward. Background should feel like a CONCERT or STUDIO with colored lights. Add lens flares and light leaks. The energy should be PALPABLE - the viewer should almost HEAR the music. Dynamic, motion-blur effects on edges.',
+    bestFor: ['Music', 'Dance', 'Concert', 'Cover', 'Performance']
+  },
+  {
+    id: 'challenge_fun',
+    nameKey: 'arch_challenge_fun',
+    descKey: 'arch_challenge_fun_desc',
+    icon: '🎉',
+    ctrBoost: 22,
+    category: 'universal',
+    prompt: 'CHALLENGE FUN COMPOSITION: The person (40-50% of frame) with an EXAGGERATED fun expression - laughing, screaming with joy, silly face. BRIGHT, COLORFUL, PLAYFUL background with relevant props or challenge elements. Use BOLD primary colors (red, yellow, blue, green). Add dynamic elements: confetti, splashes, flying objects, action lines. The composition should feel CHAOTIC but FUN. Multiple focal points creating visual excitement. The viewer should think "This looks HILARIOUS, I have to watch!" High energy, high saturation, comic-book style impact.',
+    bestFor: ['Challenge', 'Comedy', 'Entertainment', 'Prank', 'Fun']
+  },
+  {
+    id: 'mystery_reveal',
+    nameKey: 'arch_mystery_reveal',
+    descKey: 'arch_mystery_reveal_desc',
+    icon: '🔍',
+    ctrBoost: 23,
+    category: 'universal',
+    prompt: 'MYSTERY REVEAL COMPOSITION: Create a CURIOSITY GAP. The person (35-45% of frame) with an intrigued/shocked expression, looking at or pointing to something partially hidden/blurred/censored. Use a spotlight or reveal effect - darkness surrounding a bright focal point. One element should be intentionally OBSCURED (blurred, pixelated, behind a shadow, partially cropped) to create mystery. Use cool, mysterious color palette (deep blues, purples, dark teals) with one bright accent. Add question mark elements or red circles/arrows pointing to the mystery. The viewer MUST feel "What IS that?!"',
+    bestFor: ['Mystery', 'Theory', 'Secret', 'Investigation', 'Reveal']
+  },
 ];
 
 // CTR Score Calculator
-const calculateCTRScore = (settings) => {
+const calculateCTRScore = (settings, t) => {
   let score = 50; // Base score
   const issues = [];
   const boosts = [];
@@ -83,17 +315,17 @@ const calculateCTRScore = (settings) => {
     const arch = CTR_ARCHETYPES.find(a => a.id === settings.archetype);
     if (arch) {
       score += arch.ctrBoost;
-      boosts.push({ text: `${arch.name} arketipi`, value: `+${arch.ctrBoost}` });
+      boosts.push({ text: `${t(arch.nameKey)} ${t('archetypeBoost')}`, value: `+${arch.ctrBoost}` });
     }
   }
 
   // Topic description bonus
   if (settings.topicDescription && settings.topicDescription.length > 50) {
     score += 10;
-    boosts.push({ text: 'Detaylı konsept açıklaması', value: '+10' });
+    boosts.push({ text: t('detailedDescription'), value: '+10' });
   } else if (!settings.topicDescription) {
     score -= 5;
-    issues.push({ text: 'Konsept açıklaması eksik', fix: 'Konsept açıklaması ekleyin', impact: 5 });
+    issues.push({ text: t('missingDescription'), fix: t('addDescription'), impact: 5 });
   }
 
   // Overlay text check
@@ -101,14 +333,14 @@ const calculateCTRScore = (settings) => {
     const words = settings.overlayText.trim().split(/\s+/).length;
     if (words <= 3) {
       score += 8;
-      boosts.push({ text: 'Kısa ve etkili yazı', value: '+8' });
+      boosts.push({ text: t('shortText'), value: '+8' });
     } else if (words > 5) {
       score -= 10;
-      issues.push({ text: 'Yazı çok uzun', fix: 'Yazıyı 3 kelimeye indirin', impact: 10 });
+      issues.push({ text: t('textTooLong'), fix: t('shortenText'), impact: 10 });
     }
   } else {
     score -= 5;
-    issues.push({ text: 'Thumbnail yazısı yok', fix: 'Dikkat çekici bir yazı ekleyin', impact: 5 });
+    issues.push({ text: t('noThumbnailText'), fix: t('addAttentionText'), impact: 5 });
   }
 
   // Typography style bonus (2026 - color harmony focused)
@@ -117,38 +349,38 @@ const calculateCTRScore = (settings) => {
 
   if (highCtrTypoStyles.includes(settings.typoStyle)) {
     score += 10;
-    boosts.push({ text: 'Renk uyumlu yüksek CTR stili', value: '+10' });
+    boosts.push({ text: t('colorMatchedStyle'), value: '+10' });
   } else if (goodTypoStyles.includes(settings.typoStyle)) {
     score += 6;
-    boosts.push({ text: 'Kaliteli tipografi stili', value: '+6' });
+    boosts.push({ text: t('qualityTypo'), value: '+6' });
   }
 
-  // Face/photo bonus
+  // Photo/visual bonus
   if (settings.hasPhoto) {
-    score += 12;
-    boosts.push({ text: 'İnsan yüzü içeriyor', value: '+12' });
+    score += 8;
+    boosts.push({ text: t('containsFace'), value: '+8' });
   }
 
   // Optimization bonus - when "Make it more clickable" was used
   if (settings.isOptimized) {
     score += 15;
-    boosts.push({ text: 'AI optimizasyonu uygulandı', value: '+15' });
+    boosts.push({ text: t('aiOptimizationApplied'), value: '+15' });
   }
 
   // Clamp score
   score = Math.max(0, Math.min(100, score));
 
   // Determine CTR likelihood
-  let likelihood = 'Düşük';
+  let likelihood = t('ctrLow');
   let likelihoodColor = 'text-red-400';
   if (score >= 80) {
-    likelihood = 'Çok Yüksek';
+    likelihood = t('ctrVeryHigh');
     likelihoodColor = 'text-green-400';
   } else if (score >= 65) {
-    likelihood = 'Yüksek';
+    likelihood = t('ctrHigh');
     likelihoodColor = 'text-emerald-400';
   } else if (score >= 50) {
-    likelihood = 'Orta';
+    likelihood = t('ctrMedium');
     likelihoodColor = 'text-yellow-400';
   }
 
@@ -156,12 +388,12 @@ const calculateCTRScore = (settings) => {
 };
 
 // CTR Score Display Component
-const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMakeClickable, isLoading }) => (
+const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMakeClickable, isLoading, t }) => (
   <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-2xl p-4 border border-white/10">
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
         <Target className="w-5 h-5 text-blue-400" />
-        <span className="text-sm font-bold text-white">CTR Tahmini</span>
+        <span className="text-sm font-bold text-white">{t('ctrEstimate')}</span>
       </div>
       <div className="flex items-center gap-2">
         <span className={`text-2xl font-black ${likelihoodColor}`}>{score}</span>
@@ -182,13 +414,13 @@ const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMa
     </div>
 
     <p className={`text-sm font-bold mb-4 ${likelihoodColor}`}>
-      CTR Olasılığı: {likelihood}
+      {t('ctrLikelihood')}: {likelihood}
     </p>
 
     {/* Boosts */}
     {boosts.length > 0 && (
       <div className="mb-3">
-        <p className="text-[10px] text-slate-500 uppercase mb-1">Artılar</p>
+        <p className="text-[10px] text-slate-500 uppercase mb-1">{t('boosts')}</p>
         <div className="space-y-1">
           {boosts.slice(0, 3).map((b, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
@@ -203,7 +435,7 @@ const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMa
     {/* Issues */}
     {issues.length > 0 && (
       <div className="mb-4">
-        <p className="text-[10px] text-slate-500 uppercase mb-1">Düzeltilecekler</p>
+        <p className="text-[10px] text-slate-500 uppercase mb-1">{t('issuesToFix')}</p>
         <div className="space-y-1">
           {issues.slice(0, 3).map((issue, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
@@ -226,7 +458,7 @@ const CTRScoreCard = ({ score, likelihood, likelihoodColor, issues, boosts, onMa
       ) : (
         <MousePointer className="w-4 h-4" />
       )}
-      Daha Tıklanabilir Yap
+      {t('makeMoreClickable')}
     </button>
   </div>
 );
@@ -299,7 +531,9 @@ const FakeThumbnail = ({ text, bg, color }) => (
 );
 
 // YouTube Video Card Component
-const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted, thumbText, thumbBg }) => (
+const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, avatar, color, isHighlighted, thumbText, thumbBg }) => {
+  const { t } = useI18n();
+  return (
   <div className={`group cursor-pointer ${isHighlighted ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-[#0f0f0f] rounded-xl' : ''}`}>
     {/* Thumbnail */}
     <div className="relative aspect-video rounded-xl overflow-hidden mb-3 bg-black">
@@ -317,7 +551,7 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
       </div>
       {isHighlighted && (
         <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
-          SENİN VİDEON
+          {t('yourVideo')}
         </div>
       )}
     </div>
@@ -341,10 +575,12 @@ const YouTubeVideoCard = ({ thumbnail, title, channel, views, time, duration, av
       </button>
     </div>
   </div>
-);
+  );
+};
 
 // Full YouTube Mockup Modal with Multiple Views
 const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top' }) => {
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState('desktop'); // 'desktop', 'mobile', 'search'
 
   // ESC key to close
@@ -358,8 +594,8 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
 
   const userVideo = {
     thumbnail,
-    title: title || 'Yeni Videom - İZLEMELİSİNİZ!',
-    channel: channelName || 'Benim Kanalım',
+    title: title || t('myNewVideo'),
+    channel: channelName || t('myChannel'),
     views: '1.2M views',
     time: '2 hours ago',
     duration: '12:34',
@@ -396,7 +632,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
         </div>
         {video.isHighlighted && (
           <div className="absolute top-1 left-1 bg-red-600 text-white text-[8px] px-1.5 py-0.5 rounded font-bold shadow-lg">
-            SENİN VİDEON
+            {t('yourVideo')}
           </div>
         )}
       </div>
@@ -424,7 +660,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
         </div>
         {video.isHighlighted && (
           <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] px-2 py-1 rounded font-bold animate-pulse shadow-lg">
-            SENİN VİDEON
+            {t('yourVideo')}
           </div>
         )}
       </div>
@@ -445,21 +681,21 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
   );
 
   const sidebarItems = [
-    { icon: <Home className="w-5 h-5" />, label: 'Ana Sayfa', active: true },
-    { icon: <Compass className="w-5 h-5" />, label: 'Keşfet' },
-    { icon: <PlaySquare className="w-5 h-5" />, label: 'Shorts' },
-    { icon: <Film className="w-5 h-5" />, label: 'Abonelikler' },
+    { icon: <Home className="w-5 h-5" />, label: t('home'), active: true },
+    { icon: <Compass className="w-5 h-5" />, label: t('explore') },
+    { icon: <PlaySquare className="w-5 h-5" />, label: t('shorts') },
+    { icon: <Film className="w-5 h-5" />, label: t('subscriptions') },
     { divider: true },
-    { icon: <Clock className="w-5 h-5" />, label: 'Geçmiş' },
-    { icon: <ThumbsUp className="w-5 h-5" />, label: 'Beğenilenler' },
+    { icon: <Clock className="w-5 h-5" />, label: t('history') },
+    { icon: <ThumbsUp className="w-5 h-5" />, label: t('liked') },
     { divider: true },
-    { label: 'Keşfet', header: true },
-    { icon: <Gamepad2 className="w-5 h-5" />, label: 'Oyun' },
-    { icon: <Music className="w-5 h-5" />, label: 'Müzik' },
-    { icon: <Trophy className="w-5 h-5" />, label: 'Spor' },
+    { label: t('explore'), header: true },
+    { icon: <Gamepad2 className="w-5 h-5" />, label: t('gaming') },
+    { icon: <Music className="w-5 h-5" />, label: t('music') },
+    { icon: <Trophy className="w-5 h-5" />, label: t('sports') },
   ];
 
-  const categories = ['Tümü', 'Oyun', 'Canlı', 'Müzik', 'Strateji oyunları', 'Aksiyon-macera', 'Yeni', 'Son yüklenenler'];
+  const categories = [t('all'), t('gaming'), t('live'), t('music'), t('strategyGames'), t('actionAdventure'), t('new'), t('recentUploads')];
 
   return (
     <motion.div
@@ -489,7 +725,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           }`}
         >
           <Monitor className="w-4 h-4" />
-          Masaüstü
+          {t('desktop')}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); setViewMode('mobile'); }}
@@ -498,7 +734,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           }`}
         >
           <Smartphone className="w-4 h-4" />
-          Mobil
+          {t('mobile')}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); setViewMode('search'); }}
@@ -507,7 +743,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           }`}
         >
           <Search className="w-4 h-4" />
-          Arama
+          {t('search')}
         </button>
       </div>
 
@@ -537,7 +773,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
             <div className="flex-1 max-w-xl mx-4 hidden md:block">
               <div className="flex">
                 <div className="flex-1 flex items-center bg-[#121212] border border-[#303030] rounded-l-full px-4 py-2">
-                  <input type="text" placeholder="Ara" className="bg-transparent text-white w-full outline-none text-sm" />
+                  <input type="text" placeholder={t('searchPlaceholder')} className="bg-transparent text-white w-full outline-none text-sm" />
                 </div>
                 <button className="bg-[#222] border border-l-0 border-[#303030] rounded-r-full px-5">
                   <Search className="w-5 h-5 text-white" />
@@ -637,7 +873,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
             </button>
             <button className="flex flex-col items-center text-white/50">
               <User className="w-5 h-5" />
-              <span className="text-[10px]">Sen</span>
+              <span className="text-[10px]">{t('you')}</span>
             </button>
           </div>
         </motion.div>
@@ -668,7 +904,7 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           </header>
 
           <div className="p-4 text-white/60 text-sm border-b border-white/5">
-            Yaklaşık {Math.floor(Math.random() * 900000 + 100000).toLocaleString()} sonuç bulundu
+            ~{Math.floor(Math.random() * 900000 + 100000).toLocaleString()} {t('resultsFound')}
           </div>
 
           {/* Search Results */}
@@ -723,6 +959,7 @@ const CollapsibleSection = ({ title, icon, children, defaultOpen = false, badge 
 };
 
 const App = () => {
+  const { t, lang, toggleLang } = useI18n();
   const [currentSection, setCurrentSection] = useState('landing');
   const [image, setImage] = useState(null);
   const [base64Image, setBase64Image] = useState(null);
@@ -742,11 +979,37 @@ const App = () => {
   const [showEditor, setShowEditor] = useState(false);
   const [thumbnailPosition, setThumbnailPosition] = useState('top');
   const [selectedArchetype, setSelectedArchetype] = useState('');
+  const [archetypeTab, setArchetypeTab] = useState('all');
   const [ctrScore, setCtrScore] = useState(null);
   const [previousCtrScore, setPreviousCtrScore] = useState(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isOptimized, setIsOptimized] = useState(false);
   const [previousImage, setPreviousImage] = useState(null);
+
+  // Polar.sh - Plan & License states
+  const [currentPlan, setCurrentPlan] = useState(() => getCurrentPlan());
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const isPro = currentPlan.id === 'pro';
+
+  // Uygulama açılışında lisans durumunu kontrol et
+  useEffect(() => {
+    const checkLicense = async () => {
+      const key = getLicenseKey();
+      if (key) {
+        const result = await validateLicenseKey(key);
+        if (result.valid) {
+          setCurrentPlan(PLANS.pro);
+        } else {
+          setCurrentPlan(PLANS.free);
+        }
+      }
+    };
+    checkLicense();
+  }, []);
+
+  const handleLicenseActivated = (planId) => {
+    setCurrentPlan(planId === 'pro' ? PLANS.pro : PLANS.free);
+  };
 
   // Mobile UI states
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -754,9 +1017,8 @@ const App = () => {
   // AI Model selection - Gemini 3 is the latest (2026)
   const [selectedModel, setSelectedModel] = useState('gemini-3-pro-image-preview');
   const availableModels = [
-    { id: 'gemini-3-pro-image-preview', name: 'Gemini 3 Pro Image', desc: 'En yeni! 4K görsel, gelişmiş metin, düşünme modu', badge: 'ÖNERİLEN' },
-    { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', desc: 'Hızlı, iyi görsel anlama' },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Stable)', desc: 'Stabil ve dengeli' },
+    { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
+    { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: 'Hızlı ve ekonomik görsel üretim' },
   ];
 
   // Concept/Reference image states
@@ -769,11 +1031,20 @@ const App = () => {
   // Photo analysis states
   const [photoAnalysis, setPhotoAnalysis] = useState(null);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
-  const [autoGenerateAfterAnalysis, setAutoGenerateAfterAnalysis] = useState(false);
-
   // Topic/Concept research states
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
+  const [researchImageBase64, setResearchImageBase64] = useState(null);
+  const [researchImageMimeType, setResearchImageMimeType] = useState('image/png');
+  const [researchImageUrl, setResearchImageUrl] = useState(null);
+
+  // Smart Content Detection - otomatik kategori algılama
+  const [detectedCategory, setDetectedCategory] = useState(null);
+
+  // Revision
+  const [revisionText, setRevisionText] = useState('');
+  const [isRevising, setIsRevising] = useState(false);
+  const [preRevisionImage, setPreRevisionImage] = useState(null);
 
   // Calculate CTR score whenever settings change
   useEffect(() => {
@@ -785,22 +1056,11 @@ const App = () => {
       hasPhoto: !!base64Image,
       isOptimized
     };
-    const score = calculateCTRScore(settings);
+    const score = calculateCTRScore(settings, t);
     setCtrScore(score);
   }, [selectedArchetype, topicDescription, overlayText, typoStyle, base64Image, isOptimized]);
 
-  // Auto-generate thumbnail after analysis completes
-  useEffect(() => {
-    if (autoGenerateAfterAnalysis && photoAnalysis && !isAnalyzingPhoto && !isAnalyzingConcept && !loading) {
-      setAutoGenerateAfterAnalysis(false);
-      // Small delay to ensure state is fully updated
-      setTimeout(() => {
-        if (base64Image && topic && apiKey) {
-          generateThumbnail();
-        }
-      }, 100);
-    }
-  }, [autoGenerateAfterAnalysis, photoAnalysis, isAnalyzingPhoto, isAnalyzingConcept, loading]);
+  // Auto-generate removed - kullanıcı "Oluştur" butonuna basarak tetikler
 
   const handleSaveApiKey = (value) => {
     setApiKey(value);
@@ -816,8 +1076,8 @@ const App = () => {
   const typographyOptions = [
     {
       id: 'auto_harmony',
-      name: 'Otomatik Renk Uyumu',
-      desc: 'AI sahneyi analiz eder, en uyumlu rengi seçer',
+      name: t('typo_auto_harmony'),
+      desc: t('typo_auto_harmony_desc'),
       prompt: `AUTOMATIC COLOR HARMONY TYPOGRAPHY (BEST FOR CTR):
 
 ⚠️ CRITICAL - ANALYZE THE SCENE FIRST:
@@ -843,8 +1103,8 @@ POSITION: Bottom area, never covering the face`
     },
     {
       id: 'cinematic_epic',
-      name: 'Sinematik Epik',
-      desc: 'Film posteri kalitesi, metalik/taş doku, sahne ışığıyla uyumlu',
+      name: t('typo_cinematic_epic'),
+      desc: t('typo_cinematic_epic_desc'),
       prompt: `CINEMATIC EPIC TYPOGRAPHY (MOVIE POSTER QUALITY):
 
 ⚠️ COLOR MATCHING - CRITICAL:
@@ -866,8 +1126,8 @@ SHADOW: Dramatic shadow matching scene lighting angle`
     },
     {
       id: 'gaming_neon',
-      name: 'Gaming Neon',
-      desc: 'Oyun/teknoloji teması, parlak neon, sahne rengiyle uyumlu glow',
+      name: t('typo_gaming_neon'),
+      desc: t('typo_gaming_neon_desc'),
       prompt: `GAMING NEON TYPOGRAPHY (SCENE-MATCHED):
 
 ⚠️ NEON COLOR SELECTION:
@@ -889,8 +1149,8 @@ VIBE: High-tech, energetic, electric`
     },
     {
       id: 'bold_impact',
-      name: 'Maksimum Etki',
-      desc: 'En yüksek okunabilirlik, kontrast renk seçimi',
+      name: t('typo_maximum_impact'),
+      desc: t('typo_maximum_impact_desc'),
       prompt: `MAXIMUM IMPACT TYPOGRAPHY (HIGHEST READABILITY):
 
 ⚠️ CONTRAST-FIRST COLOR SELECTION:
@@ -910,8 +1170,8 @@ POSITION: Bottom center, commanding presence`
     },
     {
       id: 'elegant_modern',
-      name: 'Elegant Modern',
-      desc: 'Premium görünüm, sofistike renk paleti',
+      name: t('typo_elegant_modern'),
+      desc: t('typo_elegant_modern_desc'),
       prompt: `ELEGANT MODERN TYPOGRAPHY (PREMIUM LOOK):
 
 ⚠️ SOPHISTICATED COLOR PALETTE:
@@ -930,8 +1190,8 @@ POSITION: Strategic placement with breathing room`
     },
     {
       id: 'comic_action',
-      name: 'Comic Action',
-      desc: 'Çizgi roman tarzı, dinamik, sahne rengiyle uyumlu aksiyon efekti',
+      name: t('typo_comic_action'),
+      desc: t('typo_comic_action_desc'),
       prompt: `COMIC ACTION TYPOGRAPHY (DYNAMIC & FUN):
 
 ⚠️ COLOR MATCHING FOR COMICS:
@@ -953,8 +1213,8 @@ VIBE: Fun, exciting, eye-catching`
     },
     {
       id: 'simple_brush',
-      name: 'Sade Fırça',
-      desc: 'El yazısı tarzı, sade, sahneyle uyumlu koyu renk',
+      name: t('typo_simple_brush'),
+      desc: t('typo_simple_brush_desc'),
       prompt: `SIMPLE BRUSH TYPOGRAPHY (CLEAN & NATURAL):
 
 ⚠️ THIS IS A SUBTLE, CLEAN STYLE - NOT FLASHY:
@@ -1012,6 +1272,45 @@ VIBE: Professional, clean, gaming channel style`
     }
   };
 
+  // Fetch an image URL and convert to base64, with multiple CORS proxy fallbacks
+  const fetchImageAsBase64 = async (url) => {
+    const targets = [
+      { label: 'direct', url: url },
+      { label: 'wsrv.nl', url: `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=800&output=jpg` },
+      { label: 'corsproxy', url: `https://corsproxy.io/?${encodeURIComponent(url)}` },
+    ];
+    for (const target of targets) {
+      try {
+        const res = await fetch(target.url, { signal: AbortSignal.timeout(12000) });
+        if (!res.ok) {
+          console.log(`[RefImage] ⚠️ fetch ${target.label}: HTTP ${res.status} for`, url.substring(0, 80));
+          continue;
+        }
+        const blob = await res.blob();
+        if (!blob.type.startsWith('image/')) {
+          console.log(`[RefImage] ⚠️ fetch ${target.label}: not image (${blob.type}) for`, url.substring(0, 80));
+          continue;
+        }
+        if (blob.size > 10 * 1024 * 1024) { console.log(`[RefImage] ⚠️ fetch ${target.label}: too large ${blob.size}`); continue; }
+        if (blob.size < 1000) { console.log(`[RefImage] ⚠️ fetch ${target.label}: suspiciously small ${blob.size}b`); continue; }
+        const mimeType = blob.type || 'image/jpeg';
+        console.log(`[RefImage] ✅ fetch ${target.label}: ${Math.round(blob.size / 1024)}KB ${mimeType}`);
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        return { data: base64Data, mimeType };
+      } catch (e) {
+        console.log(`[RefImage] ❌ fetch ${target.label}: ${e.message} for`, url.substring(0, 80));
+        continue;
+      }
+    }
+    console.log('[RefImage] 🚫 fetchImageAsBase64 ALL proxies failed for:', url.substring(0, 100));
+    return null;
+  };
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1048,28 +1347,31 @@ VIBE: Professional, clean, gaming channel style`
         contents: [{
           parts: [
             {
-              text: `Bu bir YouTube thumbnail referans/konsept görseli. Lütfen şunları analiz et ve Türkçe olarak özetle:
+              text: `This is a YouTube thumbnail reference/concept image. The user wants their generated thumbnail to MATCH THIS STYLE. Analyze in detail (in English):
 
-1. **Stil**: Görsel stili (sinematik, çizgi film, gerçekçi, vb.)
-2. **Renk Paleti**: Baskın renkler ve ton
-3. **Kompozisyon**: Öğelerin yerleşimi
-4. **Metin Stili**: Varsa yazı tipi ve efektleri
-5. **Atmosfer**: Genel hava ve duygu
-6. **CTR Elementleri**: Dikkat çeken unsurlar
+1. **Visual Style**: Art style (cinematic, cartoon, realistic, photographic, illustrated, etc.)
+2. **Color Palette**: Dominant colors, color temperature, saturation level, specific hex-like descriptions
+3. **Composition**: Layout of elements, where the subject is, how space is used
+4. **Text Style**: If present - font style, effects (glow, shadow, 3D, stroke), placement, colors
+5. **Lighting**: Light direction, quality, color of light, shadows
+6. **Atmosphere & Mood**: Overall feeling, energy level, emotional tone
+7. **Special Effects**: Any glow, particles, blur, vignette, gradients, overlays
+8. **What Makes It Click-worthy**: CTR elements, visual hooks, attention grabbers
 
-Kısa ve öz ol. Her madde 1-2 cümle olsun.`
+Be SPECIFIC and DETAILED. Describe colors precisely (e.g., "neon cyan #00FFFF glow" not just "blue").
+The AI image generator will use your analysis to replicate this exact style.`
             },
             { inlineData: { mimeType: "image/png", data: conceptBase64 } }
           ]
         }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 500
+          maxOutputTokens: 1500
         }
       };
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1082,10 +1384,6 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
       if (analysisText) {
         setConceptAnalysis(analysisText);
-        // Trigger auto-generate if photo and topic are set
-        if (base64Image && topic) {
-          setAutoGenerateAfterAnalysis(true);
-        }
       } else {
         setConceptAnalysis('Analiz yapılamadı.');
       }
@@ -1106,16 +1404,27 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
         contents: [{
           parts: [
             {
-              text: `Bu fotoğrafı analiz et ve YouTube thumbnail için kullanılacak şekilde Türkçe özetle:
+              text: `Analyze this image for YouTube thumbnail creation. Respond in English.
 
-1. **Kişi**: Cinsiyet, tahmini yaş, genel görünüm
-2. **Yüz İfadesi**: Mevcut duygu/ifade
-3. **Giyim**: Kıyafet tipi ve renkleri
-4. **Poz**: Duruş ve açı
-5. **Aydınlatma**: Işık yönü ve kalitesi
-6. **Öneri**: Hangi thumbnail stili/arketipi uygun olur
+First determine: Does this image contain a PERSON/FACE or is it a non-person image (game screenshot, product, landscape, food, object, etc.)?
 
-Kısa ve öz ol. Her madde 1-2 cümle olsun.`
+IF IT CONTAINS A PERSON:
+1. **Subject**: Gender, approximate age, general appearance
+2. **Expression**: Current emotion/expression
+3. **Clothing**: Outfit type and colors
+4. **Pose**: Stance and angle
+5. **Lighting**: Light direction and quality
+6. **Recommendation**: Which thumbnail style/archetype would work best
+
+IF IT'S A NON-PERSON IMAGE:
+1. **Content**: What is shown (game screenshot, product, food, landscape, etc.)
+2. **Colors**: Dominant color palette
+3. **Composition**: Key visual elements and their arrangement
+4. **Mood**: Overall atmosphere (dark, bright, warm, cold, energetic, calm)
+5. **Quality**: Resolution and detail level
+6. **Recommendation**: How to best use this as a thumbnail base
+
+Be concise. 1-2 sentences per point.`
             },
             { inlineData: { mimeType: "image/png", data: base64Image } }
           ]
@@ -1127,7 +1436,7 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
       };
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1140,10 +1449,6 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
       if (analysisText) {
         setPhotoAnalysis(analysisText);
-        // Trigger auto-generate if topic is set
-        if (topic) {
-          setAutoGenerateAfterAnalysis(true);
-        }
       } else {
         setPhotoAnalysis('Analiz yapılamadı.');
       }
@@ -1160,84 +1465,906 @@ Kısa ve öz ol. Her madde 1-2 cümle olsun.`
 
     setIsResearchingTopic(true);
     setTopicResearch(null);
+    setResearchImageBase64(null);
+    setResearchImageUrl(null);
+
+    // Smart content detection
+    const category = detectContentCategory(topic, topicDescription);
+    setDetectedCategory(category);
+
+    let imageSearchPromise = null;
 
     try {
-      const payload = {
+      const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
+
+      // Build search queries based on detected category
+      const categorySearchHints = {
+        gaming: 'game video game gameplay',
+        education: 'tutorial guide explained',
+        vlog: 'YouTube vlog video',
+        food: 'recipe food cooking',
+        travel: 'travel destination guide',
+        tech: 'technology review tech',
+        music: 'music song artist',
+        fitness: 'fitness workout training',
+      };
+      const searchHint = categorySearchHints[category.id] || '';
+
+      const searchPayload = {
         contents: [{
           parts: [{
-            text: `Sen bir GAMER ve OYUN KÜLTÜRÜ uzmanısın. "${topic}" hakkında YouTube thumbnail tasarımı için detaylı bilgi ver.
+            text: `You MUST use Google Search to find information. DO NOT rely on your training data.
+
+SEARCH FOR: "${topic}"${userContext}
+
+The user is creating a YouTube thumbnail about "${topic}".
+This could be about ANYTHING - a video game, movie, educational topic, food, travel destination, tech product, music, fitness, or any other YouTube content category.
+
+IMPORTANT: "${topic}" is a specific topic/product/subject - treat it as a PROPER NOUN first.
+Do NOT interpret it as a generic dictionary word. Search for it as a specific title/brand/concept.
+
+Search the internet and tell me:
+1. What EXACTLY is "${topic}"? (game, product, concept, place, person, event, technique, etc.)
+2. When was it created/released/announced? Is it trending now?
+3. What does it look like visually? (colors, style, aesthetics, setting, environment)
+4. What are the iconic visual elements associated with "${topic}"?
+5. What emotions/feelings does "${topic}" evoke?
+6. What is the audience/community saying about it?
+7. What do official images/videos/promotional materials show?
+8. What makes "${topic}" visually distinctive and recognizable?
+
+Search terms to try:
+- "${topic} ${searchHint}"
+- "${topic} YouTube"
+- "${topic} 2025 2026"
+
+YOU MUST search the web. Do NOT guess or make up information.`
+          }]
+        }],
+        tools: [{
+          google_search: {}
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 2500
+        }
+      };
+
+      const searchResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(searchPayload)
+        }
+      );
+
+      const searchData = await searchResponse.json();
+
+      // Extract search result text AND grounding metadata
+      const searchParts = searchData.candidates?.[0]?.content?.parts || [];
+      const searchResult = searchParts.map(p => p.text || '').join('\n');
+      const groundingMetadata = searchData.candidates?.[0]?.groundingMetadata;
+      const searchSuggestions = groundingMetadata?.searchEntryPoint?.renderedContent || '';
+      const groundingChunks = groundingMetadata?.groundingChunks || [];
+
+      // Build source info from grounding
+      const sourceInfo = groundingChunks
+        .filter(chunk => chunk.web)
+        .map(chunk => `${chunk.web.title}: ${chunk.web.uri}`)
+        .slice(0, 5)
+        .join('\n');
+
+      // Background: Find reference image via wiki APIs + Gemini visual verification
+      imageSearchPromise = (async () => {
+        try {
+          console.log('[RefImage] 🔍 Searching for reference image:', topic);
+
+          // ── Subject Extraction ──
+          const rawClean = topic.replace(/[:\-–—|]/g, ' ').replace(/\s+/g, ' ').trim();
+          const separatorMatch = topic.match(/[:|\-–—]\s*(.+)/);
+          const contextMatch = topic.match(/^(.+?)[\s]*[:|\-–—]/);
+
+          let subject = '';
+          let contextPart = '';
+          if (separatorMatch) {
+            subject = separatorMatch[1].trim();
+            contextPart = contextMatch ? contextMatch[1].trim() : '';
+          } else {
+            const words = rawClean.split(' ').filter(w => w.length > 2 && !/^\d+$/.test(w));
+            const franchiseWords = new Set(['total', 'war', 'warhammer', 'elden', 'ring', 'dark', 'souls', 'league', 'legends', 'call', 'duty', 'grand', 'theft', 'auto', 'world', 'warcraft', 'monster', 'hunter', 'final', 'fantasy', 'resident', 'evil', 'assassins', 'creed', 'god', 'breath', 'wild', 'tears', 'kingdom', 'counter', 'strike', 'red', 'dead', 'horizon', 'tomb', 'raider', 'age', 'empires']);
+            let subjectStartIdx = 0;
+            for (let i = 0; i < words.length; i++) {
+              if (franchiseWords.has(words[i].toLowerCase()) || /^(i{1,3}|iv|v|vi{0,3})$/i.test(words[i])) {
+                subjectStartIdx = i + 1;
+              } else break;
+            }
+            if (subjectStartIdx > 0 && subjectStartIdx < words.length) {
+              subject = words.slice(subjectStartIdx).join(' ');
+              contextPart = words.slice(0, subjectStartIdx).join(' ');
+            } else {
+              subject = words[words.length - 1] || rawClean;
+              contextPart = words.slice(0, -1).join(' ');
+            }
+          }
+
+          // Build search terms: most specific first
+          const searchTerms = [];
+          if (subject) searchTerms.push(subject);
+          if (contextPart && subject) searchTerms.push(`${subject} ${contextPart}`);
+          searchTerms.push(rawClean);
+          const seen = new Set();
+          const uniqueTerms = searchTerms.filter(t => {
+            const key = t.toLowerCase().trim();
+            if (!key || key.length < 2 || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          const subjectWords = subject.toLowerCase().split(/[\s_\-]+/).filter(w => w.length > 2);
+          console.log('[RefImage] 🎯 Subject:', subject, '| Context:', contextPart, '| Terms:', uniqueTerms);
+
+          // ── Image Name Scoring ──
+          const scoreImageName = (filename) => {
+            const lower = filename.toLowerCase().replace(/[_\-]/g, ' ');
+            let score = 0;
+            if (lower.includes(subject.toLowerCase())) score += 100;
+            for (const word of subjectWords) { if (lower.includes(word)) score += 40; }
+            if (/portrait|render|artwork|character|model|splash|promo|official|full|key[\s_]?art|infobox|main|primary|profile/i.test(filename)) score += 25;
+            if (/screenshot|map|loading|wallpaper|roster|campaign|menu|logo|background|trailer/i.test(filename)) score -= 15;
+            if (/icon|badge|flag|symbol|arrow|nav|button|header|footer|placeholder|banner/i.test(filename)) score -= 50;
+            if (/\.svg$/i.test(filename)) score -= 100;
+            if (/\.gif$/i.test(filename)) score -= 30;
+            return score;
+          };
+
+          // ── PHASE 1: Collect candidate URLs from all sources ──
+          const allCandidates = []; // { url, score, source, label }
+
+          // Helper: get candidates from a Fandom wiki page
+          const collectFandomCandidates = async (wiki, pageTitle, sourceLabel) => {
+            const pageCandidates = [];
+
+            // Method 1: pageimages (main thumbnail)
+            try {
+              const res = await fetch(
+                `https://${wiki}.fandom.com/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=pageimages&format=json&pithumbsize=800&origin=*`,
+                { signal: AbortSignal.timeout(6000) }
+              );
+              if (res.ok) {
+                const data = await res.json();
+                const page = Object.values(data.query?.pages || {})[0];
+                if (page?.thumbnail?.source) {
+                  const score = scoreImageName(page?.pageimage || '') + 10;
+                  pageCandidates.push({ url: page.thumbnail.source, score, source: sourceLabel, label: `${wiki}/${pageTitle} (thumbnail)` });
+                }
+              }
+            } catch {}
+
+            // Method 2: parse/images (all page images, scored)
+            try {
+              const res = await fetch(
+                `https://${wiki}.fandom.com/api.php?action=parse&page=${encodeURIComponent(pageTitle)}&prop=images&format=json&origin=*`,
+                { signal: AbortSignal.timeout(6000) }
+              );
+              if (res.ok) {
+                const data = await res.json();
+                const images = data.parse?.images || [];
+                const scored = images
+                  .map(name => ({ name, score: scoreImageName(name) }))
+                  .filter(i => i.score > -50)
+                  .sort((a, b) => b.score - a.score);
+
+                for (const { name: fileName, score: nameScore } of scored.slice(0, 4)) {
+                  try {
+                    const infoRes = await fetch(
+                      `https://${wiki}.fandom.com/api.php?action=query&titles=File:${encodeURIComponent(fileName)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
+                      { signal: AbortSignal.timeout(6000) }
+                    );
+                    if (!infoRes.ok) continue;
+                    const infoData = await infoRes.json();
+                    const imgPage = Object.values(infoData.query?.pages || {})[0];
+                    const info = imgPage?.imageinfo?.[0];
+                    if (!info || info.width < 150 || info.height < 150) continue;
+                    const imgUrl = info.thumburl || info.url;
+                    const sizeBonus = Math.min(20, Math.floor(Math.min(info.width, info.height) / 100) * 3);
+                    pageCandidates.push({ url: imgUrl, score: nameScore + sizeBonus, source: sourceLabel, label: `${wiki}/${fileName}` });
+                  } catch { continue; }
+                }
+              }
+            } catch {}
+
+            return pageCandidates;
+          };
+
+          // Strategy 1: Fandom pages from grounding
+          const fandomPages = groundingChunks
+            .filter(c => c.web?.uri?.includes('fandom.com/wiki/'))
+            .map(c => {
+              const match = c.web.uri.match(/https?:\/\/([^.]+)\.fandom\.com\/wiki\/([^?#]+)/);
+              if (!match) return null;
+              const pageName = decodeURIComponent(match[2].replace(/_/g, ' '));
+              const pageNameLower = pageName.toLowerCase();
+              let pageScore = 0;
+              if (pageNameLower === subject.toLowerCase()) pageScore = 100;
+              else if (pageNameLower.includes(subject.toLowerCase())) pageScore = 80;
+              else { for (const w of subjectWords) { if (pageNameLower.includes(w)) pageScore += 30; } }
+              return { wiki: match[1], page: pageName, score: pageScore };
+            })
+            .filter(Boolean)
+            .sort((a, b) => b.score - a.score);
+
+          console.log('[RefImage] 📚 Grounding pages:', fandomPages.map(f => `${f.wiki}/${f.page}(${f.score})`));
+
+          for (const { wiki, page } of fandomPages.slice(0, 3)) {
+            const candidates = await collectFandomCandidates(wiki, page, 'grounding');
+            allCandidates.push(...candidates);
+          }
+
+          // Strategy 2: Fandom search
+          const topicLower = topic.toLowerCase();
+          const topicWikiMap = [
+            { patterns: ['total war'], wikis: ['totalwar'] },
+            { patterns: ['warhammer 3', 'warhammer 2', 'warhammer 1', 'warhammer iii', 'warhammer ii'], wikis: ['totalwar', 'warhammerfantasy'] },
+            { patterns: ['warhammer 40', '40k'], wikis: ['warhammer40k'] },
+            { patterns: ['warhammer fantasy', 'age of sigmar', 'beastmen', 'skaven', 'chaos warriors', 'lizardmen', 'high elves', 'dark elves'], wikis: ['warhammerfantasy', 'totalwar'] },
+            { patterns: ['warhammer'], wikis: ['totalwar', 'warhammerfantasy', 'warhammer40k'] },
+            { patterns: ['elden ring'], wikis: ['eldenring'] },
+            { patterns: ['dark souls', 'demon souls', 'bloodborne', 'sekiro'], wikis: ['darksouls'] },
+            { patterns: ['witcher'], wikis: ['witcher'] },
+            { patterns: ['elder scrolls', 'skyrim', 'oblivion', 'morrowind'], wikis: ['elderscrolls'] },
+            { patterns: ['league of legends', 'lol'], wikis: ['leagueoflegends'] },
+            { patterns: ['minecraft'], wikis: ['minecraft'] },
+            { patterns: ['zelda', 'breath of the wild', 'tears of the kingdom'], wikis: ['zelda'] },
+            { patterns: ['genshin'], wikis: ['genshin-impact'] },
+            { patterns: ['call of duty', 'warzone'], wikis: ['callofduty'] },
+            { patterns: ['fortnite'], wikis: ['fortnite'] },
+            { patterns: ['destiny'], wikis: ['destiny'] },
+            { patterns: ['world of warcraft', 'wow'], wikis: ['wowpedia'] },
+            { patterns: ['diablo'], wikis: ['diablo'] },
+            { patterns: ['starfield', 'fallout'], wikis: ['starfield', 'fallout'] },
+            { patterns: ['baldurs gate', "baldur's gate"], wikis: ['baldursgate3'] },
+            { patterns: ['cyberpunk'], wikis: ['cyberpunk'] },
+            { patterns: ['gta', 'grand theft auto'], wikis: ['gta'] },
+            { patterns: ['red dead'], wikis: ['reddead'] },
+            { patterns: ['god of war'], wikis: ['godofwar'] },
+            { patterns: ['monster hunter'], wikis: ['monsterhunter'] },
+            { patterns: ['final fantasy'], wikis: ['finalfantasy'] },
+            { patterns: ['resident evil'], wikis: ['residentevil'] },
+            { patterns: ['assassins creed', "assassin's creed"], wikis: ['assassinscreed'] },
+            { patterns: ['pokemon', 'pokémon'], wikis: ['pokemon'] },
+            { patterns: ['mario'], wikis: ['mario'] },
+            { patterns: ['halo'], wikis: ['halo'] },
+            { patterns: ['overwatch'], wikis: ['overwatch'] },
+            { patterns: ['apex legends', 'apex'], wikis: ['apexlegends'] },
+            { patterns: ['valorant'], wikis: ['valorant'] },
+            { patterns: ['dota'], wikis: ['dota2'] },
+            { patterns: ['palworld'], wikis: ['palworld'] },
+            { patterns: ['helldivers'], wikis: ['helldivers'] },
+            { patterns: ['counter strike', 'cs2', 'csgo'], wikis: ['counterstrike'] },
+            { patterns: ['horizon'], wikis: ['horizon'] },
+            { patterns: ['starcraft'], wikis: ['starcraft'] },
+            { patterns: ['tomb raider'], wikis: ['tombraider'] },
+          ];
+          const matchedWikis = [];
+          for (const entry of topicWikiMap) {
+            if (entry.patterns.some(p => topicLower.includes(p))) matchedWikis.push(...entry.wikis);
+          }
+          const categoryWikis = {
+            gaming: ['totalwar', 'warhammer40k', 'warhammer', 'elderscrolls', 'leagueoflegends', 'darksouls', 'eldenring', 'witcher'],
+            food: ['recipes'], music: ['music'], historical: ['assassinscreed', 'civilization'],
+          };
+          const fallbackWikis = categoryWikis[category?.id] || [];
+          const wikis = [...new Set([...matchedWikis, ...fallbackWikis])];
+          console.log('[RefImage] 🎮 Wikis:', wikis);
+
+          // Search Fandom wikis — collect candidates, don't stop at first
+          for (const wiki of wikis.slice(0, 4)) {
+            for (const term of uniqueTerms.slice(0, 2)) {
+              try {
+                const res = await fetch(
+                  `https://${wiki}.fandom.com/api.php?action=query&list=search&srsearch=${encodeURIComponent(term)}&format=json&srlimit=3&origin=*`,
+                  { signal: AbortSignal.timeout(6000) }
+                );
+                if (!res.ok) continue;
+                const data = await res.json();
+                const results = (data.query?.search || [])
+                  .map(r => {
+                    const titleLower = r.title.toLowerCase();
+                    let score = 0;
+                    if (titleLower === subject.toLowerCase()) score = 100;
+                    else if (titleLower.includes(subject.toLowerCase())) score = 70;
+                    else { for (const w of subjectWords) { if (titleLower.includes(w)) score += 25; } }
+                    return { ...r, relevance: score };
+                  })
+                  .sort((a, b) => b.relevance - a.relevance);
+
+                for (const result of results.slice(0, 2)) {
+                  const candidates = await collectFandomCandidates(wiki, result.title, `search-${wiki}`);
+                  allCandidates.push(...candidates);
+                }
+              } catch { continue; }
+            }
+            if (allCandidates.length >= 15) break;
+          }
+
+          // Strategy 3: Wikipedia
+          for (const term of uniqueTerms.slice(0, 2)) {
+            try {
+              const searchRes = await fetch(
+                `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term.replace(/ /g, '_'))}`,
+                { signal: AbortSignal.timeout(6000) }
+              );
+              if (searchRes.ok) {
+                const wikiData = await searchRes.json();
+                if (wikiData.thumbnail?.source) {
+                  const highRes = wikiData.thumbnail.source.replace(/\/\d+px-/, '/800px-');
+                  allCandidates.push({ url: highRes, score: scoreImageName(wikiData.title || term), source: 'wikipedia', label: `Wikipedia: ${term}` });
+                }
+              }
+            } catch {}
+          }
+
+          // Strategy 4: Wikimedia Commons
+          for (const term of uniqueTerms.slice(0, 1)) {
+            try {
+              const commonsQuery = `${term} ${category?.id === 'gaming' ? 'game' : ''}`.trim();
+              const res = await fetch(
+                `https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(commonsQuery)}&srnamespace=6&srlimit=3&format=json&origin=*`,
+                { signal: AbortSignal.timeout(6000) }
+              );
+              if (!res.ok) continue;
+              const data = await res.json();
+              for (const result of (data.query?.search || []).slice(0, 3)) {
+                try {
+                  const infoRes = await fetch(
+                    `https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(result.title)}&prop=imageinfo&iiprop=url|size&iiurlwidth=800&format=json&origin=*`,
+                    { signal: AbortSignal.timeout(6000) }
+                  );
+                  if (!infoRes.ok) continue;
+                  const infoData = await infoRes.json();
+                  const imgPage = Object.values(infoData.query?.pages || {})[0];
+                  const info = imgPage?.imageinfo?.[0];
+                  if (!info || info.width < 200 || info.height < 200) continue;
+                  allCandidates.push({ url: info.thumburl || info.url, score: scoreImageName(result.title), source: 'commons', label: `Commons: ${result.title}` });
+                } catch { continue; }
+              }
+            } catch {}
+          }
+
+          // ── PHASE 2: Deduplicate and download top candidates ──
+          const uniqueCandidates = [];
+          const seenUrls = new Set();
+          for (const c of allCandidates.sort((a, b) => b.score - a.score)) {
+            const urlKey = c.url.replace(/\/\d+px-/, '/X-');
+            if (!seenUrls.has(urlKey)) {
+              seenUrls.add(urlKey);
+              uniqueCandidates.push(c);
+            }
+          }
+
+          console.log(`[RefImage] 📊 Total: ${allCandidates.length}, unique: ${uniqueCandidates.length}`);
+          console.log('[RefImage] 📊 Top:', uniqueCandidates.slice(0, 8).map(c => `${c.label}(${c.score})`));
+
+          if (uniqueCandidates.length === 0) {
+            console.log('[RefImage] ⚠️ No candidates found');
+            return;
+          }
+
+          // Download top candidates (max 5 for Gemini verification)
+          const downloadedCandidates = [];
+          for (const candidate of uniqueCandidates.slice(0, 8)) {
+            try {
+              const imgResult = await fetchImageAsBase64(candidate.url);
+              if (imgResult) {
+                downloadedCandidates.push({ ...candidate, data: imgResult.data, mimeType: imgResult.mimeType });
+                console.log(`[RefImage] ⬇️ Downloaded: ${candidate.label} (${Math.round(imgResult.data.length / 1024)}KB)`);
+                if (downloadedCandidates.length >= 5) break;
+              }
+            } catch { continue; }
+          }
+
+          if (downloadedCandidates.length === 0) {
+            console.log('[RefImage] ⚠️ Failed to download any candidates');
+            return;
+          }
+
+          // ── PHASE 3: Gemini Visual Verification ──
+          if (downloadedCandidates.length >= 2) {
+            console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for verification...`);
+
+            const verifyParts = [
+              { text: `You are an image identification expert. I need to find the correct image of "${subject}"${contextPart ? ` from "${contextPart}"` : ''}.
+
+I have ${downloadedCandidates.length} candidate images below. Your job:
+1. Identify which image BEST depicts "${subject}" specifically (not a generic related image, not a different character/faction/item)
+2. The image should show the actual character/subject, not a map, logo, faction icon, or unrelated character
+
+Reply with ONLY a single number (1-${downloadedCandidates.length}) for the best match.
+If NONE of the images show "${subject}", reply with 0.` }
+            ];
+
+            for (let i = 0; i < downloadedCandidates.length; i++) {
+              verifyParts.push({ text: `\nImage ${i + 1}:` });
+              verifyParts.push({ inlineData: { mimeType: downloadedCandidates[i].mimeType, data: downloadedCandidates[i].data } });
+            }
+
+            try {
+              const verifyResponse = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{ parts: verifyParts }],
+                    generationConfig: { temperature: 0, maxOutputTokens: 10 }
+                  })
+                }
+              );
+
+              if (verifyResponse.ok) {
+                const verifyData = await verifyResponse.json();
+                const responseText = verifyData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+                const choice = parseInt(responseText);
+                console.log(`[RefImage] 🤖 Gemini chose: "${responseText}" → parsed: ${choice}`);
+
+                if (choice > 0 && choice <= downloadedCandidates.length) {
+                  const winner = downloadedCandidates[choice - 1];
+                  console.log(`[RefImage] ✅ Gemini verified: Image ${choice} — ${winner.label} (score:${winner.score})`);
+                  setResearchImageBase64(winner.data);
+                  setResearchImageMimeType(winner.mimeType);
+                  setResearchImageUrl(winner.url);
+                  return;
+                } else if (choice === 0) {
+                  console.log('[RefImage] ⚠️ Gemini says none match — using highest scored');
+                }
+              } else {
+                console.log('[RefImage] ⚠️ Gemini verification failed:', verifyResponse.status);
+              }
+            } catch (e) {
+              console.log('[RefImage] ❌ Gemini verification error:', e.message);
+            }
+          }
+
+          // Fallback: use the highest-scored downloaded candidate
+          const fallback = downloadedCandidates[0];
+          console.log(`[RefImage] 📌 Using fallback: ${fallback.label} (score:${fallback.score})`);
+          setResearchImageBase64(fallback.data);
+          setResearchImageMimeType(fallback.mimeType);
+          setResearchImageUrl(fallback.url);
+
+        } catch (e) {
+          console.log('[RefImage] ❌ Search failed:', e.message);
+        }
+      })();
+
+      // Step 2: Deep visual analysis combining search results + AI creativity
+      const analysisPayload = {
+        contents: [{
+          parts: [{
+            text: `Sen bir GÖRSEL TASARIM, İÇERİK ve YOUTUBE uzmanısın.
+"${topic}" hakkında YouTube thumbnail tasarımı için görsel analiz yapman gerekiyor.
 
 ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : ''}
 
-Lütfen şunları araştır ve Türkçe olarak detaylı yaz:
+📡 İNTERNETTEN BULUNAN GÜNCEL BİLGİLER (BU BİLGİLERİ KULLAN!):
+${searchResult}
 
-1. **KARAKTER/KONU KİMLİĞİ**:
-   - Bu kim/ne? (Oyun, film, karakter, boss, item vb.)
-   - Hangi evrene/franchise'a ait?
-   - Lore'daki önemi ve hikayesi
+${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
 
-2. **GÖRSEL KİMLİK** (ÇOK ÖNEMLİ):
-   - Karakteristik renk paleti (örn: Ba'lakor = koyu mor, siyah, demon kırmızısı)
-   - İkonik görsel elementler (kanatlar, silahlar, zırh, auralar)
-   - Ortam/atmosfer (karanlık, epik, korkunç, parlak vb.)
-   - Tipik arka plan elementleri
+⚠️ ÖNEMLİ: Yukarıdaki internet araştırması sonuçlarını TEMEL AL.
+"${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
 
-3. **DUYGUSAL TON**:
-   - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem)
-   - Oyuncu bu konuyu görünce ne hissetmeli?
+Lütfen Türkçe olarak çok detaylı yaz:
 
-4. **THUMBNAIL ÖNERİLERİ**:
-   - En iyi kompozisyon önerisi
-   - Kullanılması gereken efektler (ışık, parçacık, sis vb.)
+⚡ 0. **İÇERİK KATEGORİSİ** (İLK ÖNCE BUNU BELİRLE!):
+İnternet araştırması sonuçlarına göre "${topic}" hangi kategoriye ait?
+Cevabını MUTLAKA şu formatta yaz (ilk satır olmalı):
+DETECTED_CATEGORY: [gaming/education/vlog/food/travel/tech/music/fitness/historical/general]
+
+Karar verirken:
+- gaming: Video oyunu, oyun karakteri, oyun franchise'ı, oyun modu, oyun içi içerik, esport
+- education: Eğitim, bilim, tarih belgeseli, nasıl yapılır, ders, kişisel gelişim, din/maneviyat
+- historical: Tarihsel dönem, imparatorluk, savaş, fetih, antik medeniyet (oyun DEĞİL, gerçek tarih)
+- vlog: Günlük yaşam, reaction, challenge, podcast, sohbet
+- food: Yemek, tarif, restoran, lezzet
+- travel: Seyahat, gezi, ülke/şehir turu, doğa
+- tech: Teknoloji, telefon, bilgisayar, yazılım, AI, ürün inceleme
+- music: Müzik, şarkı, konser, enstrüman, dans
+- fitness: Spor, egzersiz, diyet, vücut geliştirme
+- general: Yukarıdakilerin hiçbirine uymuyorsa
+
+⚠️ ÖNEMLİ: Sözlük anlamına BAKMA! İnternet sonuçlarına bak. Örneğin "Taurox" sözlükte boğa ama internette Warhammer oyun karakteri → gaming!
+
+1. **KONU KİMLİĞİ**:
+   - Bu ne? Tam tanımı (Oyun, ürün, kavram, mekan, kişi, olay, teknik, yemek, müzik vb.)
+   - Hangi alana/sektöre ait? Popülerliği ne durumda?
+   - Hedef kitle kimler? Fanlar/takipçiler için anlamı
+   - Güncellik: Trend mi? Yeni mi çıktı? Tartışmalı mı?
+
+2. **GÖRSEL KİMLİK** (ÇOK ÖNEMLİ - DETAYLI YAZILMALI):
+   - Karakteristik renk paleti (HEX kodlarıyla - örn: #4a0080, #1a1a2e, #8b0000)
+   - İkonik görsel elementler (logolar, semboller, ürünler, mekanlar, kıyafetler)
+   - Ortam/atmosfer (karanlık, epik, sıcak, profesyonel, enerjik, huzurlu, neon vb.)
+   - Tipik arka plan elementleri (stüdyo, doğa, şehir, mutfak, sahne, gym vb.)
+   - Işık tipi ve yönü (doğal, stüdyo, neon, altın saat, dramatik, yumuşak vb.)
+   - Parçacık/efekt önerileri (bokeh, lens flare, duman, konfeti, ışık sızması vb.)
+
+2b. **OYUN/FRANCHİSE GÖRSEL KİMLİĞİ** (OYUN veya FRANCHİSE İÇERİĞİ İSE ÇOK DETAYLI DOLDUR, DEĞİLSE GEÇ):
+   Bu konu bir VIDEO OYUNU, oyun franchise'ı, oyun karakteri veya oyun dünyasıyla ilgiliyse:
+
+   - **OYUN ART STYLE**: Bu oyunun görsel stili nedir? (grimdark, cel-shaded, realistic, stylized, pixel art, anime vb.)
+     Oyunun genel renk paleti ve atmosferi nedir? (karanlık ve kasvetli, renkli ve canlı, pastel vb.)
+
+   - **KARAKTERLERİN GÖRSEL DETAYLARI** (ÇOK KRİTİK - EN ÇOK HATA YAPILAN KISIM):
+     * Thumbnail'da görünmesi muhtemel ANA karakter(ler) kimler?
+
+     * ⚠️⚠️⚠️ İLK ÖNCE BELİRLE - CHARACTER_TYPE: human / non-human / monster
+       - Bu karakter İNSAN mı? (Geralt, Master Chief, Mario vb.)
+       - Bu karakter İNSAN-DIŞI mı? (Minotaur, ejderha, uzaylı, robot, canavar, demon vb.)
+       - Bu ÇOK KRİTİK çünkü AI görsel modeli "bull" deyince GERÇEK bir boğa çizer.
+         Oysa Taurox bir Minotaur'dur = İNSAN VÜCUTLU + BOĞA BAŞLI DEV yaratık. Gerçek bir boğa DEĞİL!
+       - HAYVAN İSMİ KULLANMA! Yaratığın tam anatomik tanımını yaz:
+         YANLIŞ: "Taurox is a brass bull" (AI gerçek boğa çizer!)
+         DOĞRU: "Taurox is a massive Minotaur - stands upright on two legs like a human, 3 meters tall, humanoid muscular body, bull-shaped head with huge curved horns, entire body covered in living brass metal plates"
+         YANLIŞ: "Deathwing is a dragon" (AI generic ejderha çizer!)
+         DOĞRU: "Deathwing is a colossal black dragon with molten lava glowing between cracked armor plates bolted onto his body, massive jaw with molten orange glow, torn wings with metal reinforcements"
+
+     * Her karakter için ÇOK DETAYLI fiziksel tanım:
+       - Tür: İnsan mı, humanoid mi, yaratık mı, robot mu? İki ayak üzerinde mi, dört ayak mı?
+       - Boyut: Normal insan boyutu? Dev mi? Küçük mü? (metre cinsinden yaklaşık boy)
+       - Baş/Yüz: İnsan yüzü mü? Hayvan başı mı? Miğfer mi? Maske mi? Detaylı tanımla
+       - Vücut: İnsan anatomisi mi? Kas yapısı, özel uzuvlar (kanatlar, kuyruk, ekstra kollar?)
+       - Deri/Kaplama: Normal deri? Pullu? Metal? Taş? Renk ve doku
+       - Gözler: Renk, parlaklık, sayı, özel özellik (parlayan, ateşli, boş vb.)
+     * Her karakter için KIYAFET/ZIRH detayları:
+       - Zırh tipi ve rengi (power armor, plate armor, robe, casual vb.)
+       - Zırh üzerindeki semboller, işaretler, renkler
+       - Başlık/miğfer (varsa detaylı tanımla)
+       - Silah(lar): Hangi silahı tutuyor? (kılıç tipi, tüfek modeli, büyü asası vb.) - SİLAHIN GÖRSEL DETAYI
+     * ⚠️ ÖNEMLİ: Genel "bir savaşçı" veya "bir canavar" DEĞİL, O OYUNUN O KARAKTERİNE ÖZGÜ detayları yaz!
+       Örn: "Geralt of Rivia" → "CHARACTER_TYPE: human. Beyaz uzun saç, sarı kedi gözleri, sol yanakta yara izi, siyah zırh üzerine gümüş kurt madalyonu"
+       Örn: "Space Marine" → "CHARACTER_TYPE: human (in power armor). Mavi power armor, sol omuzda beyaz Omega sembolü, kırmızı göz lensleri, gold trim"
+       Örn: "Taurox" → "CHARACTER_TYPE: non-human (Minotaur). Dev boyutlu (3m), iki ayak üzerinde dik duran humanoid vücut, boğa başı, devasa kıvrık boynuzlar, tüm vücut canlı pirinç/bronz metal plakalarla kaplı, kızıl parlayan gözler, Khorne runik sembolleri kazınmış"
+
+   - **FACTION/GRUP DETAYLARI**:
+     * Hangi faction/takım/grup? (Space Marines Ultramarines, Horde, Brotherhood of Steel vb.)
+     * Faction renkleri: Ana renk + ikincil renk + aksanlar (HEX kodlarıyla)
+     * Faction sembolü/logosu: Tam görsel tanım (şekil, renk, nereye yerleştirilir)
+     * Faction'a özgü mimari/teknoloji/araçlar
+
+   - **OYUN LOGOSU ve İKONİK ELEMENTLER**:
+     * Oyunun logosunun görsel tanımı (font stili, renk, efektler)
+     * Oyunun en ikonik görsel elementleri (Warhammer: Aquila kartalı, Elden Ring: Erdtree, Dark Souls: bonfire vb.)
+     * Oyunun signature efektleri (Warhammer: warp energy, Elden Ring: golden glow, Cyberpunk: glitch efekti)
+
+   - **SAHNE/ENVIRONMENT**:
+     * Bu oyunun dünyasında tipik ortamlar nasıl görünür?
+     * Mimari stil (gothic, futuristic, fantasy castle, wasteland vb.)
+     * Gökyüzü/atmosfer (karanlık bulutlar, çift güneş, yeşil warp fırtınası, kırmızı gökyüzü vb.)
+     * Zemin/arazi tipi
+
+3. **TARİHSEL DOĞRULUK ANALİZİ** (BU BÖLÜM HER ZAMAN DOLDURULMALI):
+   Bu konu tarihsel bir dönem, imparatorluk, medeniyet, savaş veya tarihsel bir oyunla (Age of Empires, Civilization, Total War, Crusader Kings, Europa Universalis, Mount & Blade, Kingdom Come, Assassin's Creed, Ghost of Tsushima, For Honor vb.) İLGİLİYSE aşağıdakileri DETAYLI doldur.
+   Tarihsel içerik DEĞİLSE "Bu konu tarihsel değildir" yaz ve geç.
+
+   - **TARİHSEL DÖNEM**: Tam tarih aralığı (yıllar). Örn: "Osmanlı klasik dönemi: 1453-1600"
+
+   - **SAHNE MANTIĞI ve OLAY BAĞLAMI** (ÇOK KRİTİK!):
+     Bu bölüm thumbnail'ın ANLAMLI ve MANTIKLI olması için en önemli bölümdür.
+     * **Olay nedir?** Bu tarihsel an/savaş/fetih tam olarak neyi anlatıyor?
+     * **Kimin bakış açısı?** Thumbnail kimin perspektifinden? (Saldıran mı, savunan mı, izleyen mi?)
+     * **Sahne nerede geçiyor?** O an o mekan nasıl görünüyor?
+       - ÖNEMLİ: Bir şehrin FETHİNDEN/KUŞATMASINDAN bahsediliyorsa, o şehir HENÜZ fethedilmemiş haliyle gösterilmeli!
+       - Örnek: İstanbul'un Fethi 1453 → Şehirde Ayasofya bir BİZANS KİLİSESİ (kubbe + haç), CAMİ DEĞİL! Minareler YOK, hilal YOK. Çünkü henüz fethedilmedi.
+       - Örnek: Roma'nın yıkılışı → Roma tapınakları ve pagan sembolleri, Katolik katedralleri değil
+       - Örnek: Kudüs kuşatması (Haçlı Seferleri) → Kudüs o an kimin elinde? Ona göre semboller değişir
+     * **İki taraf kimler?** Savaş/çatışma varsa her iki tarafın görsel kimliğini ayrı ayrı tanımla:
+       - SALDIRAN taraf: bayrak, zırh, silah, renk paleti
+       - SAVUNAN taraf: bayrak, zırh, silah, renk paleti, savunma yapıları (surlar, kuleler)
+     * **Zamanlama detayı**: Olay öncesi mi, olay anı mı, sonrası mı?
+       - ÖNCE: Şehir/yer henüz eski sahiplerinin kontrolünde
+       - OLAY ANI: Kuşatma/savaş devam ediyor, her iki tarafın elementleri görünür
+       - SONRA: Yeni sahiplerin kontrolü ele geçirmiş hali
+
+   - **BAYRAKLAR ve SANCAKLAR** (ÇOK KRİTİK - EN SIK YAPILAN HATA!):
+     * O dönemde kullanılan GERÇEK bayrak/sancak tasarımı nedir? (Renk, sembol, şekil, detay)
+     * ⚠️⚠️⚠️ KESİNLİKLE modern ülke bayrağı kullanılMAMALI! Bu EN SIK YAPILAN HATADIR!
+     * ⚠️ ÖZELLIKLE OSMANLI İÇİN: Osmanlı bayrağı/sancağı MODERN TÜRKİYE BAYRAĞI DEĞİLDİR!
+       - YANLIŞ: 🇹🇷 Kırmızı zemin + beyaz hilal + beyaz 5 köşeli yıldız (Bu MODERN Türkiye bayrağıdır, 1844 sonrası!)
+       - DOĞRU (Klasik Osmanlı): Kırmızı/bordo sancak üzerinde 3 hilal (üç hilalli sancak) VEYA altın/sarı hilal ve 8 köşeli yıldız
+       - DOĞRU (Erken Osmanlı): Düz kırmızı/bordo sancak, bazen Zülfikar kılıcı motifi, bazen tuğra
+       - DOĞRU (Fetih dönemi 1453): Kırmızı sancak, altın renkli hilal ve 8 köşeli yıldız (8-pointed, NOT 5-pointed!)
+       - ÖNEMLİ: Hilal ve yıldız varsa, yıldız MUTLAKA 8 KÖŞELI olmalı (5 köşeli MODERN semboldür!)
+       - Osmanlı sancağının rengi genelde KOYU KIRMIZI/BORDO, beyaz değil
+     * DİĞER TARİHSEL BAYRAKLAR İÇİN DE: Her devletin kendi dönemi için doğru bayrağını araştır
+     * O dönemin sancağını ÇOK detaylı tanımla: zemin rengi, sembol şekli, sembol rengi, yıldız köşe sayısı, ek detaylar
+     * Eğer iki taraf varsa HER İKİ TARAFIN bayraklarını ayrı ayrı tanımla
+     * ⚠️ BAYRAK/SANCAK AÇIKLAMASINDA "Turkish flag", "Turkey flag" KELİMELERİNİ KULLANMA - bunlar AI modelinin modern bayrak çizmesine sebep olur!
+
+   - **ZIRHLAR ve KIYAFETLER**:
+     * O dönemin askeri sınıfları kimlerdi ve ne giyerlerdi?
+     * Zırh tipi, başlık/miğfer, pelerin/kaftan, ayakkabı detayları
+     * Komutanlar vs sıradan askerler arasındaki kıyafet farkları
+     * Eğer iki taraf varsa HER İKİ TARAFIN kıyafetlerini ayrı ayrı tanımla
+
+   - **SİLAHLAR ve SAVAŞ TEKNOLOJİSİ**:
+     * O dönemde kullanılan başlıca silahlar (yakın dövüş, uzak menzil, kuşatma)
+     * Barut var mıydı? Topçuluk? Ok/yay mı arbalet mi tüfek mi?
+
+   - **MİMARİ ve ÇEVRE**:
+     * O dönemin ve medeniyetin mimari stili (kubbe, kemer, sütun, gotik, pagoda vb.)
+     * ⚠️ ÖNEMLİ: Bir mekan FETHEDILMEDEN/EL DEĞIŞTIRMEDEN ÖNCEKİ haliyle gösterilmeli!
+       - Fetih ÖNCESİ: Eski sahiplerin mimari stili, dini yapıları, sembolleri
+       - Fetih SONRASI: Yeni sahiplerin ekledikleri (minare, çan kulesi vb.)
+     * Coğrafi ortam (çöl, step, orman, dağ, kıyı, boğaz vb.)
+
+   - **SEMBOLLER ve ARMALAR**:
+     * İmparatorluk/krallık arması, mühür, tuğra veya amblem
+     * Dini/kültürel semboller (varsa) - ama DÖNEME UYGUN olanlar
+
+   - **KULLANILMAMASI GEREKENLER** (Anakronizm ve mantık hatası listesi):
+     * Bu dönemde henüz var OLMAYAN şeylerin listesi
+     * Bu medeniyetle KARIŞTIRILMAMASI gereken başka medeniyetlerin elementleri
+     * OLAY MANTIĞINA AYKIRI şeyler:
+       - Örn: "İstanbul fethi sahnesinde CAMİ gösterilmez çünkü henüz kilise"
+       - Örn: "Romalılar Hristiyanlık öncesi dönemde haç taşımaz"
+       - Örn: "Vikinglerin fethetmediği bir İngiliz şehrinde Viking sembolleri olmaz"
+
+4. **DUYGUSAL TON ve ATMOSFER**:
+   - Hangi duyguyu uyandırmalı? (Korku, heyecan, güç, gizem, merak, nostalji, güven, iştah, hayranlık, eğlence)
+   - İzleyici bu thumbnail'ı görünce ne hissetmeli?
+   - Renk psikolojisi önerileri (sıcak=güven/iştah, soğuk=profesyonellik, neon=enerji, vs.)
+
+5. **THUMBNAIL ÖNERİLERİ**:
+   - En iyi kompozisyon önerisi (kişi nerede durmalı, arka plan nasıl olmalı)
+   - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare, bokeh, duman vb.)
+   - Kostüm/kıyafet önerisi (kişi ne giymeli - İÇERİĞE UYGUN olmalı!)
    - Kaçınılması gereken hatalar
-   - Örnek metin önerileri (2-3 kelime)
+   - Örnek yazı önerileri (2-3 kelime, Türkçe ve İngilizce seçenekler)
 
-5. **REFERANS STİLİ**:
-   - Bu konu için en uygun görsel stil (sinematik, çizgi roman, gerçekçi vb.)
-   - Benzer başarılı thumbnail'lar nasıl görünür?
+6. **REFERANS STİLİ**:
+   - Bu konu için en uygun görsel stil (sinematik, profesyonel, enerjik, sıcak, minimalist, neon, dark fantasy vb.)
+   - Benzer başarılı YouTube thumbnail'ların özellikleri
+   - ÖNERİLEN ARCHETYPE: Bu konu için en uygun 2-3 archetype ID'si öner (reaction_face, expert_authority, food_desire, travel_wonder, transformation, breaking_news, music_energy, challenge_fun, mystery_reveal, shocked_threat, power_fantasy, scale_contrast, almost_fail, mystery_object, before_after)
 
-Bir gamer gibi düşün, detaylı ve tutkulu yaz. Bu bilgiler doğrudan thumbnail tasarımında kullanılacak.`
+Bir YouTube uzmanı ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
+Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.
+⚠️ TARİHSEL İÇERİKLERDE: Modern bayrak/sembol kullanmak, yanlış dönem kıyafeti giydirmek veya anakronistik teknoloji göstermek EN BÜYÜK HATADIR!
+⚠️⚠️ BAYRAK ÖZELLİKLE KRİTİK: Osmanlı bayrağı/sancağı ≠ Modern Türkiye bayrağı! Osmanlı sancağı = koyu kırmızı/bordo + altın hilal + altın 8 köşeli yıldız. Modern Türkiye bayrağı (parlak kırmızı + beyaz hilal + beyaz 5 köşeli yıldız) 1844 SONRASI oluşmuştur!`
           }]
         }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1500
+          maxOutputTokens: 4000
         }
       };
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      const analysisResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(analysisPayload)
         }
       );
 
-      const data = await response.json();
-      const researchText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const analysisData = await analysisResponse.json();
+      const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (researchText) {
-        setTopicResearch(researchText);
-        // Research is stored separately and used in generation prompt
-        // topicDescription remains available for user's additional notes
+        // Parse AI-determined category from research response
+        const categoryMatch = researchText.match(/DETECTED_CATEGORY:\s*(gaming|education|vlog|food|travel|tech|music|fitness|historical|general)/i);
+        const aiDetectedCategoryId = categoryMatch ? categoryMatch[1].toLowerCase() : null;
+
+        // AI category overrides keyword-based detection (AI has internet context!)
+        if (aiDetectedCategoryId && aiDetectedCategoryId !== 'general') {
+          const aiCategory = aiDetectedCategoryId === 'historical'
+            ? { ...GENERAL_CATEGORY, id: 'historical', visualMood: 'Cinematic, epic, historically authentic, dramatic lighting' }
+            : CONTENT_CATEGORIES[aiDetectedCategoryId];
+          if (aiCategory) {
+            setDetectedCategory(aiCategory);
+          }
+        }
+
+        // Determine content type from AI classification (primary) or keyword fallback
+        const effectiveCategoryId = aiDetectedCategoryId || category.id;
+        const isHistorical = effectiveCategoryId === 'historical';
+        const isGaming = effectiveCategoryId === 'gaming';
+
+        const scenePromptBase = `You are a SCENE DIRECTOR. Read the research below and write a CONCRETE, DETAILED scene description for a YouTube thumbnail.
+
+RESEARCH:
+${researchText}
+
+TOPIC: "${topic}"
+${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
+
+Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
+
+        const scenePromptGeneral = `${scenePromptBase}
+
+FORMAT (write each section completely):
+
+**SCENE_DESCRIPTION**: Describe the background environment in vivid detail. Include: setting, lighting, colors, atmosphere, key objects, mood. Be very specific - e.g. "A dark, rain-soaked cyberpunk alley with neon signs reflecting off wet pavement, holographic advertisements flickering overhead, steam rising from grates" NOT just "a city street".
+
+**COLOR_PALETTE**: List 3-5 dominant colors for the scene (e.g., "deep crimson, electric blue, dark charcoal, golden amber")
+
+**PERSON_COSTUME**: What should the person in the thumbnail wear? Match the theme. (e.g., "futuristic tactical suit with glowing blue accents" or "casual gaming hoodie with headphones around neck")
+
+**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at subject, dramatic perspective, wide-angle lens feel")
+
+**KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
+
+Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
+
+        const scenePromptGaming = `${scenePromptBase}
+
+IMPORTANT: This is a VIDEO GAME topic. The research above contains detailed character and faction information.
+You MUST use that information to create an AUTHENTIC game-accurate scene. DO NOT invent generic fantasy/sci-fi visuals.
+
+FORMAT (write each section completely):
+
+**SCENE_DESCRIPTION**: Describe the game world environment in vivid detail. Use the ACTUAL game's environment style from the research.
+Include: specific location from the game, lighting style matching the game's aesthetic, atmosphere, iconic game elements in the background.
+e.g. for Warhammer 40K: "A ruined cathedral-fortress on a war-torn hive world, gothic architecture with massive stone pillars, skull motifs carved into every surface, the sky torn apart by warp storms glowing sickly purple-green, Imperial Aquila banners hanging torn from the walls, distant explosions lighting up the smog-filled horizon"
+NOT just: "a dark sci-fi background"
+
+**COLOR_PALETTE**: Use the EXACT colors from the game/faction. List 4-6 colors with purpose.
+e.g. "Ultramarine blue (#0A2B6E) for armor, gold (#C5A028) for trim and aquila, dark red (#5C0A0A) for eye lenses and wax seals, black (#1A1A1A) for joints and undersuit, bone white (#E8DCC8) for skull decorations"
+
+**CHARACTER_VISUAL**: EXTREMELY detailed description of the game character that will appear in the thumbnail.
+This is the MOST IMPORTANT section.
+
+FIRST, state: CHARACTER_TYPE: human / non-human / monster
+This changes EVERYTHING about how the character is drawn!
+
+For NON-HUMAN characters (monsters, creatures, demons, minotaurs, dragons, aliens, robots):
+⚠️⚠️⚠️ DO NOT use simple animal names! AI image models will draw REAL animals!
+WRONG: "Taurox is a brass bull" → AI draws a literal bull (4 legs, animal)
+RIGHT: "Taurox is a massive bipedal Minotaur creature standing upright on two legs, 3 meters tall, humanoid muscular torso and arms, bull-shaped head with enormous curved horns, entire body surface covered in fused brass metal plates, glowing red eyes"
+
+Describe the EXACT anatomy:
+- How many legs? Stands upright like human or on all fours?
+- Body shape: humanoid? beast? hybrid? Size compared to a human?
+- Head: what shape? Horns? Tusks? Eyes (how many, color, glow)?
+- Special features: wings, tail, extra arms, tentacles?
+- Surface: skin, scales, metal, stone, fur? Color and texture?
+- What makes it DIFFERENT from the real-world animal it resembles?
+
+For HUMAN characters:
+- Face: skin tone, eye color/glow, facial hair, scars, markings, expression
+- Hair: color, length, style, special features
+- Armor/Clothing: EXACT type, color, material, every distinctive marking/symbol
+- Helmet (if any): on head or held? Exact design
+- Weapon(s): EXACT weapon name and visual description, how they hold it
+- Pose: what pose for the thumbnail?
+⚠️ This must be the SPECIFIC game character, not a generic warrior/soldier!
+
+**THUMBNAIL_COMPOSITION**: How should the thumbnail be composed?
+If CHARACTER_TYPE is non-human:
+- The GAME CHARACTER (creature/monster) should be the DOMINANT visual element (50-70% of frame)
+- If a person (YouTuber) photo is uploaded, place the person SMALLER in the foreground corner (20-30% of frame), looking up at or reacting to the creature
+- The creature should be BEHIND and ABOVE the person, towering over them
+- Example: "Taurox the massive brass Minotaur fills the background, roaring with axes raised. The person is in the bottom-left corner, smaller, looking back in awe/fear"
+
+If CHARACTER_TYPE is human:
+- The person can BE dressed as the character (face stays same, body gets character's armor/outfit)
+- OR the game character can appear alongside the person
+- Person takes up 40-50% of frame as the main focal point
+
+**FACTION_ELEMENTS**: Faction-specific visual details to include in the scene:
+- Faction symbol/logo: exact shape, color, where it appears (on shoulder pad, banner, etc.)
+- Faction-specific objects: banners, standards, vehicles, structures
+- Faction art style: clean vs battle-damaged, ornate vs utilitarian
+
+**GAME_IDENTITY**: Elements that make this INSTANTLY recognizable as THIS specific game:
+- Game's signature visual motifs (skulls for 40K, runes for Elden Ring, etc.)
+- Game's art style description (grimdark, high fantasy, cel-shaded, etc.)
+- Iconic HUD/UI elements that could subtly appear (optional)
+- Game logo style description (for text overlay inspiration)
+
+**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at the character, dramatic perspective, the character fills 60% of the frame with the game world behind")
+
+**KEY_EFFECTS**: Game-appropriate visual effects:
+- Particle effects from the game (magic particles, sparks, embers, energy, warp lightning)
+- Lighting effects (glowing weapons, eye glow, energy auras)
+- Atmospheric effects (fog, smoke, dust, rain) matching the game world
+
+Keep each section 3-5 sentences. Be SPECIFIC to THIS game. Be COMPLETE - finish every sentence.`;
+
+        const scenePromptHistorical = `${scenePromptBase}
+
+CRITICAL: AI image models draw MODERN versions of well-known cities when they hear city names.
+e.g., "Istanbul" → draws modern minarets. "Rome" → draws modern Italy.
+DO NOT use modern city/country names! Describe architecture and visuals directly instead.
+
+FORMAT (write each section completely, in English):
+
+**SCENE_DESCRIPTION**: Describe the scene using ONLY architectural and visual terms, NO modern city names.
+WRONG: "Istanbul with Byzantine architecture" (model draws modern Istanbul!)
+RIGHT: "Ancient walled city, massive domed basilica with Christian crosses, Theodosian double walls, Byzantine eagle banners"
+
+**ATTACKER_DESCRIPTION**: (If attackers present) Describe banners, armor, weapons in detail.
+⚠️ Ottoman banner = DARK CRIMSON/BURGUNDY + GOLDEN crescent + GOLDEN 8-POINTED star
+NEVER use: "Turkish flag", "flag of Turkey", white crescent, 5-pointed star, bright red
+
+**DEFENDER_DESCRIPTION**: (If defenders present) Describe their armor, shields, banners.
+
+**CAMERA_POSITION**: Where is the camera? What angle?
+
+**PERSON_COSTUME**: What should the thumbnail person wear? Match the era.
+
+**ABSOLUTELY_NOT**: Things that MUST NOT appear. For Ottoman scenes ALWAYS include:
+"NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
+
+Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
+
+        const scenePayload = {
+          contents: [{
+            parts: [{
+              text: isHistorical ? scenePromptHistorical : isGaming ? scenePromptGaming : scenePromptGeneral
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 8192
+          }
+        };
+
+        const sceneResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(scenePayload)
+          }
+        );
+
+        const sceneData = await sceneResponse.json();
+        let sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
+        const finishReason = sceneData.candidates?.[0]?.finishReason;
+
+        // If output was truncated (MAX_TOKENS), log warning but still use what we got
+        if (finishReason === 'MAX_TOKENS' && sceneDescription) {
+          console.warn('Scene direction was truncated. Using partial result.');
+        }
+
+        // Combine research + scene description
+        const combinedResearch = sceneDescription
+          ? `${researchText}\n\n🎬 READY-TO-USE SCENE DIRECTION:\n${sceneDescription}`
+          : researchText;
+
+        setTopicResearch(combinedResearch);
       } else {
         setTopicResearch('Araştırma yapılamadı.');
       }
     } catch (err) {
       setTopicResearch('Araştırma hatası: ' + err.message);
     } finally {
+      // Wait for background image search to complete before marking research done
+      if (imageSearchPromise) {
+        console.log('[Research] ⏳ Waiting for reference image search to complete...');
+        await imageSearchPromise;
+        console.log('[Research] ✅ Reference image search finished, researchImageBase64 set:', !!researchImageBase64);
+      }
       setIsResearchingTopic(false);
     }
   };
 
   const generateThumbnail = async () => {
     if (!apiKey) {
-      setError("Lütfen Gemini API Key'inizi girin.");
+      setError(t('enterApiKey'));
       return;
     }
-    if (!base64Image || !topic) {
-      setError("Lütfen bir fotoğraf yükleyin ve video konusunu belirtin.");
+    if (!topic) {
+      setError(t('uploadPhotoAndTopic'));
+      return;
+    }
+
+    // Günlük kullanım limiti kontrolü
+    if (!canGenerate(currentPlan)) {
+      const remaining = getRemainingGenerations(currentPlan);
+      setError(t('dailyLimitReached'));
       return;
     }
 
@@ -1251,132 +2378,74 @@ Bir gamer gibi düşün, detaylı ve tutkulu yaz. Bu bilgiler doğrudan thumbnai
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
     try {
-      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      // Smart content detection for parameter tuning
+      const contentCategory = detectedCategory || detectContentCategory(topic, topicDescription);
 
-⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
-- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
-- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
-- ❌ NEVER create vertical/portrait images
-- ❌ NEVER create square images
-- ✅ ONLY create WIDE horizontal images like a movie poster or YouTube thumbnail
-- If you generate a portrait image, the task has FAILED
+      const prompt = `Create a cinematic YouTube thumbnail for "${topic}".
+${topicDescription ? `Context: ${topicDescription}` : ''}
 
-${topicDescription ? `
-TOPIC/CONCEPT CONTEXT (IMPORTANT - USE THIS INFO):
-The user has provided the following description about "${topic}":
-${topicDescription}
-
-Use this information to accurately represent the game/topic's visual style, atmosphere, characters, and world.
-` : ''}
-
-${topicResearch ? `
-🎮 GAMER KNOWLEDGE - DETAILED RESEARCH (VERY IMPORTANT - FOLLOW THIS):
-An expert gamer has researched "${topic}" and provided the following detailed information.
-YOU MUST USE THIS INFORMATION to create an authentic, lore-accurate thumbnail:
-
+${topicResearch ? `VISUAL RESEARCH (follow this closely):
 ${topicResearch}
 
-⚠️ CRITICAL: Apply the visual identity, color palette, atmosphere, and style described above.
-This is not generic - it's specific to "${topic}" and must look authentic to fans of this content.
+Follow the SCENE DIRECTION sections above precisely:
+- Use SCENE_DESCRIPTION for background, COLOR_PALETTE for colors, CHARACTER_VISUAL for character details.
+- If CHARACTER_TYPE is "non-human": Draw the creature as the DOMINANT element (50-70% of frame) using its FULL anatomical description. Never simplify to animal names (e.g. "bipedal Minotaur with brass plates" not just "bull"). If a person photo is uploaded, place them smaller in a corner reacting to the creature.
+- If CHARACTER_TYPE is "human": Dress the uploaded person in the character's exact armor/outfit.
+- For historical content: Describe architecture directly, avoid modern city names. Use period-accurate banners and symbols.
 ` : ''}
-
-${conceptAnalysis ? `
-🎨 REFERENCE STYLE ANALYSIS (Apply this style to the thumbnail):
-The user provided a reference/concept image. Here's the AI analysis of that reference:
+${conceptAnalysis ? `REFERENCE STYLE (match this exactly):
 ${conceptAnalysis}
-
-IMPORTANT: Use this style analysis to match the visual style, colors, composition, and atmosphere of the reference image.
-But you MUST include the person from the provided photo - the reference is only for STYLE, not for replacing the person.
+The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
-
-${photoAnalysis ? `
-👤 PHOTO SUBJECT ANALYSIS:
-Here's the AI analysis of the person's photo:
-${photoAnalysis}
-
-Use this information to better integrate the person into the scene and choose appropriate expressions/poses.
+${researchImageBase64 ? `TOPIC REFERENCE IMAGE: A reference image of "${topic}" is attached. Study this image carefully - it shows what the topic ACTUALLY looks like. Use this as your primary visual reference for accuracy (colors, shapes, style, distinctive features).
 ` : ''}
-
-${selectedArchetype ? `
-🎯 HIGH-CTR ARCHETYPE (IMPORTANT - USE THIS PATTERN):
-${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
-This archetype is proven to increase click-through rates. Apply this pattern to the thumbnail composition.
+${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
-
-⚠️ CRITICAL - PERSON SIZE AND POSITIONING (LIKE PROFESSIONAL YOUTUBE THUMBNAILS):
-The provided photo shows the person who must appear LARGE in the thumbnail.
-- THE FACE MUST BE BIG: The person's face should take up 40-50% of the frame HEIGHT
-- Position the person CENTERED or slightly below center in the frame
-- The face is the MAIN FOCAL POINT - everything else is secondary
-- SEAMLESSLY BLEND the person into the scene with matching lighting and color grading
-- Add dramatic colored rim lighting/glow on the person (green, red, blue, orange based on theme)
-- The person should look like they BELONG in this world
-
-IMPORTANT - COSTUME/CLOTHING TRANSFORMATION:
-- TRANSFORM the person's clothing to match the scene's theme and universe
-- Do NOT keep their original casual clothes (jeans, t-shirt, etc.) in fantasy/sci-fi scenes
-- Examples of costume adaptation:
-  * Fantasy theme → Medieval armor, robes, cloaks, warrior gear
-  * Sci-fi/Space → Futuristic suit, space armor, tech gear
-  * Horror → Torn/dirty clothes, blood stains, survival gear
-  * Gaming → Character-appropriate outfit matching the game's aesthetic
-- Face and facial features must remain unchanged, only transform the body/clothing
-
-⚠️ CRITICAL - PERSON FRAMING:
-- The person's ENTIRE HEAD and FACE must be FULLY VISIBLE - NEVER crop the top of the head
-- Show from chest-up or shoulders-up so the face is LARGE
-- Leave adequate space above the head (headroom)
-- The face should fill a significant portion of the frame
-- Do NOT make the person too small - they should DOMINATE the thumbnail
-
-${overlayText ? `
-TEXT OVERLAY: "${overlayText}"
-- Place text at the BOTTOM of the image (bottom 20-25% of frame)
-- Text must be VERY LARGE and BOLD - easily readable at small sizes
-- Use thick black stroke/outline (3-5px) for readability
-- Add strong glow effect in the scene's dominant color (green, red, blue, etc.)
-- Text can span the full width of the image
-- NEVER put text over the person's face
-- Avoid bottom-right corner (YouTube timestamp area)
-
-⚠️ CRITICAL - TEXT COLOR HARMONY:
-The text color MUST harmonize with the scene. Follow these rules:
-1. ANALYZE the scene's dominant colors FIRST
-2. Choose text color that CONTRASTS but COMPLEMENTS the background
-3. If scene is dark/cold → Use warm bright text (white, yellow, gold)
-4. If scene is warm/red → Use cool accent (white with blue glow)
-5. The text GLOW/OUTLINE should use a color FROM the scene
-6. Never use a text color that blends into the background
-7. Test: Would this text be readable at 120px thumbnail size?
-` : `
-⚠️ NO TEXT OVERLAY - This thumbnail should have NO text on it.
-- Focus entirely on the visual composition
-- Let the person and scene tell the story
-- Clean, text-free thumbnail
+${selectedArchetype ? `COMPOSITION PATTERN: ${CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.prompt || ''}
+` : ''}
+${base64Image ? `PERSON PHOTO UPLOADED:
+- Blend the person seamlessly into the scene with matching lighting and dramatic rim glow.
+- Face must remain unchanged, fully visible, never cropped. Leave headroom above.
+- For non-game content: Face should be large (40-50% of frame height), centered.
+- For game content with non-human CHARACTER_TYPE: Person stays human, appears smaller in corner reacting to the game creature.
+- For game content with human CHARACTER_TYPE: Transform clothing to match the character's exact armor/outfit from research.
+` : `No person photo provided. Create a compelling scene from scratch based on the topic.
+${topicResearch ? 'Follow CHARACTER_VISUAL and THUMBNAIL_COMPOSITION from research for character appearance and layout.' : ''}
 `}
+${overlayText ? `TEXT: "${overlayText}" - Place at bottom, very large and bold, thick black outline, glow effect in scene's dominant color. Never over the face. Avoid bottom-right corner.
+` : `NO TEXT on this image. Zero letters, words, numbers, or symbols anywhere. The user will add text later.
+`}
+Style: ${selectedTypo.prompt}. Mood: ${contentCategory.visualMood}.
+Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture. Must look like a professional YouTube thumbnail, not generic AI art.
+${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
-VISUAL STYLE: ${selectedTypo.prompt}
-
-SCENE COMPOSITION:
-- Build an epic, atmospheric world for "${topic}"
-- Use volumetric lighting, particles, fog/mist
-- High contrast, vibrant colors that pop at small sizes
-- Cinematic quality, NOT "AI plastic" look
-- Shot on 35mm film aesthetic with slight grain
-
-${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
+      // Build parts - image is optional
+      const promptParts = [{ text: prompt }];
+      if (base64Image) {
+        promptParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
+      }
+      // Send concept/reference image to the model so it can SEE the reference style
+      if (conceptBase64) {
+        promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+      // Send research-found reference image so the model knows what the topic looks like
+      if (researchImageBase64) {
+        console.log('[Generate] 🖼️ Including research reference image in payload');
+        promptParts.push({ inlineData: { mimeType: researchImageMimeType || "image/png", data: researchImageBase64 } });
+      } else {
+        console.log('[Generate] ⚠️ No research reference image available');
+      }
 
       const payload = {
         contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: "image/png", data: base64Image } }
-          ]
+          parts: promptParts
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.6,
-          topP: 0.95
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -1399,11 +2468,12 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
       if (generatedBase64) {
         setResultImage(`data:image/png;base64,${generatedBase64}`);
+        incrementDailyUsage(); // Günlük kullanım sayacını artır
       } else {
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
     } catch (err) {
-      setError(err.message || "Bilinmeyen bir hata.");
+      setError(err.message || t('unknownError'));
     } finally {
       setLoading(false);
     }
@@ -1411,26 +2481,18 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
 
   // Make it more clickable - regenerate with optimized settings
   const makeMoreClickable = async () => {
-    if (!resultImage || !base64Image) return;
+    if (!resultImage) return;
 
     setIsOptimizing(true);
     setPreviousImage(resultImage);
     setPreviousCtrScore(ctrScore); // Save current score for comparison
 
-    // Auto-select best archetype if none selected
+    // Auto-select best archetype based on detected content category
     let optimizedArchetype = selectedArchetype;
     if (!optimizedArchetype) {
-      // Pick based on topic keywords
-      const topicLower = (topic + ' ' + topicDescription).toLowerCase();
-      if (topicLower.includes('horror') || topicLower.includes('korku') || topicLower.includes('scary')) {
-        optimizedArchetype = 'shocked_threat';
-      } else if (topicLower.includes('rpg') || topicLower.includes('build') || topicLower.includes('güçlü')) {
-        optimizedArchetype = 'power_fantasy';
-      } else if (topicLower.includes('boss') || topicLower.includes('dev') || topicLower.includes('huge')) {
-        optimizedArchetype = 'scale_contrast';
-      } else {
-        optimizedArchetype = 'power_fantasy'; // Default to power fantasy
-      }
+      const category = detectedCategory || detectContentCategory(topic, topicDescription);
+      // Pick the first recommended archetype for this category
+      optimizedArchetype = category.defaultArchetypes?.[0] || 'reaction_face';
       setSelectedArchetype(optimizedArchetype);
     }
 
@@ -1450,7 +2512,9 @@ ${extraRequest ? `ADDITIONAL REQUEST: ${extraRequest}` : ''}`;
     const selectedTypo = typographyOptions.find(t => t.id === 'auto_harmony');
 
     try {
-      const optimizedPrompt = `You are an elite YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      const optimizeCategory = detectedCategory || detectContentCategory(topic, topicDescription);
+
+      const optimizedPrompt = `You are a world-class YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
 
 ⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
 - THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
@@ -1479,28 +2543,40 @@ MAXIMUM CLICK-THROUGH PRINCIPLES:
 ${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
 
 ${topicResearch ? `
-🎮 GAMER KNOWLEDGE (CRITICAL - USE THIS FOR AUTHENTICITY):
+📋 EXPERT RESEARCH (CRITICAL - USE THIS FOR AUTHENTICITY):
 ${topicResearch}
 Apply the visual identity, colors, and atmosphere described above!
+
+🏛️ HISTORICAL SCENE (IF APPLICABLE):
+If the research contains "READY-TO-USE SCENE DIRECTION", follow it EXACTLY:
+- Use SCENE_DESCRIPTION for background (do NOT substitute modern city visuals!)
+- Use PERSON_COSTUME for the person's outfit
+- Follow ABSOLUTELY_NOT list strictly - zero tolerance for listed items
+- Do NOT use modern city names internally - build scene from architectural descriptions only
 ` : ''}
 
 ${conceptAnalysis ? `
-🎨 STYLE REFERENCE (from user's concept image):
+🎨 STYLE REFERENCE (CRITICAL - Match this style from user's reference image):
 ${conceptAnalysis}
-Apply this style but ALWAYS include the person from the photo.
+You MUST apply this exact visual style, color palette, lighting, and atmosphere to the thumbnail.
+The reference image is attached - LOOK AT IT and replicate its visual DNA.
 ` : ''}
 
 ${photoAnalysis ? `
-👤 PHOTO ANALYSIS:
+👤 IMAGE ANALYSIS:
 ${photoAnalysis}
 ` : ''}
 
-REFERENCE PHOTO - The person in this photo must appear LARGE in the thumbnail:
+UPLOADED IMAGE INTEGRATION:
+If the image contains a person:
 - Face should take up 40-50% of the frame HEIGHT - make it BIG
 - Transform clothing to match theme
 - Add dramatic colored lighting matching the scene
 - Keep face unchanged and recognizable
 - NEVER crop the head - leave headroom above
+If the image is not a person (screenshot, product, etc.):
+- Use it as the primary visual element, enhanced with professional effects
+- Integrate its colors, style, and elements into a compelling thumbnail
 
 ${optimizedText ? `
 TEXT: "${optimizedText}"
@@ -1518,26 +2594,51 @@ TEXT: "${optimizedText}"
 4. Text GLOW must use a color FROM the scene
 5. Maximum contrast for 120px thumbnail readability
 ` : `
-⚠️ NO TEXT - Create a clean, text-free thumbnail.
+⚠️⚠️⚠️ ABSOLUTE ZERO TEXT RULE ⚠️⚠️⚠️
+- There must be ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS anywhere on this image
+- Do NOT add any title, watermark, logo text, game name, or ANY written content
+- The image must be 100% visual only - person, scene, and effects
+- If you add ANY text, the task has FAILED
 `}
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
+
+CINEMATIC QUALITY (NON-NEGOTIABLE):
+- 3-point dramatic lighting with strong rim light separation
+- Shallow depth of field, background bokeh, subject tack sharp
+- Professional color grading - crushed blacks, controlled highlights
+- Real skin texture with subsurface scattering, NO plastic/waxy AI look
+- Volumetric atmosphere (god rays, particles, haze)
+- Film grain aesthetic (ISO 400-800), subtle chromatic aberration on edges
+- High dynamic range contrast that POPS at 120px thumbnail size
 
 ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
 
 MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
 
+      const optimizeParts = [
+        { text: optimizedPrompt },
+      ];
+      if (base64Image) {
+        optimizeParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
+      }
+      if (conceptBase64) {
+        optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+      if (researchImageBase64) {
+        optimizeParts.push({ inlineData: { mimeType: researchImageMimeType || "image/png", data: researchImageBase64 } });
+      }
+
       const payload = {
         contents: [{
-          parts: [
-            { text: optimizedPrompt },
-            { inlineData: { mimeType: "image/png", data: base64Image } }
-          ]
+          parts: optimizeParts
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.7,
-          topP: 0.95
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -1565,7 +2666,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         throw new Error('Optimizasyon başarısız.');
       }
     } catch (err) {
-      setError(err.message || "Optimizasyon hatası.");
+      setError(err.message || t('optimizationError'));
       setPreviousImage(null); // Reset on error
       setPreviousCtrScore(null);
     } finally {
@@ -1573,60 +2674,48 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
     }
   };
 
-  // Yazısız yeniden oluştur
+  // Yazısız yeniden oluştur - mevcut sahneyi koruyarak sadece yazıyı kaldır
   const regenerateWithoutText = async () => {
+    if (!apiKey || !resultImage) return;
+
     const savedText = overlayText;
-    setOverlayText(''); // Geçici olarak yazıyı kaldır
-
-    // State güncellemesi için kısa bir bekleme
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Mevcut generate fonksiyonunu çağırmak yerine, doğrudan API çağrısı yapıyoruz
-    if (!apiKey || !base64Image || !topic) {
-      setOverlayText(savedText); // Hata varsa geri al
-      return;
-    }
+    setOverlayText('');
 
     setLoading(true);
     setError(null);
 
     try {
-      const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
+      // Mevcut result image'ı base64'e çevir (sahneyi korumak için)
+      const currentImageBase64 = resultImage.replace(/^data:image\/\w+;base64,/, '');
 
-      const prompt = `You are an elite YouTube thumbnail designer. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      const prompt = `This is an existing YouTube thumbnail. Your task is to REMOVE ALL TEXT from this image while keeping EVERYTHING ELSE exactly the same.
 
-⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
-- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
-- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
+⚠️ CRITICAL INSTRUCTIONS:
+- REMOVE every piece of text, letters, words, numbers, and written content from this image
+- KEEP the exact same scene, person, background, lighting, colors, effects, composition
+- KEEP the exact same person position, facial expression, costume, and pose
+- RECONSTRUCT the areas behind the text naturally - fill in with the surrounding background/scene
+- The result should look like the text was never there
+- Do NOT change the scene, do NOT change the person, do NOT change colors or lighting
+- Do NOT add new text - the result must be 100% text-free
+- MAINTAIN the same 1280x720 horizontal landscape orientation
+- The only difference should be: text removed, background filled in naturally
 
-🎯 ARCHETYPE: ${THUMBNAIL_ARCHETYPES[selectedArchetype]?.name || 'Power Fantasy'}
-${THUMBNAIL_ARCHETYPES[selectedArchetype]?.description || ''}
-
-${topicResearch ? `🎮 GAME INFO:\n${topicResearch}` : ''}
-${photoAnalysis ? `👤 PHOTO:\n${photoAnalysis}` : ''}
-
-REFERENCE PHOTO - The person must appear LARGE (face 40-50% height):
-- Transform to match theme
-- Dramatic lighting
-- Keep face recognizable
-
-⚠️ NO TEXT ON THE IMAGE - Create a completely clean, text-free thumbnail.
-The thumbnail should be designed so the user can add their own text later.
-
-VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors'}
-
-MAKE IT CLICK-WORTHY!`;
+Think of this as "inpainting" - remove text and fill with surrounding context.`;
 
       const payload = {
         contents: [{
           parts: [
             { text: prompt },
-            { inlineData: { mimeType: "image/png", data: base64Image } }
+            { inlineData: { mimeType: "image/png", data: currentImageBase64 } }
           ]
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 0.7
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -1650,36 +2739,114 @@ MAKE IT CLICK-WORTHY!`;
       if (generatedBase64) {
         setResultImage(`data:image/png;base64,${generatedBase64}`);
       } else {
-        throw new Error('Yazısız thumbnail oluşturulamadı.');
+        throw new Error('Yazı kaldırma başarısız oldu.');
       }
     } catch (err) {
       setError(err.message);
-      setOverlayText(savedText); // Hata durumunda geri al
+      setOverlayText(savedText);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Revise image - kullanıcının talimatıyla mevcut görseli revize et
+  const reviseImage = async () => {
+    if (!apiKey || !resultImage || !revisionText.trim()) return;
+
+    setIsRevising(true);
+    setPreRevisionImage(resultImage);
+    setError(null);
+
+    try {
+      const currentImageBase64 = resultImage.replace(/^data:image\/\w+;base64,/, '');
+
+      const revisionPrompt = `You are a professional YouTube thumbnail designer. You have created the attached thumbnail and the user wants specific changes.
+
+⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
+- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
+- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
+
+🎯 USER'S REVISION REQUEST:
+"${revisionText.trim()}"
+
+📋 CRITICAL RULES:
+- KEEP the same overall scene, composition, and subject
+- ONLY modify what the user specifically asked for
+- Maintain the same person (if present) with identical face, pose, and expression
+- Keep the same general color scheme unless the user asks to change it
+- Preserve all elements the user did NOT mention
+- The result should feel like a refined version of the same thumbnail, NOT a completely new one
+- Apply the requested changes naturally and professionally
+
+Think of this as "editing" the existing thumbnail based on the user's feedback.`;
+
+      const payload = {
+        contents: [{
+          parts: [
+            { text: revisionPrompt },
+            { inlineData: { mimeType: "image/png", data: currentImageBase64 } }
+          ]
+        }],
+        generationConfig: {
+          responseModalities: ['TEXT', 'IMAGE'],
+          temperature: 1.0,
+          imageConfig: {
+            aspectRatio: '16:9'
+          }
+        },
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      };
+
+      const result = await fetchWithRetry(
+        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+      if (generatedBase64) {
+        setResultImage(`data:image/png;base64,${generatedBase64}`);
+        setRevisionText('');
+      } else {
+        throw new Error(t('revisionError'));
+      }
+    } catch (err) {
+      setError(err.message || t('revisionError'));
+      setPreRevisionImage(null);
+    } finally {
+      setIsRevising(false);
     }
   };
 
   const features = [
     {
       icon: <BrainCircuit className="w-6 h-6" />,
-      title: 'AI Destekli Tasarım',
-      desc: 'Gemini AI ile profesyonel thumbnail\'ler saniyeler içinde'
+      title: t('aiPoweredDesign'),
+      desc: t('aiPoweredDesignDesc')
     },
     {
       icon: <Layers className="w-6 h-6" />,
-      title: 'Akıllı Yerleştirme',
-      desc: 'Kişiyi sahnenin içine organik şekilde entegre eder'
+      title: t('smartPlacement'),
+      desc: t('smartPlacementDesc')
     },
     {
       icon: <Zap className="w-6 h-6" />,
-      title: 'CTR Optimizasyonu',
-      desc: 'Tıklama oranını artıran tipografi ve renk uyumu'
+      title: t('ctrOptimization'),
+      desc: t('ctrOptimizationDesc')
     },
     {
       icon: <Youtube className="w-6 h-6" />,
-      title: 'YouTube Önizleme',
-      desc: 'Thumbnail\'in YouTube\'da nasıl görüneceğini anında gör'
+      title: t('youtubePreview'),
+      desc: t('youtubePreviewDesc')
     }
   ];
 
@@ -1700,12 +2867,24 @@ MAKE IT CLICK-WORTHY!`;
               <div className="bg-black/40 backdrop-blur-xl border border-[#27272a] rounded-xl sm:rounded-2xl px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
                 <Logo size="sm" className="sm:hidden" />
                 <Logo size="md" className="hidden sm:flex" />
-                <button
-                  onClick={() => setCurrentSection('app')}
-                  className="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg sm:rounded-full transition-all border border-white/10"
-                >
-                  Başla
-                </button>
+                <div className="flex items-center gap-2">
+                  {isPro ? (
+                    <ProBadge size="md" />
+                  ) : (
+                    <button
+                      onClick={() => setShowLicenseModal(true)}
+                      className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 hover:from-purple-500/30 hover:to-blue-500/30 text-purple-400 text-xs font-bold px-3 py-1.5 rounded-lg transition-all border border-purple-500/20"
+                    >
+                      Pro
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setCurrentSection('app')}
+                    className="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 rounded-lg sm:rounded-full transition-all border border-white/10"
+                  >
+                    {t('tryFree')}
+                  </button>
+                </div>
               </div>
             </div>
           </nav>
@@ -1726,22 +2905,22 @@ MAKE IT CLICK-WORTHY!`;
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
                     </span>
-                    <p className="text-[10px] sm:text-xs text-green-500">Gemini AI ile Çalışıyor</p>
+                    <p className="text-[10px] sm:text-xs text-green-500">{t('workingWithGemini')}</p>
                   </div>
 
                   {/* Main Heading */}
                   <h1 className="text-white text-center text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tighter mb-2 sm:mb-4">
-                    Thumbnail Oluştur
+                    {t('createThumbnailHero')}
                   </h1>
                   <h2 className="text-white/80 text-center text-xl sm:text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tighter mb-4 sm:mb-6">
                     <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      Saniyeler İçinde
+                      {t('inSeconds')}
                     </span>
                   </h2>
 
                   {/* Description */}
                   <p className="text-white/60 px-2 sm:px-4 text-center text-xs sm:text-sm md:text-base lg:text-lg max-w-2xl mx-auto mb-6 sm:mb-10">
-                    Fotoğrafınızı yükleyin, konunuzu yazın. AI sizin için viral YouTube thumbnail tasarlasın.
+                    {t('heroDesc')}
                   </p>
 
                   {/* CTA Button - Simplified for mobile */}
@@ -1750,7 +2929,7 @@ MAKE IT CLICK-WORTHY!`;
                       onClick={() => setCurrentSection('app')}
                       className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-black text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
                     >
-                      Ücretsiz Dene
+                      {t('tryFree')}
                       <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
@@ -1780,10 +2959,10 @@ MAKE IT CLICK-WORTHY!`;
               >
                 <div className="border border-[#27272a] rounded-xl sm:rounded-2xl py-8 sm:py-12 px-4 sm:px-6 bg-black/40 backdrop-blur-xl">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white text-center mb-2 sm:mb-4">
-                    Neden ThumbnailMAX?
+                    {t('whyThumbnailmax')}
                   </h2>
                   <p className="text-white/50 text-center text-xs sm:text-sm mb-8 sm:mb-12">
-                    Profesyonel YouTuber'ların tercih ettiği AI thumbnail aracı
+                    {t('whyDesc')}
                   </p>
 
                   <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -1809,6 +2988,16 @@ MAKE IT CLICK-WORTHY!`;
             </div>
           </section>
 
+          {/* Pricing Section - Polar.sh */}
+          <PricingSection onActivateLicense={() => setShowLicenseModal(true)} />
+
+          {/* License Key Modal */}
+          <LicenseKeyModal
+            isOpen={showLicenseModal}
+            onClose={() => setShowLicenseModal(false)}
+            onActivated={handleLicenseActivated}
+          />
+
           {/* CTA Section - Mobile Optimized */}
           <section className="py-12 sm:py-20 px-3 sm:px-4 pb-24 sm:pb-32">
             <div className="max-w-3xl mx-auto">
@@ -1820,17 +3009,17 @@ MAKE IT CLICK-WORTHY!`;
               >
                 <div className="border border-[#27272a] rounded-xl sm:rounded-2xl py-8 sm:py-12 px-4 sm:px-6 text-center bg-black/40 backdrop-blur-xl">
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white mb-2 sm:mb-3">
-                    Hemen Başlamaya Hazır mısın?
+                    {t('readyToStart')}
                   </h2>
                   <p className="text-white/60 mb-6 sm:mb-8 text-xs sm:text-sm md:text-base max-w-md mx-auto">
-                    Kendi Gemini API Key'inle sınırsız thumbnail oluştur. Tamamen ücretsiz.
+                    {t('readyDesc')}
                   </p>
                   <button
                     onClick={() => setCurrentSection('app')}
                     className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-sm sm:text-base px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl transition-all flex items-center justify-center gap-2 mx-auto shadow-lg shadow-orange-500/20"
                   >
                     <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Thumbnail Oluştur
+                    {t('createThumbnail')}
                   </button>
                 </div>
               </motion.div>
@@ -1845,7 +3034,7 @@ MAKE IT CLICK-WORTHY!`;
                 <span>ThumbnailMAX — Gemini AI</span>
               </div>
               <p className="text-white/30 text-[10px] sm:text-xs text-center">
-                Verileriniz bizde saklanmaz
+                {t('dataNotStored')}
               </p>
             </div>
           </footer>
@@ -1879,6 +3068,13 @@ MAKE IT CLICK-WORTHY!`;
         )}
       </AnimatePresence>
 
+      {/* License Key Modal - App Section */}
+      <LicenseKeyModal
+        isOpen={showLicenseModal}
+        onClose={() => setShowLicenseModal(false)}
+        onActivated={handleLicenseActivated}
+      />
+
       <div className="min-h-screen bg-[#08080a] text-slate-200 font-sans pb-24 lg:pb-6">
         {/* Header - Mobile Optimized */}
         <header className="sticky top-0 z-50 bg-[#08080a]/90 backdrop-blur-xl border-b border-white/5">
@@ -1892,11 +3088,23 @@ MAKE IT CLICK-WORTHY!`;
             </button>
 
             <div className="flex items-center gap-2">
+              {/* Plan Badge */}
+              {isPro ? (
+                <ProBadge size="sm" />
+              ) : (
+                <button
+                  onClick={() => setShowLicenseModal(true)}
+                  className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 hover:border-purple-500/40 transition-colors"
+                >
+                  <span className="text-[10px] sm:text-xs font-bold text-purple-400">Pro</span>
+                </button>
+              )}
+
               {/* API Status - Compact on mobile */}
               {apiKey ? (
                 <div className="bg-green-500/10 border border-green-500/20 px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500" />
-                  <span className="text-[10px] sm:text-xs font-bold text-green-400 hidden sm:inline">Bağlı</span>
+                  <span className="text-[10px] sm:text-xs font-bold text-green-400 hidden sm:inline">{t('connected')}</span>
                 </div>
               ) : (
                 <button
@@ -1939,10 +3147,18 @@ MAKE IT CLICK-WORTHY!`;
               >
                 <div className="p-4 space-y-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-bold text-white">Ayarlar</h2>
-                    <button onClick={() => setShowMobileMenu(false)} className="p-2 rounded-lg bg-white/5">
-                      <X className="w-5 h-5 text-slate-400" />
-                    </button>
+                    <h2 className="text-lg font-bold text-white">{t('settings')}</h2>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={toggleLang}
+                        className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center gap-1.5 text-xs font-bold text-slate-300"
+                      >
+                        {lang === 'tr' ? '🇬🇧 EN' : '🇹🇷 TR'}
+                      </button>
+                      <button onClick={() => setShowMobileMenu(false)} className="p-2 rounded-lg bg-white/5">
+                        <X className="w-5 h-5 text-slate-400" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* API Key */}
@@ -1965,29 +3181,29 @@ MAKE IT CLICK-WORTHY!`;
                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-                    {apiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> Kaydedildi</p>}
+                    {apiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> {t('saved')}</p>}
                   </div>
 
                   {/* Channel Name */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500">Kanal Adı</label>
+                    <label className="text-xs font-bold text-slate-500">{t('channelName')}</label>
                     <input
                       type="text"
                       value={channelName}
                       onChange={(e) => setChannelName(e.target.value)}
-                      placeholder="Örn: Benim Kanalım"
+                      placeholder={t('channelNamePlaceholder')}
                       className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm"
                     />
                   </div>
 
                   {/* Thumbnail Position */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500">YouTube Önizleme Konumu</label>
+                    <label className="text-xs font-bold text-slate-500">{t('youtubePreviewPosition')}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: 'top', label: 'Üst', icon: '⬆️' },
-                        { id: 'middle', label: 'Orta', icon: '⏺️' },
-                        { id: 'bottom', label: 'Alt', icon: '⬇️' }
+                        { id: 'top', label: t('posTop'), icon: '⬆️' },
+                        { id: 'middle', label: t('posMid'), icon: '⏺️' },
+                        { id: 'bottom', label: t('posBot'), icon: '⬇️' }
                       ].map((pos) => (
                         <button
                           key={pos.id}
@@ -2008,35 +3224,41 @@ MAKE IT CLICK-WORTHY!`;
                   {/* AI Model Selector */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
-                      <BrainCircuit className="w-3 h-3" /> AI Modeli
+                      <BrainCircuit className="w-3 h-3" /> {t('aiModel')}
                     </label>
                     <div className="space-y-2">
-                      {availableModels.map((model) => (
-                        <button
-                          key={model.id}
-                          onClick={() => setSelectedModel(model.id)}
-                          className={`w-full p-3 rounded-lg border text-left transition-all ${
-                            selectedModel === model.id
-                              ? 'bg-purple-600 border-purple-500 text-white'
-                              : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs font-bold">{model.name}</p>
-                            {model.badge && (
-                              <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold">
-                                {model.badge}
-                              </span>
-                            )}
-                          </div>
-                          <p className={`text-[10px] ${selectedModel === model.id ? 'text-purple-200' : 'text-slate-600'}`}>
-                            {model.desc}
-                          </p>
-                        </button>
-                      ))}
+                      {availableModels.map((model) => {
+                        const isModelAllowed = TEST_MODE || currentPlan.limits.allowedModels.includes(model.id);
+                        return (
+                          <button
+                            key={model.id}
+                            onClick={() => isModelAllowed ? setSelectedModel(model.id) : setShowLicenseModal(true)}
+                            className={`w-full p-3 rounded-lg border text-left transition-all relative ${
+                              !isModelAllowed
+                                ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
+                                : selectedModel === model.id
+                                ? 'bg-purple-600 border-purple-500 text-white'
+                                : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-bold">{model.name}</p>
+                              {model.badge && (
+                                <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold">
+                                  {model.badge}
+                                </span>
+                              )}
+                              {!isModelAllowed && <ProBadge size="xs" />}
+                            </div>
+                            <p className={`text-[10px] ${selectedModel === model.id ? 'text-purple-200' : 'text-slate-600'}`}>
+                              {model.desc}
+                            </p>
+                          </button>
+                        );
+                      })}
                     </div>
                     <p className="text-[10px] text-slate-600">
-                      Deneysel model daha iyi sonuç verebilir ama yavaş olabilir
+                      {t('experimentalModelNote')}
                     </p>
                   </div>
                 </div>
@@ -2054,13 +3276,13 @@ MAKE IT CLICK-WORTHY!`;
               className="mb-6"
             >
               <div className="bg-[#101014] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-white/5">
-                {/* Before/After Comparison */}
-                {previousImage && (
+                {/* Before/After Comparison - Optimize */}
+                {previousImage && !isOptimizing && !preRevisionImage && (
                   <div className="bg-gradient-to-br from-[#1a1a2e] to-[#16213e] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/10 mb-4">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-blue-400" />
-                        Önce / Sonra
+                        {t('beforeAfter')}
                       </span>
                       {previousCtrScore && ctrScore && (
                         <div className="flex items-center gap-1.5 bg-green-500/20 px-2 py-1 rounded-full">
@@ -2072,11 +3294,11 @@ MAKE IT CLICK-WORTHY!`;
                     </div>
                     <div className="grid grid-cols-2 gap-2 sm:gap-3">
                       <div>
-                        <p className="text-[10px] text-slate-400 text-center mb-1">Önceki</p>
+                        <p className="text-[10px] text-slate-400 text-center mb-1">{t('previous')}</p>
                         <img src={previousImage} alt="Before" className="w-full rounded-lg opacity-70" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-green-400 text-center mb-1 font-bold">Optimize ✓</p>
+                        <p className="text-[10px] text-green-400 text-center mb-1 font-bold">{t('optimized')}</p>
                         <img src={resultImage} alt="After" className="w-full rounded-lg border border-green-500/30" />
                       </div>
                     </div>
@@ -2084,15 +3306,49 @@ MAKE IT CLICK-WORTHY!`;
                       onClick={() => { setPreviousImage(null); setPreviousCtrScore(null); }}
                       className="mt-2 text-xs text-slate-500 hover:text-white flex items-center gap-1 mx-auto"
                     >
-                      <X className="w-3 h-3" /> Kapat
+                      <X className="w-3 h-3" /> {t('close')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Before/After Comparison - Revision */}
+                {preRevisionImage && !isRevising && (
+                  <div className="bg-gradient-to-br from-[#1a1a2e] to-[#0f3460] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-cyan-500/20 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-cyan-400" />
+                        {t('beforeAfter')}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                      <div>
+                        <p className="text-[10px] text-slate-400 text-center mb-1">{t('revisionBeforeLabel')}</p>
+                        <img src={preRevisionImage} alt="Before revision" className="w-full rounded-lg opacity-70" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-cyan-400 text-center mb-1 font-bold">{t('revisionAfterLabel')}</p>
+                        <img src={resultImage} alt="After revision" className="w-full rounded-lg border border-cyan-500/30" />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setPreRevisionImage(null)}
+                      className="mt-2 text-xs text-slate-500 hover:text-white flex items-center gap-1 mx-auto"
+                    >
+                      <X className="w-3 h-3" /> {t('close')}
                     </button>
                   </div>
                 )}
 
                 {/* Main Result */}
-                {!previousImage && (
-                  <div className="rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 bg-black mb-4">
-                    <img src={resultImage} alt="Result" className="w-full h-auto" />
+                {(!previousImage || isOptimizing) && !preRevisionImage && (
+                  <div className="relative rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 bg-black mb-4">
+                    <img src={resultImage} alt="Result" className={`w-full h-auto ${isOptimizing || isRevising ? 'opacity-40' : ''}`} />
+                    {(isOptimizing || isRevising) && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className={`w-10 h-10 border-3 ${isRevising ? 'border-cyan-500/30 border-t-cyan-500' : 'border-purple-500/30 border-t-purple-500'} rounded-full animate-spin mb-3`} />
+                        <span className="text-white/80 text-sm font-medium">{isRevising ? t('revising') : t('optimizing')}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -2102,7 +3358,7 @@ MAKE IT CLICK-WORTHY!`;
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <Target className="w-4 h-4 text-blue-400" />
-                        <span className="text-sm font-bold text-white">CTR Skoru</span>
+                        <span className="text-sm font-bold text-white">{t('ctrScore')}</span>
                       </div>
                       <span className={`text-2xl font-black ${ctrScore.likelihoodColor}`}>{ctrScore.score}</span>
                     </div>
@@ -2131,21 +3387,21 @@ MAKE IT CLICK-WORTHY!`;
                     className="flex-1 sm:flex-none bg-white text-black px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-all text-sm"
                   >
                     <Download className="w-4 h-4" />
-                    <span>İndir</span>
+                    <span>{t('download')}</span>
                   </button>
                   <button
                     onClick={() => setShowYouTubeMockup(true)}
                     className="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm"
                   >
                     <Youtube className="w-4 h-4" />
-                    <span>Önizle</span>
+                    <span>{t('preview')}</span>
                   </button>
                   <button
                     onClick={() => setShowEditor(true)}
                     className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm"
                   >
                     <Edit3 className="w-4 h-4" />
-                    <span>Düzenle</span>
+                    <span>{t('edit')}</span>
                   </button>
                   <button
                     onClick={makeMoreClickable}
@@ -2153,15 +3409,42 @@ MAKE IT CLICK-WORTHY!`;
                     className="flex-1 sm:flex-none bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm disabled:opacity-50"
                   >
                     {isOptimizing ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                    <span className="hidden sm:inline">Optimize Et</span>
+                    <span className="hidden sm:inline">{t('optimize')}</span>
                   </button>
+                </div>
+
+                {/* Revision Input */}
+                <div className="mt-3 p-3 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-cyan-300">{t('reviseTitle')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={revisionText}
+                      onChange={(e) => setRevisionText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && revisionText.trim()) reviseImage(); }}
+                      placeholder={t('revisePlaceholder')}
+                      disabled={isRevising}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 disabled:opacity-50"
+                    />
+                    <button
+                      onClick={reviseImage}
+                      disabled={isRevising || !revisionText.trim()}
+                      className="shrink-0 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/30 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                    >
+                      {isRevising ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      <span className="hidden sm:inline">{t('reviseSend')}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Yazısız Yeniden Oluştur - İpucu */}
                 <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs text-amber-300">
-                      💡 AI yazı eklemiş mi? Yazısız versiyon oluşturup editörde kendi yazınızı ekleyebilirsiniz.
+                      {t('aiAddedTextHint')}
                     </p>
                     <button
                       onClick={regenerateWithoutText}
@@ -2169,7 +3452,7 @@ MAKE IT CLICK-WORTHY!`;
                       className="shrink-0 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-50"
                     >
                       <RefreshCcw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                      Yazısız Oluştur
+                      {t('createWithoutText')}
                     </button>
                   </div>
                 </div>
@@ -2185,8 +3468,8 @@ MAKE IT CLICK-WORTHY!`;
                   <div className="w-20 h-20 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
                   <BrainCircuit className="w-8 h-8 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                 </div>
-                <p className="text-xl font-black text-white animate-pulse">Oluşturuluyor...</p>
-                <p className="text-sm text-blue-400 mt-1">AI thumbnail tasarlıyor</p>
+                <p className="text-xl font-black text-white animate-pulse">{t('creating')}</p>
+                <p className="text-sm text-blue-400 mt-1">{t('aiDesigningThumbnail')}</p>
               </div>
             </div>
           )}
@@ -2196,7 +3479,7 @@ MAKE IT CLICK-WORTHY!`;
 
             {/* Essential: Photo + Topic */}
             <CollapsibleSection
-              title="Fotoğraf ve Konu"
+              title={t('photoAndTopic')}
               icon={<Upload className="w-4 h-4" />}
               defaultOpen={true}
               badge={image && topic ? "✓" : null}
@@ -2213,8 +3496,8 @@ MAKE IT CLICK-WORTHY!`;
                   <div className="flex items-center gap-4">
                     <img src={image} className="w-16 h-16 rounded-lg object-cover" alt="Ref" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-blue-400">Fotoğraf Yüklendi</p>
-                      <p className="text-xs text-slate-500">Değiştirmek için dokun</p>
+                      <p className="text-sm font-bold text-blue-400">{t('photoUploaded')}</p>
+                      <p className="text-xs text-slate-500">{t('tapToChange')}</p>
                     </div>
                     {!photoAnalysis && (
                       <button
@@ -2223,38 +3506,36 @@ MAKE IT CLICK-WORTHY!`;
                         className="bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 disabled:opacity-50"
                       >
                         {isAnalyzingPhoto ? <RefreshCcw className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
-                        Analiz
+                        {t('analyze')}
                       </button>
                     )}
                   </div>
                 ) : (
                   <div className="text-center py-6">
                     <Upload className="w-10 h-10 mx-auto mb-2 text-slate-600" />
-                    <p className="text-sm font-bold text-slate-400">Fotoğrafınızı Yükleyin</p>
-                    <p className="text-xs text-slate-600 mt-1">Thumbnail'da görünecek yüz</p>
+                    <p className="text-sm font-bold text-slate-400">{t('uploadPhoto')}</p>
+                    <p className="text-xs text-slate-600 mt-1">{t('faceInThumbnail')}</p>
                   </div>
                 )}
               </div>
 
-              {/* Photo Analysis Result */}
+              {/* Photo Analysis Result - sadece tamamlandı göstergesi */}
               {photoAnalysis && (
-                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3">
-                  <p className="text-xs font-bold text-purple-400 mb-2 flex items-center gap-1">
-                    <BrainCircuit className="w-3 h-3" /> AI Analizi
-                  </p>
-                  <p className="text-xs text-slate-300 line-clamp-3">{photoAnalysis}</p>
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                  <BrainCircuit className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-xs font-bold text-purple-400">{t('aiAnalysis')} ✓</span>
                 </div>
               )}
 
               {/* Topic Input */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Video Konusu *</label>
+                <label className="text-xs font-bold text-slate-500">{t('videoTopic')} *</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={topic}
-                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); }}
-                    placeholder="Örn: Elden Ring, Minecraft Hardcore"
+                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); setResearchImageBase64(null); setResearchImageUrl(null); }}
+                    placeholder={t('topicPlaceholder')}
                     className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
                   <button
@@ -2272,17 +3553,32 @@ MAKE IT CLICK-WORTHY!`;
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                      <Gamepad2 className="w-3 h-3" /> AI Araştırması: {topic}
+                      <Gamepad2 className="w-3 h-3" /> {t('aiResearch')}: {topic}
                     </p>
-                    <button onClick={() => setTopicResearch(null)} className="text-slate-500 hover:text-white">
+                    <button onClick={() => { setTopicResearch(null); setResearchImageBase64(null); setResearchImageUrl(null); }} className="text-slate-500 hover:text-white">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
                     {topicResearch}
                   </div>
+                  {researchImageBase64 && (
+                    <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
+                      <img
+                        src={`data:image/png;base64,${researchImageBase64}`}
+                        alt="Reference"
+                        className="w-16 h-16 object-cover rounded-lg border border-amber-500/30"
+                      />
+                      <p className="text-[10px] text-cyan-400 flex-1">
+                        Referans görsel bulundu — thumbnail üretiminde kullanılacak
+                      </p>
+                      <button onClick={() => { setResearchImageBase64(null); setResearchImageUrl(null); }} className="text-slate-500 hover:text-white">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
                   <p className="text-[10px] text-green-400 flex items-center gap-1 pt-1 border-t border-amber-500/20">
-                    <Check className="w-3 h-3" /> Bu araştırma thumbnail oluştururken kullanılacak
+                    <Check className="w-3 h-3" /> {t('researchWillBeUsed')}
                   </p>
                 </div>
               )}
@@ -2290,97 +3586,134 @@ MAKE IT CLICK-WORTHY!`;
               {/* Overlay Text - Optional */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
-                  Thumbnail Yazısı
-                  <span className="text-[10px] text-slate-600 font-normal">(opsiyonel)</span>
+                  {t('thumbnailText')}
+                  <span className="text-[10px] text-slate-600 font-normal">{t('optional')}</span>
                 </label>
                 <input
                   type="text"
                   value={overlayText}
                   onChange={(e) => setOverlayText(e.target.value)}
-                  placeholder="Boş bırakılabilir - yazısız thumbnail"
+                  placeholder={t('textPlaceholder')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                 />
                 <p className="text-[10px] text-slate-600">
-                  {overlayText ? '3 kelimeden az olması önerilir' : 'Boş bırakırsanız yazısız thumbnail oluşturulur'}
+                  {overlayText ? t('lessThan3Words') : t('emptyMeansNoText')}
                 </p>
               </div>
             </CollapsibleSection>
 
             {/* Style Selection */}
             <CollapsibleSection
-              title="Stil Seçimi"
+              title={t('styleSelection')}
               icon={<Palette className="w-4 h-4" />}
               badge={selectedArchetype ? CTR_ARCHETYPES.find(a => a.id === selectedArchetype)?.icon : null}
             >
-              {/* CTR Archetypes - Compact Grid */}
+              {/* CTR Archetypes - Categorized Grid */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">CTR Arketipi</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {CTR_ARCHETYPES.map((arch) => (
+                <label className="text-xs font-bold text-slate-500">{t('ctrArchetype')}</label>
+                {/* Category Tabs */}
+                <div className="flex gap-1 bg-black/30 rounded-lg p-1">
+                  {[
+                    { id: 'all', label: t('all'), icon: '🎯' },
+                    { id: 'universal', label: lang === 'tr' ? 'Genel' : 'General', icon: '🌐' },
+                    { id: 'gaming', label: t('gaming'), icon: '🎮' },
+                  ].map((tab) => (
                     <button
-                      key={arch.id}
-                      onClick={() => setSelectedArchetype(arch.id)}
-                      className={`p-3 rounded-xl border transition-all text-left ${
-                        selectedArchetype === arch.id
-                          ? 'bg-orange-600 border-orange-500 text-white'
-                          : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                      key={tab.id}
+                      onClick={() => setArchetypeTab(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-bold transition-all ${
+                        archetypeTab === tab.id
+                          ? 'bg-white/10 text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{arch.icon}</span>
-                        <span className="text-xs font-bold truncate">{arch.name}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
-                        +{arch.ctrBoost}% CTR
-                      </span>
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
                     </button>
                   ))}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {CTR_ARCHETYPES
+                    .filter(arch => archetypeTab === 'all' || arch.category === archetypeTab)
+                    .map((arch) => {
+                    const isArchAllowed = TEST_MODE || currentPlan.limits.allowedArchetypes.includes(arch.id);
+                    return (
+                      <button
+                        key={arch.id}
+                        onClick={() => isArchAllowed ? setSelectedArchetype(arch.id) : setShowLicenseModal(true)}
+                        className={`p-3 rounded-xl border transition-all text-left relative ${
+                          !isArchAllowed
+                            ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
+                            : selectedArchetype === arch.id
+                            ? 'bg-orange-600 border-orange-500 text-white'
+                            : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">{arch.icon}</span>
+                          <span className="text-xs font-bold truncate">{t(arch.nameKey)}</span>
+                          {!isArchAllowed && <ProBadge size="xs" />}
+                        </div>
+                        <span className={`text-[10px] font-bold ${selectedArchetype === arch.id ? 'text-green-300' : 'text-green-500/60'}`}>
+                          +{arch.ctrBoost}% CTR
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Typography - Horizontal Scroll on Mobile */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Yazı Stili</label>
+                <label className="text-xs font-bold text-slate-500">{t('textStyle')}</label>
                 <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-visible">
-                  {typographyOptions.map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => setTypoStyle(opt.id)}
-                      className={`flex-shrink-0 w-40 sm:w-auto p-3 rounded-xl border transition-all text-left ${
-                        typoStyle === opt.id
-                          ? 'bg-blue-600 border-blue-500 text-white'
-                          : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
-                      }`}
-                    >
-                      <p className="text-xs font-bold truncate">{opt.name}</p>
-                      <p className={`text-[10px] mt-0.5 line-clamp-1 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>
-                        {opt.desc}
-                      </p>
-                    </button>
-                  ))}
+                  {typographyOptions.map((opt) => {
+                    const isTypoAllowed = TEST_MODE || currentPlan.limits.allowedTypoStyles.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => isTypoAllowed ? setTypoStyle(opt.id) : setShowLicenseModal(true)}
+                        className={`flex-shrink-0 w-40 sm:w-auto p-3 rounded-xl border transition-all text-left ${
+                          !isTypoAllowed
+                            ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
+                            : typoStyle === opt.id
+                            ? 'bg-blue-600 border-blue-500 text-white'
+                            : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold truncate">{opt.name}</p>
+                          {!isTypoAllowed && <ProBadge size="xs" />}
+                        </div>
+                        <p className={`text-[10px] mt-0.5 line-clamp-1 ${typoStyle === opt.id ? 'text-blue-100' : 'text-slate-600'}`}>
+                          {opt.desc}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </CollapsibleSection>
 
             {/* Advanced Options */}
             <CollapsibleSection
-              title="Gelişmiş Seçenekler"
+              title={t('advancedOptions')}
               icon={<Sparkles className="w-4 h-4" />}
             >
               {/* Concept Description */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Konsept Açıklaması</label>
+                <label className="text-xs font-bold text-slate-500">{t('conceptDescription')}</label>
                 <textarea
                   value={topicDescription}
                   onChange={(e) => setTopicDescription(e.target.value)}
-                  placeholder={topicResearch ? "Araştırma tamamlandı! Ekstra detay eklemek isterseniz buraya yazın..." : "AI araştırması yapmadan önce konu hakkında bilgi verin..."}
+                  placeholder={topicResearch ? t('conceptPlaceholderWithResearch') : t('conceptPlaceholderNoResearch')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[60px]"
                 />
               </div>
 
               {/* Concept/Reference Image */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Referans Görsel</label>
+                <label className="text-xs font-bold text-slate-500">{t('referenceImage')}</label>
                 <div
                   onClick={() => conceptInputRef.current.click()}
                   className={`border-2 border-dashed rounded-xl p-3 cursor-pointer transition-all ${
@@ -2392,8 +3725,8 @@ MAKE IT CLICK-WORTHY!`;
                     <div className="flex items-center gap-3">
                       <img src={conceptImage} className="w-12 h-12 rounded-lg object-cover" alt="Concept" />
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-emerald-400">Yüklendi</p>
-                        <p className="text-[10px] text-slate-600">Değiştirmek için dokun</p>
+                        <p className="text-xs font-bold text-emerald-400">{t('uploaded')}</p>
+                        <p className="text-[10px] text-slate-600">{t('tapToChange')}</p>
                       </div>
                       {!conceptAnalysis && (
                         <button
@@ -2401,33 +3734,33 @@ MAKE IT CLICK-WORTHY!`;
                           disabled={isAnalyzingConcept || !apiKey}
                           className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
                         >
-                          {isAnalyzingConcept ? <RefreshCcw className="w-3 h-3 animate-spin" /> : 'Analiz'}
+                          {isAnalyzingConcept ? <RefreshCcw className="w-3 h-3 animate-spin" /> : t('analyze')}
                         </button>
                       )}
                     </div>
                   ) : (
                     <div className="text-center py-4 opacity-40">
                       <ImageIcon className="w-6 h-6 mx-auto mb-1" />
-                      <p className="text-xs">Örnek thumbnail yükle</p>
+                      <p className="text-xs">{t('uploadExample')}</p>
                     </div>
                   )}
                 </div>
 
                 {conceptAnalysis && (
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                    <p className="text-xs font-bold text-emerald-400 mb-1">AI Analizi</p>
-                    <p className="text-xs text-slate-300 line-clamp-3">{conceptAnalysis}</p>
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 flex items-center gap-2">
+                    <BrainCircuit className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs font-bold text-emerald-400">{t('referenceImage')} {t('analyze')} ✓</span>
                   </div>
                 )}
               </div>
 
               {/* Extra Request */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-500">Ekstra İstek</label>
+                <label className="text-xs font-bold text-slate-500">{t('extraRequest')}</label>
                 <textarea
                   value={extraRequest}
                   onChange={(e) => setExtraRequest(e.target.value)}
-                  placeholder="Örn: Arka planda yeşil sis olsun..."
+                  placeholder={t('extraRequestPlaceholder')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40 min-h-[50px]"
                 />
               </div>
@@ -2437,12 +3770,23 @@ MAKE IT CLICK-WORTHY!`;
             <div className="hidden lg:block">
               <button
                 onClick={generateThumbnail}
-                disabled={loading || !image || !topic || !apiKey}
+                disabled={loading || !topic || !apiKey}
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3"
               >
                 {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-                {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
+                {loading ? t('creating') : t('createThumbnail')}
               </button>
+              {!isPro && (
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <UsageBadge remaining={getRemainingGenerations(currentPlan)} total={currentPlan.limits.dailyGenerations} />
+                  <button
+                    onClick={() => setShowLicenseModal(true)}
+                    className="text-purple-400 hover:text-purple-300 text-[10px] font-medium transition-colors"
+                  >
+                    {t('unlimitedWithPro')}
+                  </button>
+                </div>
+              )}
             </div>
 
             {error && <p className="text-sm text-red-500 font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl p-3">{error}</p>}
@@ -2452,8 +3796,8 @@ MAKE IT CLICK-WORTHY!`;
               <div className="hidden lg:block bg-[#101014] rounded-2xl p-8 border border-white/5">
                 <div className="text-center opacity-30">
                   <Monitor className="w-16 h-16 mx-auto mb-3" />
-                  <p className="text-lg font-bold">Stüdyo Hazır</p>
-                  <p className="text-sm text-slate-500">Formu doldurup oluştur'a tıklayın</p>
+                  <p className="text-lg font-bold">{t('studioReady')}</p>
+                  <p className="text-sm text-slate-500">{t('fillFormAndCreate')}</p>
                 </div>
               </div>
             )}
@@ -2462,13 +3806,24 @@ MAKE IT CLICK-WORTHY!`;
 
         {/* Mobile Floating Action Button */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#08080a] via-[#08080a] to-transparent lg:hidden">
+          {!isPro && (
+            <div className="flex items-center justify-between mb-2 px-1">
+              <UsageBadge remaining={getRemainingGenerations(currentPlan)} total={currentPlan.limits.dailyGenerations} />
+              <button
+                onClick={() => setShowLicenseModal(true)}
+                className="text-purple-400 hover:text-purple-300 text-[10px] font-medium transition-colors"
+              >
+                {t('unlimitedWithPro')}
+              </button>
+            </div>
+          )}
           <button
             onClick={generateThumbnail}
-            disabled={loading || !image || !topic || !apiKey}
+            disabled={loading || !topic || !apiKey}
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20"
           >
             {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-            {loading ? 'Oluşturuluyor...' : 'Thumbnail Oluştur'}
+            {loading ? t('creating') : t('createThumbnail')}
           </button>
         </div>
       </div>

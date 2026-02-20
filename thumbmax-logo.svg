@@ -1,0 +1,67 @@
+<svg width="400" height="120" viewBox="0 0 400 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main gradient -->
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="50%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+
+    <!-- Glow gradient -->
+    <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="100%" stop-color="#A78BFA" />
+    </linearGradient>
+
+    <!-- Text gradient -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="100%" stop-color="#A78BFA" />
+    </linearGradient>
+
+    <!-- Inner shadow -->
+    <filter id="innerShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+      <feOffset in="blur" dx="1" dy="2" result="offsetBlur" />
+      <feComposite in="SourceGraphic" in2="offsetBlur" operator="over" />
+    </filter>
+
+    <!-- Outer glow -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+      <feMerge>
+        <feMergeNode in="coloredBlur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="400" height="120" rx="12" fill="#0a0a0f" />
+
+  <!-- Logo Icon -->
+  <g transform="translate(20, 16)">
+    <!-- Background frame - rounded rectangle representing thumbnail -->
+    <rect x="4" y="8" width="65" height="52" rx="10" fill="url(#logoGradient)" filter="url(#glow)" />
+
+    <!-- Inner dark area -->
+    <rect x="9" y="13" width="55" height="42" rx="6" fill="#0a0a0f" opacity="0.9" />
+
+    <!-- Play button triangle -->
+    <path d="M28 24L48 34L28 44V24Z" fill="url(#glowGradient)" filter="url(#innerShadow)" />
+
+    <!-- Sparkle/AI indicator - top right -->
+    <circle cx="60" cy="16" r="5" fill="white" opacity="0.9" />
+    <circle cx="60" cy="16" r="2.5" fill="url(#logoGradient)" />
+
+    <!-- Small accent dots -->
+    <circle cx="16" cy="50" r="2.5" fill="url(#glowGradient)" opacity="0.7" />
+    <circle cx="56" cy="50" r="1.5" fill="white" opacity="0.5" />
+  </g>
+
+  <!-- THUMB text (white) -->
+  <text x="110" y="75" font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900" font-size="48" letter-spacing="-1" fill="white">THUMB</text>
+
+  <!-- MAX text (gradient) -->
+  <text x="290" y="75" font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900" font-size="48" letter-spacing="-1" fill="url(#textGradient)">MAX</text>
+</svg>
