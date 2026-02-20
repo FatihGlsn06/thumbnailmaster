@@ -1034,9 +1034,12 @@ const App = () => {
   // Topic/Concept research states
   const [topicResearch, setTopicResearch] = useState(null);
   const [isResearchingTopic, setIsResearchingTopic] = useState(false);
-  const [researchImageBase64, setResearchImageBase64] = useState(null);
-  const [researchImageMimeType, setResearchImageMimeType] = useState('image/png');
-  const [researchImageUrl, setResearchImageUrl] = useState(null);
+  // Çoklu referans görseller — [{data, mimeType, url, label, score, reason}]
+  const [researchImages, setResearchImages] = useState([]);
+  // Geriye uyumluluk için ilk görseli kolay erişim
+  const researchImageBase64 = researchImages[0]?.data || null;
+  const researchImageMimeType = researchImages[0]?.mimeType || 'image/png';
+  const researchImageUrl = researchImages[0]?.url || null;
 
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
@@ -1465,8 +1468,7 @@ Be concise. 1-2 sentences per point.`
 
     setIsResearchingTopic(true);
     setTopicResearch(null);
-    setResearchImageBase64(null);
-    setResearchImageUrl(null);
+    setResearchImages([]);
 
     // Smart content detection
     const category = detectContentCategory(topic, topicDescription);
@@ -1868,19 +1870,29 @@ YOU MUST search the web. Do NOT guess or make up information.`
             return;
           }
 
-          // ── PHASE 3: Gemini Visual Verification ──
+          // ── PHASE 3: Gemini Multi-Image Verification & Selection ──
+          const maxSelections = Math.min(3, downloadedCandidates.length);
           if (downloadedCandidates.length >= 2) {
-            console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for verification...`);
+            console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for multi-selection (max ${maxSelections})...`);
 
             const verifyParts = [
-              { text: `You are an image identification expert. I need to find the correct image of "${subject}"${contextPart ? ` from "${contextPart}"` : ''}.
+              { text: `You are an expert image analyst. I need to find the BEST reference images of "${subject}"${contextPart ? ` from "${contextPart}"` : ''} for creating a YouTube thumbnail.
 
 I have ${downloadedCandidates.length} candidate images below. Your job:
-1. Identify which image BEST depicts "${subject}" specifically (not a generic related image, not a different character/faction/item)
-2. The image should show the actual character/subject, not a map, logo, faction icon, or unrelated character
+1. Select up to ${maxSelections} images that BEST depict "${subject}" from DIFFERENT ANGLES, POSES, or PERSPECTIVES
+2. Each image should show the actual character/subject — not a map, logo, faction icon, or unrelated item
+3. Prioritize VARIETY: pick images showing different aspects (close-up face, full body, action pose, different outfits, different scenes)
+4. If images are too similar, pick fewer but more diverse ones
 
-Reply with ONLY a single number (1-${downloadedCandidates.length}) for the best match.
-If NONE of the images show "${subject}", reply with 0.` }
+Reply in this EXACT format (one line per selection, no extra text):
+PICK:<number>|<reason>
+
+Example for 3 picks:
+PICK:2|Close-up portrait showing facial details and armor
+PICK:5|Full body action pose with weapon
+PICK:1|Different outfit/scene showing environment
+
+If NONE of the images show "${subject}", reply with: NONE` }
             ];
 
             for (let i = 0; i < downloadedCandidates.length; i++) {
@@ -1896,7 +1908,7 @@ If NONE of the images show "${subject}", reply with 0.` }
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     contents: [{ parts: verifyParts }],
-                    generationConfig: { temperature: 0, maxOutputTokens: 10 }
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 200 }
                   })
                 }
               );
@@ -1904,19 +1916,37 @@ If NONE of the images show "${subject}", reply with 0.` }
               if (verifyResponse.ok) {
                 const verifyData = await verifyResponse.json();
                 const responseText = verifyData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-                const choice = parseInt(responseText);
-                console.log(`[RefImage] 🤖 Gemini chose: "${responseText}" → parsed: ${choice}`);
+                console.log(`[RefImage] 🤖 Gemini multi-select response:\n${responseText}`);
 
-                if (choice > 0 && choice <= downloadedCandidates.length) {
-                  const winner = downloadedCandidates[choice - 1];
-                  console.log(`[RefImage] ✅ Gemini verified: Image ${choice} — ${winner.label} (score:${winner.score})`);
-                  setResearchImageBase64(winner.data);
-                  setResearchImageMimeType(winner.mimeType);
-                  setResearchImageUrl(winner.url);
-                  return;
-                } else if (choice === 0) {
-                  console.log('[RefImage] ⚠️ Gemini says none match — using highest scored');
+                if (responseText !== 'NONE') {
+                  // Parse PICK lines: PICK:2|reason text
+                  const picks = [];
+                  const pickRegex = /PICK:\s*(\d+)\s*\|\s*(.+)/g;
+                  let match;
+                  while ((match = pickRegex.exec(responseText)) !== null) {
+                    const idx = parseInt(match[1]) - 1;
+                    const reason = match[2].trim();
+                    if (idx >= 0 && idx < downloadedCandidates.length && !picks.some(p => p.idx === idx)) {
+                      picks.push({ idx, reason });
+                    }
+                  }
+
+                  if (picks.length > 0) {
+                    const selectedImages = picks.map(p => ({
+                      data: downloadedCandidates[p.idx].data,
+                      mimeType: downloadedCandidates[p.idx].mimeType,
+                      url: downloadedCandidates[p.idx].url,
+                      label: downloadedCandidates[p.idx].label || `Image ${p.idx + 1}`,
+                      score: downloadedCandidates[p.idx].score,
+                      reason: p.reason
+                    }));
+                    console.log(`[RefImage] ✅ Gemini selected ${selectedImages.length} diverse references:`);
+                    selectedImages.forEach((img, i) => console.log(`  ${i + 1}. ${img.label} — ${img.reason}`));
+                    setResearchImages(selectedImages);
+                    return;
+                  }
                 }
+                console.log('[RefImage] ⚠️ Gemini could not pick valid images — using top scored');
               } else {
                 console.log('[RefImage] ⚠️ Gemini verification failed:', verifyResponse.status);
               }
@@ -1925,12 +1955,17 @@ If NONE of the images show "${subject}", reply with 0.` }
             }
           }
 
-          // Fallback: use the highest-scored downloaded candidate
-          const fallback = downloadedCandidates[0];
-          console.log(`[RefImage] 📌 Using fallback: ${fallback.label} (score:${fallback.score})`);
-          setResearchImageBase64(fallback.data);
-          setResearchImageMimeType(fallback.mimeType);
-          setResearchImageUrl(fallback.url);
+          // Fallback: use top scored downloaded candidates (up to 3)
+          const fallbackImages = downloadedCandidates.slice(0, maxSelections).map((c, i) => ({
+            data: c.data,
+            mimeType: c.mimeType,
+            url: c.url,
+            label: c.label || `Image ${i + 1}`,
+            score: c.score,
+            reason: i === 0 ? 'En yüksek skor (birincil referans)' : 'Ek referans görsel'
+          }));
+          console.log(`[RefImage] 📌 Using fallback: top ${fallbackImages.length} scored candidates`);
+          setResearchImages(fallbackImages);
 
         } catch (e) {
           console.log('[RefImage] ❌ Search failed:', e.message);
@@ -2397,7 +2432,13 @@ ${conceptAnalysis ? `REFERENCE STYLE (match this exactly):
 ${conceptAnalysis}
 The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
-${researchImageBase64 ? `TOPIC REFERENCE IMAGE: A reference image of "${topic}" is attached. Study this image carefully - it shows what the topic ACTUALLY looks like. Use this as your primary visual reference for accuracy (colors, shapes, style, distinctive features).
+${researchImages.length > 0 ? `TOPIC REFERENCE IMAGES (${researchImages.length} attached): Multiple reference images of "${topic}" are attached below. These show the topic from DIFFERENT angles and perspectives.
+CRITICAL INSTRUCTIONS:
+- Study ALL reference images carefully — they show what "${topic}" ACTUALLY looks like
+- You MUST incorporate visual elements from AT LEAST ONE of these references into the thumbnail
+- Use them for accuracy: colors, shapes, proportions, distinctive features, clothing/armor details
+- Combine the best visual details from multiple references for a richer, more accurate result
+${researchImages.map((img, i) => `  Reference ${i + 1}: ${img.reason || 'Visual reference'}`).join('\n')}
 ` : ''}
 ${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
@@ -2428,12 +2469,14 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       if (conceptBase64) {
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
-      // Send research-found reference image so the model knows what the topic looks like
-      if (researchImageBase64) {
-        console.log('[Generate] 🖼️ Including research reference image in payload');
-        promptParts.push({ inlineData: { mimeType: researchImageMimeType || "image/png", data: researchImageBase64 } });
+      // Send ALL research reference images so the model has diverse visual references
+      if (researchImages.length > 0) {
+        console.log(`[Generate] 🖼️ Including ${researchImages.length} research reference images in payload`);
+        for (const refImg of researchImages) {
+          promptParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
+        }
       } else {
-        console.log('[Generate] ⚠️ No research reference image available');
+        console.log('[Generate] ⚠️ No research reference images available');
       }
 
       const payload = {
@@ -2625,8 +2668,10 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       if (conceptBase64) {
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
-      if (researchImageBase64) {
-        optimizeParts.push({ inlineData: { mimeType: researchImageMimeType || "image/png", data: researchImageBase64 } });
+      if (researchImages.length > 0) {
+        for (const refImg of researchImages) {
+          optimizeParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
+        }
       }
 
       const payload = {
@@ -3534,7 +3579,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                   <input
                     type="text"
                     value={topic}
-                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); setResearchImageBase64(null); setResearchImageUrl(null); }}
+                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); setResearchImages([]); }}
                     placeholder={t('topicPlaceholder')}
                     className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
@@ -3555,26 +3600,48 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
                       <Gamepad2 className="w-3 h-3" /> {t('aiResearch')}: {topic}
                     </p>
-                    <button onClick={() => { setTopicResearch(null); setResearchImageBase64(null); setResearchImageUrl(null); }} className="text-slate-500 hover:text-white">
+                    <button onClick={() => { setTopicResearch(null); setResearchImages([]); }} className="text-slate-500 hover:text-white">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[200px] overflow-y-auto">
                     {topicResearch}
                   </div>
-                  {researchImageBase64 && (
-                    <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
-                      <img
-                        src={`data:image/png;base64,${researchImageBase64}`}
-                        alt="Reference"
-                        className="w-16 h-16 object-cover rounded-lg border border-amber-500/30"
-                      />
-                      <p className="text-[10px] text-cyan-400 flex-1">
-                        Referans görsel bulundu — thumbnail üretiminde kullanılacak
-                      </p>
-                      <button onClick={() => { setResearchImageBase64(null); setResearchImageUrl(null); }} className="text-slate-500 hover:text-white">
-                        <X className="w-3 h-3" />
-                      </button>
+                  {researchImages.length > 0 && (
+                    <div className="pt-1 border-t border-amber-500/20 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-cyan-400 font-bold">
+                          {researchImages.length} referans görsel bulundu — thumbnail üretiminde kullanılacak
+                        </p>
+                        <button onClick={() => setResearchImages([])} className="text-slate-500 hover:text-white">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {researchImages.map((img, i) => (
+                          <div key={i} className="relative group flex-shrink-0">
+                            <img
+                              src={`data:${img.mimeType || 'image/png'};base64,${img.data}`}
+                              alt={`Reference ${i + 1}`}
+                              className="w-16 h-16 object-cover rounded-lg border border-amber-500/30 hover:border-cyan-400/60 transition-all"
+                            />
+                            <div className="absolute -top-1 -left-1 bg-cyan-500 text-[8px] text-white font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                              {i + 1}
+                            </div>
+                            {img.reason && (
+                              <div className="absolute bottom-full left-0 mb-1 hidden group-hover:block z-50 bg-slate-900 border border-slate-700 rounded-lg p-2 text-[9px] text-slate-300 whitespace-nowrap shadow-xl">
+                                {img.reason}
+                              </div>
+                            )}
+                            <button
+                              onClick={() => setResearchImages(prev => prev.filter((_, idx) => idx !== i))}
+                              className="absolute -top-1 -right-1 bg-red-500/80 rounded-full w-3.5 h-3.5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-2 h-2 text-white" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                   <p className="text-[10px] text-green-400 flex items-center gap-1 pt-1 border-t border-amber-500/20">
