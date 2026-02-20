@@ -1678,12 +1678,16 @@ YOU MUST search the web. Do NOT guess or make up information.`
             return pageCandidates;
           };
 
-          // Strategy 1: Fandom pages from grounding
+          // Strategy 1: Extract ALL wiki sources from grounding (fandom + wikipedia + others)
+          const groundingWikiSubdomains = new Set(); // collect fandom subdomains for Strategy 2
+
+          // 1a: Fandom pages from grounding
           const fandomPages = groundingChunks
             .filter(c => c.web?.uri?.includes('fandom.com/wiki/'))
             .map(c => {
               const match = c.web.uri.match(/https?:\/\/([^.]+)\.fandom\.com\/wiki\/([^?#]+)/);
               if (!match) return null;
+              groundingWikiSubdomains.add(match[1].toLowerCase()); // remember this wiki
               const pageName = decodeURIComponent(match[2].replace(/_/g, ' '));
               const pageNameLower = pageName.toLowerCase();
               let pageScore = 0;
@@ -1695,15 +1699,145 @@ YOU MUST search the web. Do NOT guess or make up information.`
             .filter(Boolean)
             .sort((a, b) => b.score - a.score);
 
-          console.log('[RefImage] 📚 Grounding pages:', fandomPages.map(f => `${f.wiki}/${f.page}(${f.score})`));
+          console.log('[RefImage] 📚 Grounding fandom pages:', fandomPages.map(f => `${f.wiki}/${f.page}(${f.score})`));
 
           for (const { wiki, page } of fandomPages.slice(0, 3)) {
             const candidates = await collectFandomCandidates(wiki, page, 'grounding');
             allCandidates.push(...candidates);
           }
 
-          // Strategy 2: Fandom search
+          // 1b: Wikipedia pages from grounding (direct image extraction)
+          const wikiPages = groundingChunks
+            .filter(c => c.web?.uri?.match(/wikipedia\.org\/wiki\//))
+            .map(c => {
+              const match = c.web.uri.match(/\/wiki\/([^?#]+)/);
+              if (!match) return null;
+              return decodeURIComponent(match[1].replace(/_/g, ' '));
+            })
+            .filter(Boolean);
+
+          for (const wikiPage of [...new Set(wikiPages)].slice(0, 2)) {
+            try {
+              const res = await fetch(
+                `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiPage.replace(/ /g, '_'))}`,
+                { signal: AbortSignal.timeout(6000) }
+              );
+              if (res.ok) {
+                const data = await res.json();
+                if (data.thumbnail?.source) {
+                  const highRes = data.thumbnail.source.replace(/\/\d+px-/, '/800px-');
+                  allCandidates.push({ url: highRes, score: scoreImageName(data.title || wikiPage) + 15, source: 'grounding-wikipedia', label: `Wikipedia(grounding): ${wikiPage}` });
+                  console.log(`[RefImage] 📖 Grounding Wikipedia image: ${wikiPage}`);
+                }
+              }
+            } catch {}
+          }
+
+          // 1c: Direct image URLs from grounding (official sites, press kits etc.)
+          const directImageUrls = groundingChunks
+            .filter(c => c.web?.uri?.match(/\.(jpg|jpeg|png|webp)(\?|$)/i))
+            .map(c => c.web.uri)
+            .slice(0, 3);
+
+          for (const imgUrl of directImageUrls) {
+            allCandidates.push({ url: imgUrl, score: scoreImageName(imgUrl.split('/').pop() || '') + 5, source: 'grounding-direct', label: `Direct: ${imgUrl.split('/').pop()?.substring(0, 40)}` });
+            console.log(`[RefImage] 🔗 Grounding direct image: ${imgUrl.substring(0, 60)}`);
+          }
+
+          // Strategy 2: AI-powered dynamic wiki discovery + fallback static map
           const topicLower = topic.toLowerCase();
+
+          // Step 2a: Ask Gemini to find the correct fandom wiki names for ANY topic
+          let aiDiscoveredWikis = [];
+          try {
+            console.log('[RefImage] 🤖 Asking Gemini to discover relevant wikis for:', topic);
+            const wikiDiscoveryResponse = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [{
+                      text: `You are a wiki/fandom expert. For the topic "${topic}", I need to find reference images.
+
+What are the correct Fandom wiki subdomain names for this topic? Fandom wikis follow the pattern: https://{SUBDOMAIN}.fandom.com
+
+Rules:
+- Give me the EXACT subdomain names (e.g., "eldenring", "leagueoflegends", "totalwar", "naruto", "onepiece", "dragonball")
+- Include the main wiki for the franchise/game AND any related sub-wikis
+- For games: include the game-specific wiki
+- For anime/manga: include the anime wiki
+- For movies/TV: include the show/franchise wiki
+- Also suggest the best Wikipedia search term for this topic
+- Also suggest if there's a dedicated wiki site outside Fandom (e.g., liquipedia for esports)
+
+Reply in this EXACT format (one per line, no extra text):
+WIKI:<subdomain>
+WIKI:<subdomain>
+WPEDIA:<search_term>
+SEARCH:<fandom_search_query>
+
+Example for "Naruto Sasuke":
+WIKI:naruto
+WPEDIA:Sasuke Uchiha
+SEARCH:Sasuke
+
+Example for "Stardew Valley":
+WIKI:stardewvalley
+WPEDIA:Stardew Valley
+SEARCH:Stardew Valley
+
+Example for "Age of Empires 4 Ottoman":
+WIKI:ageofempires
+WPEDIA:Ottoman Empire Age of Empires
+SEARCH:Ottomans`
+                    }]
+                  }],
+                  generationConfig: { temperature: 0, maxOutputTokens: 150 }
+                })
+              }
+            );
+
+            if (wikiDiscoveryResponse.ok) {
+              const wikiData = await wikiDiscoveryResponse.json();
+              const wikiText = wikiData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+              console.log('[RefImage] 🤖 Gemini wiki discovery:', wikiText);
+
+              // Parse WIKI lines
+              const wikiMatches = wikiText.matchAll(/WIKI:\s*(\S+)/g);
+              for (const m of wikiMatches) {
+                const subdomain = m[1].toLowerCase().replace(/[^a-z0-9\-]/g, '');
+                if (subdomain && subdomain.length > 1) aiDiscoveredWikis.push(subdomain);
+              }
+
+              // Parse WPEDIA for extra Wikipedia search
+              const wpediaMatch = wikiText.match(/WPEDIA:\s*(.+)/);
+              if (wpediaMatch) {
+                const wpediaTerm = wpediaMatch[1].trim();
+                if (wpediaTerm && !uniqueTerms.includes(wpediaTerm)) {
+                  uniqueTerms.push(wpediaTerm);
+                  console.log('[RefImage] 📖 AI suggested Wikipedia term:', wpediaTerm);
+                }
+              }
+
+              // Parse SEARCH for better fandom search query
+              const searchMatch = wikiText.match(/SEARCH:\s*(.+)/);
+              if (searchMatch) {
+                const searchTerm = searchMatch[1].trim();
+                if (searchTerm && !uniqueTerms.includes(searchTerm)) {
+                  uniqueTerms.unshift(searchTerm); // prioritize AI search term
+                  console.log('[RefImage] 🔍 AI suggested search term:', searchTerm);
+                }
+              }
+
+              console.log('[RefImage] 🤖 AI discovered wikis:', aiDiscoveredWikis);
+            }
+          } catch (e) {
+            console.log('[RefImage] ⚠️ Wiki discovery failed:', e.message);
+          }
+
+          // Step 2b: Static fallback map (used if AI finds nothing or as supplement)
           const topicWikiMap = [
             { patterns: ['total war'], wikis: ['totalwar'] },
             { patterns: ['warhammer 3', 'warhammer 2', 'warhammer 1', 'warhammer iii', 'warhammer ii'], wikis: ['totalwar', 'warhammerfantasy'] },
@@ -1756,8 +1890,10 @@ YOU MUST search the web. Do NOT guess or make up information.`
             food: ['recipes'], music: ['music'], historical: ['assassinscreed', 'civilization'],
           };
           const fallbackWikis = categoryWikis[category?.id] || [];
-          const wikis = [...new Set([...matchedWikis, ...fallbackWikis])];
-          console.log('[RefImage] 🎮 Wikis:', wikis);
+
+          // Merge: AI-discovered FIRST, then grounding-discovered, then static matches, then category fallbacks
+          const wikis = [...new Set([...aiDiscoveredWikis, ...groundingWikiSubdomains, ...matchedWikis, ...fallbackWikis])];
+          console.log('[RefImage] 🎮 Final wiki list:', wikis, `(AI:${aiDiscoveredWikis.length} Grounding:${groundingWikiSubdomains.size} Static:${matchedWikis.length} Fallback:${fallbackWikis.length})`);
 
           // Search Fandom wikis — collect candidates, don't stop at first
           for (const wiki of wikis.slice(0, 4)) {
