@@ -2432,13 +2432,21 @@ ${conceptAnalysis ? `REFERENCE STYLE (match this exactly):
 ${conceptAnalysis}
 The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
-${researchImages.length > 0 ? `TOPIC REFERENCE IMAGES (${researchImages.length} attached): Multiple reference images of "${topic}" are attached below. These show the topic from DIFFERENT angles and perspectives.
-CRITICAL INSTRUCTIONS:
-- Study ALL reference images carefully — they show what "${topic}" ACTUALLY looks like
-- You MUST incorporate visual elements from AT LEAST ONE of these references into the thumbnail
-- Use them for accuracy: colors, shapes, proportions, distinctive features, clothing/armor details
-- Combine the best visual details from multiple references for a richer, more accurate result
-${researchImages.map((img, i) => `  Reference ${i + 1}: ${img.reason || 'Visual reference'}`).join('\n')}
+${researchImages.length > 0 ? `
+⚠️⚠️⚠️ MANDATORY REFERENCE IMAGES (${researchImages.length} attached) ⚠️⚠️⚠️
+The following ${researchImages.length} reference images labeled [TOPIC_REF_1], [TOPIC_REF_2], etc. show EXACTLY what "${topic}" looks like in reality.
+
+YOU MUST FOLLOW THESE RULES:
+1. DIRECTLY COPY the visual appearance from these references — exact colors, exact shapes, exact proportions, exact distinctive features, exact clothing/armor/outfit details
+2. DO NOT reimagine or reinterpret the subject. The references ARE the ground truth.
+3. If the references show a character with specific armor, weapons, scars, hair color — reproduce them EXACTLY
+4. If the references show a location/object with specific architecture, colors, textures — reproduce them EXACTLY
+5. The thumbnail subject MUST be visually recognizable as the same thing shown in the references
+
+What each reference shows:
+${researchImages.map((img, i) => `  [TOPIC_REF_${i + 1}]: ${img.reason || 'Visual reference'}`).join('\n')}
+
+Use ALL references together to build the most accurate depiction possible.
 ` : ''}
 ${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
@@ -2460,23 +2468,31 @@ Style: ${selectedTypo.prompt}. Mood: ${contentCategory.visualMood}.
 Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture. Must look like a professional YouTube thumbnail, not generic AI art.
 ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
-      // Build parts - image is optional
+      // Build parts — REFERENCE IMAGES FIRST so model prioritizes them
       const promptParts = [{ text: prompt }];
-      if (base64Image) {
-        promptParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
-      }
-      // Send concept/reference image to the model so it can SEE the reference style
-      if (conceptBase64) {
-        promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
-      }
-      // Send ALL research reference images so the model has diverse visual references
+
+      // 1. TOPIC REFERENCE IMAGES — sent first with explicit labels
       if (researchImages.length > 0) {
-        console.log(`[Generate] 🖼️ Including ${researchImages.length} research reference images in payload`);
-        for (const refImg of researchImages) {
+        console.log(`[Generate] 🖼️ Including ${researchImages.length} research reference images in payload (FIRST)`);
+        for (let i = 0; i < researchImages.length; i++) {
+          const refImg = researchImages[i];
+          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — ${refImg.reason || 'Reference image'}. COPY the visual details from this image:` });
           promptParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
       } else {
         console.log('[Generate] ⚠️ No research reference images available');
+      }
+
+      // 2. Person photo (if uploaded)
+      if (base64Image) {
+        promptParts.push({ text: '[PERSON_PHOTO] — The person to include in the thumbnail:' });
+        promptParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
+      }
+
+      // 3. Style/concept reference (if uploaded)
+      if (conceptBase64) {
+        promptParts.push({ text: '[STYLE_REF] — Match this visual style:' });
+        promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
 
       const payload = {
@@ -2585,6 +2601,14 @@ MAXIMUM CLICK-THROUGH PRINCIPLES:
 
 ${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
 
+${researchImages.length > 0 ? `
+⚠️⚠️⚠️ MANDATORY REFERENCE IMAGES (${researchImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.) ⚠️⚠️⚠️
+These reference images show EXACTLY what "${topic}" looks like. You MUST DIRECTLY COPY the visual appearance:
+- Exact colors, shapes, proportions, distinctive features, clothing/armor/outfit details
+- DO NOT reimagine or reinterpret — the references ARE the ground truth
+- The subject in the thumbnail MUST be visually recognizable as the same thing in the references
+` : ''}
+
 ${topicResearch ? `
 📋 EXPERT RESEARCH (CRITICAL - USE THIS FOR AUTHENTICITY):
 ${topicResearch}
@@ -2662,16 +2686,21 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       const optimizeParts = [
         { text: optimizedPrompt },
       ];
+      // Reference images FIRST with labels
+      if (researchImages.length > 0) {
+        for (let i = 0; i < researchImages.length; i++) {
+          const refImg = researchImages[i];
+          optimizeParts.push({ text: `[TOPIC_REF_${i + 1}] — COPY visual details from this:` });
+          optimizeParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
+        }
+      }
       if (base64Image) {
+        optimizeParts.push({ text: '[PERSON_PHOTO]:' });
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
       }
       if (conceptBase64) {
+        optimizeParts.push({ text: '[STYLE_REF]:' });
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
-      }
-      if (researchImages.length > 0) {
-        for (const refImg of researchImages) {
-          optimizeParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
-        }
       }
 
       const payload = {
