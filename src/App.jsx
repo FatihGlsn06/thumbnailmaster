@@ -7,7 +7,8 @@ import {
   ChevronDown, Star, ArrowRight, MoreVertical, Search, Bell, Mic,
   Menu, Home, Compass, PlaySquare, Clock, ThumbsUp, Film, Gamepad2,
   Music, Radio, Trophy, Lightbulb, Shirt, X, User, Smartphone, Grid3X3,
-  TrendingUp, Target, MousePointer, BarChart3, Send, MessageSquare
+  TrendingUp, Target, MousePointer, BarChart3, Send, MessageSquare,
+  CheckCircle, XCircle
 } from 'lucide-react';
 import { WebGLShader } from '@/components/ui/web-gl-shader';
 import { LiquidButton, MetalButton } from '@/components/ui/liquid-glass-button';
@@ -1098,6 +1099,10 @@ const App = () => {
 
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
+
+  // Post-generation verification
+  const [verificationResult, setVerificationResult] = useState(null); // { score, passed, reason, suggestion }
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Revision
   const [revisionText, setRevisionText] = useState('');
@@ -2938,10 +2943,12 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
 
     setLoading(true);
     setError(null);
-    // Reset optimization state for fresh generation
+    // Reset optimization and verification state for fresh generation
     setIsOptimized(false);
     setPreviousImage(null);
     setPreviousCtrScore(null);
+    setVerificationResult(null);
+    setIsVerifying(false);
 
     // ── Determine research data: from existing state OR fresh auto-research ──
     let effectiveResearch = topicResearch;
@@ -3104,6 +3111,9 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       if (generatedBase64) {
         setResultImage(`data:image/png;base64,${generatedBase64}`);
         incrementDailyUsage(); // Günlük kullanım sayacını artır
+
+        // Background verification — non-blocking, user sees image immediately
+        verifyThumbnail(generatedBase64, topic, effectiveResearch, effectiveImages);
       } else {
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
@@ -3111,6 +3121,123 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       setError(err.message || t('unknownError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ═══ Post-generation Verification ═══
+  // Checks if generated thumbnail actually represents the requested topic
+  const verifyThumbnail = async (generatedBase64, topicName, researchData, refImages) => {
+    if (!apiKey || !generatedBase64) return;
+
+    setIsVerifying(true);
+    setVerificationResult(null);
+
+    try {
+      const verifyParts = [
+        { text: `You are a THUMBNAIL QUALITY INSPECTOR. Your job is to verify that a generated YouTube thumbnail ACTUALLY represents the requested topic.
+
+REQUESTED TOPIC: "${topicName}"
+${researchData ? `\nRESEARCH CONTEXT (what the topic actually is):\n${researchData.substring(0, 1500)}` : ''}
+
+TASK: Look at the GENERATED THUMBNAIL below and evaluate:
+
+1. **TOPIC ACCURACY** (0-10): Does this image clearly represent "${topicName}"?
+   - 10: Instantly recognizable as ${topicName} (correct characters, setting, visual identity)
+   - 7-9: Clearly related, most visual elements are correct
+   - 4-6: Somewhat related but generic or missing key visual identifiers
+   - 1-3: Wrong topic, generic fantasy/sci-fi, or could be anything
+   - 0: Completely unrelated
+
+2. **SPECIFICITY** (0-10): Is this SPECIFIC to "${topicName}" or could it be any similar topic?
+   - 10: Unique to this exact topic (correct logos, characters, faction colors, specific scene)
+   - 5: Could be this topic OR several other similar ones
+   - 0: Completely generic (e.g., "generic dark fantasy warrior" instead of a specific game character)
+
+3. **ISSUES**: What specific visual elements are WRONG or MISSING?
+   - Wrong colors/design for the topic?
+   - Missing iconic elements that should be present?
+   - Characters that don't match the topic?
+   - Generic AI art that doesn't represent any specific franchise?
+
+RESPOND IN THIS EXACT FORMAT (single line each):
+ACCURACY:<score 0-10>
+SPECIFICITY:<score 0-10>
+VERDICT:<PASS|WARN|FAIL>
+REASON:<1 sentence explanation in Turkish>
+SUGGESTION:<1 sentence fix suggestion in Turkish, or "Yok" if PASS>
+
+Rules:
+- VERDICT is PASS if both scores >= 7
+- VERDICT is WARN if average >= 5 but either score < 7
+- VERDICT is FAIL if average < 5 or either score <= 3
+- Be STRICT. A generic dark fantasy warrior is NOT a specific game character.
+- A beautiful image that doesn't match the topic is still a FAIL.` },
+        { text: '[GENERATED_THUMBNAIL] — The thumbnail to verify:' },
+        { inlineData: { mimeType: 'image/png', data: generatedBase64 } }
+      ];
+
+      // Add reference images for comparison if available
+      if (refImages && refImages.length > 0) {
+        verifyParts.push({ text: `\n[REFERENCE IMAGES] — What "${topicName}" SHOULD look like (compare against these):` });
+        for (let i = 0; i < Math.min(refImages.length, 2); i++) {
+          if (refImages[i].data) {
+            verifyParts.push({ text: `Reference ${i + 1}: ${refImages[i].reason || 'Visual reference'}` });
+            verifyParts.push({ inlineData: { mimeType: refImages[i].mimeType || 'image/png', data: refImages[i].data } });
+          }
+        }
+      }
+
+      const verifyResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: verifyParts }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 300 }
+          })
+        }
+      );
+
+      if (!verifyResponse.ok) {
+        console.warn('[Verify] ⚠️ Verification API failed:', verifyResponse.status);
+        return;
+      }
+
+      const verifyData = await verifyResponse.json();
+      const responseText = verifyData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      console.log('[Verify] 🔍 Verification response:', responseText);
+
+      // Parse response
+      const accuracyMatch = responseText.match(/ACCURACY:\s*(\d+)/i);
+      const specificityMatch = responseText.match(/SPECIFICITY:\s*(\d+)/i);
+      const verdictMatch = responseText.match(/VERDICT:\s*(PASS|WARN|FAIL)/i);
+      const reasonMatch = responseText.match(/REASON:\s*(.+)/i);
+      const suggestionMatch = responseText.match(/SUGGESTION:\s*(.+)/i);
+
+      const accuracy = accuracyMatch ? parseInt(accuracyMatch[1]) : null;
+      const specificity = specificityMatch ? parseInt(specificityMatch[1]) : null;
+      const verdict = verdictMatch ? verdictMatch[1].toUpperCase() : null;
+      const reason = reasonMatch ? reasonMatch[1].trim() : '';
+      const suggestion = suggestionMatch ? suggestionMatch[1].trim() : '';
+
+      if (verdict) {
+        const result = {
+          accuracy,
+          specificity,
+          score: accuracy !== null && specificity !== null ? Math.round((accuracy + specificity) / 2) : null,
+          passed: verdict === 'PASS',
+          verdict,
+          reason,
+          suggestion: suggestion !== 'Yok' ? suggestion : ''
+        };
+        setVerificationResult(result);
+        console.log(`[Verify] ${verdict === 'PASS' ? '✅' : verdict === 'WARN' ? '⚠️' : '❌'} Verification: ${verdict} (accuracy: ${accuracy}, specificity: ${specificity}) — ${reason}`);
+      }
+    } catch (err) {
+      console.warn('[Verify] ❌ Verification error:', err.message);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -4005,6 +4132,63 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <div className={`w-10 h-10 border-3 ${isRevising ? 'border-cyan-500/30 border-t-cyan-500' : 'border-purple-500/30 border-t-purple-500'} rounded-full animate-spin mb-3`} />
                         <span className="text-white/80 text-sm font-medium">{isRevising ? t('revising') : t('optimizing')}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Verification Badge */}
+                {(isVerifying || verificationResult) && (
+                  <div className={`rounded-xl p-3 border mb-4 ${
+                    isVerifying ? 'bg-blue-500/10 border-blue-500/20' :
+                    verificationResult?.verdict === 'PASS' ? 'bg-green-500/10 border-green-500/20' :
+                    verificationResult?.verdict === 'WARN' ? 'bg-yellow-500/10 border-yellow-500/20' :
+                    'bg-red-500/10 border-red-500/20'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {isVerifying ? (
+                          <>
+                            <RefreshCcw className="w-4 h-4 text-blue-400 animate-spin" />
+                            <span className="text-xs font-bold text-blue-400">Konu doğrulaması yapılıyor...</span>
+                          </>
+                        ) : verificationResult?.verdict === 'PASS' ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                            <span className="text-xs font-bold text-green-400">Konu Doğrulandı</span>
+                          </>
+                        ) : verificationResult?.verdict === 'WARN' ? (
+                          <>
+                            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                            <span className="text-xs font-bold text-yellow-400">Kısmi Eşleşme</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-4 h-4 text-red-400" />
+                            <span className="text-xs font-bold text-red-400">Konu Eşleşmiyor</span>
+                          </>
+                        )}
+                      </div>
+                      {verificationResult?.score !== null && verificationResult?.score !== undefined && (
+                        <span className={`text-lg font-black ${
+                          verificationResult.verdict === 'PASS' ? 'text-green-400' :
+                          verificationResult.verdict === 'WARN' ? 'text-yellow-400' : 'text-red-400'
+                        }`}>{verificationResult.score}/10</span>
+                      )}
+                    </div>
+                    {verificationResult?.reason && (
+                      <p className="text-xs text-slate-300 mt-1">{verificationResult.reason}</p>
+                    )}
+                    {verificationResult?.suggestion && verificationResult.verdict !== 'PASS' && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <p className="text-xs text-amber-300 flex-1">💡 {verificationResult.suggestion}</p>
+                        <button
+                          onClick={generateThumbnail}
+                          disabled={loading}
+                          className="text-xs bg-amber-500/20 border border-amber-500/30 text-amber-300 px-3 py-1 rounded-lg hover:bg-amber-500/30 transition-all whitespace-nowrap"
+                        >
+                          Yeniden Üret
+                        </button>
                       </div>
                     )}
                   </div>
