@@ -1099,10 +1099,23 @@ const App = () => {
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
 
+  // Auto-generate after research completes
+  const [autoGenerateAfterResearch, setAutoGenerateAfterResearch] = useState(false);
+
   // Revision
   const [revisionText, setRevisionText] = useState('');
   const [isRevising, setIsRevising] = useState(false);
   const [preRevisionImage, setPreRevisionImage] = useState(null);
+
+  // Auto-generate: when research finishes and autoGenerate flag is set, trigger thumbnail generation
+  useEffect(() => {
+    if (autoGenerateAfterResearch && topicResearch && !isResearchingTopic) {
+      console.log('[AutoGen] ✅ Research complete, auto-triggering thumbnail generation');
+      setAutoGenerateAfterResearch(false);
+      // Small delay to ensure all state (including researchImages) is settled
+      setTimeout(() => generateThumbnail(), 100);
+    }
+  }, [topicResearch, isResearchingTopic, autoGenerateAfterResearch]);
 
   // Calculate CTR score whenever settings change
   useEffect(() => {
@@ -1569,10 +1582,12 @@ Search the internet and tell me:
 6. What is the audience/community saying about it?
 7. What do official images/videos/promotional materials show?
 8. What makes "${topic}" visually distinctive and recognizable?
+9. YOUTUBE THUMBNAIL RESEARCH: Search for popular YouTube videos about "${topic}". What do the TOP creators' thumbnails look like? What specific visual techniques make them stand out? (e.g., dramatic close-up of a specific character, a particular iconic moment, contrast between elements, unique color grading)
+10. What is a SPECIFIC dramatic/iconic moment or scene from "${topic}" that would make a compelling thumbnail? NOT a generic scene — a UNIQUE, RECOGNIZABLE moment.
 
 Search terms to try:
 - "${topic} ${searchHint}"
-- "${topic} YouTube"
+- "${topic} YouTube thumbnail"
 - "${topic} 2025 2026"
 
 YOU MUST search the web. Do NOT guess or make up information.`
@@ -2604,9 +2619,14 @@ Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT s
 
         const scenePromptGeneral = `${scenePromptBase}
 
+⚠️ ANTI-GENERIC RULE: Create a scene that is SPECIFIC to "${topic}" — not a generic background.
+If the research found what top YouTube creators do for this topic, use that insight.
+Pick a UNIQUE visual angle that would make a viewer say "that's definitely about ${topic}!"
+
 FORMAT (write each section completely):
 
-**SCENE_DESCRIPTION**: Describe the background environment in vivid detail. Include: setting, lighting, colors, atmosphere, key objects, mood. Be very specific - e.g. "A dark, rain-soaked cyberpunk alley with neon signs reflecting off wet pavement, holographic advertisements flickering overhead, steam rising from grates" NOT just "a city street".
+**SCENE_DESCRIPTION**: Describe a background SPECIFIC to "${topic}" — not a generic scene.
+Include: setting, lighting, colors, atmosphere, key objects, mood. Be very specific - e.g. "A dark, rain-soaked cyberpunk alley with neon signs reflecting off wet pavement, holographic advertisements flickering overhead, steam rising from grates" NOT just "a city street".
 
 **COLOR_PALETTE**: List 3-5 dominant colors for the scene (e.g., "deep crimson, electric blue, dark charcoal, golden amber")
 
@@ -2655,12 +2675,16 @@ Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
 IMPORTANT: This is a VIDEO GAME topic. The research above contains detailed character and faction information.
 You MUST use that information to create an AUTHENTIC game-accurate scene. DO NOT invent generic fantasy/sci-fi visuals.
 
+⚠️ ANTI-GENERIC RULE: Do NOT create a generic battle scene or generic fantasy landscape.
+Pick a SPECIFIC, ICONIC, RECOGNIZABLE moment or scene from "${topic}" that fans would instantly identify.
+If "${topic}" is a mod/DLC, show what makes THIS mod UNIQUE — not just generic game content.
+
 FORMAT (write each section completely):
 
-**SCENE_DESCRIPTION**: Describe the game world environment in vivid detail. Use the ACTUAL game's environment style from the research.
-Include: specific location from the game, lighting style matching the game's aesthetic, atmosphere, iconic game elements in the background.
-e.g. for Warhammer 40K: "A ruined cathedral-fortress on a war-torn hive world, gothic architecture with massive stone pillars, skull motifs carved into every surface, the sky torn apart by warp storms glowing sickly purple-green, Imperial Aquila banners hanging torn from the walls, distant explosions lighting up the smog-filled horizon"
-NOT just: "a dark sci-fi background"
+**SCENE_DESCRIPTION**: Describe a SPECIFIC, ICONIC scene from this game — NOT a generic battle.
+Include: a particular RECOGNIZABLE location, a SPECIFIC dramatic moment (not just "armies fighting"), the UNIQUE visual identity of this game/mod.
+e.g. for "Dawnless Days Total War": "The siege of Minas Tirith — the massive white-stone tiered city towering against a sky blackened by Mordor's volcanic ash, thousands of Orc siege towers pressing against the walls, the Witch-King on his Fell Beast circling the top tier, Gondorian trebuchets launching fire into the horde below, the banner of the White Tree visible on the topmost level"
+NOT: "an army of orcs fighting in a field" (too generic, could be any fantasy game)
 
 **COLOR_PALETTE**: Use the EXACT colors from the game/faction. List 4-6 colors with purpose.
 e.g. "Ultramarine blue (#0A2B6E) for armor, gold (#C5A028) for trim and aquila, dark red (#5C0A0A) for eye lenses and wax seals, black (#1A1A1A) for joints and undersuit, bone white (#E8DCC8) for skull decorations"
@@ -2814,6 +2838,14 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
       return;
     }
 
+    // AUTO-RESEARCH: If research hasn't been done yet, do it first then re-trigger generate
+    if (!topicResearch && !isResearchingTopic) {
+      console.log('[Generate] 🔄 Auto-triggering research before generation...');
+      setAutoGenerateAfterResearch(true);
+      researchTopic();
+      return; // Will be re-triggered by useEffect when research completes
+    }
+
     // Günlük kullanım limiti kontrolü
     if (!canGenerate(currentPlan)) {
       const remaining = getRemainingGenerations(currentPlan);
@@ -2836,6 +2868,10 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
 
       const prompt = `Create a cinematic YouTube thumbnail for "${topic}".
 ${topicDescription ? `Context: ${topicDescription}` : ''}
+
+⚠️ ANTI-GENERIC: This thumbnail must be SPECIFIC to "${topic}" — not a generic scene.
+Show a UNIQUE, RECOGNIZABLE moment/element that makes this INSTANTLY identifiable as "${topic}".
+Avoid generic compositions like "two armies fighting" or "person standing in front of landscape".
 
 ${topicResearch ? `VISUAL RESEARCH (follow this closely):
 ${topicResearch}
