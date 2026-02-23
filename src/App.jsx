@@ -54,11 +54,35 @@ const CONTENT_CATEGORIES = {
   },
   education: {
     id: 'education',
-    keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'bilim', 'science', 'matematik', 'tarih', 'history', 'fizik', 'kimya', 'biyoloji', 'edebiyat', 'felsefe', 'psikoloji', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'documentary', 'belgesel', 'araştırma', 'research', 'ramazan', 'namaz', 'ibadet', 'oruç', 'dua', 'kuran', 'quran', 'din', 'islam', 'hristiyanlık', 'budizm', 'meditasyon', 'meditation', 'spirituality', 'maneviyat', 'felsefe', 'philosophy', 'hadis', 'sünnet', 'cami', 'kilise', 'sinagog', 'bayram', 'iftar', 'sahur', 'teravih', 'zekat', 'hac', 'umre', 'mevlid', 'kandil', 'cuma', 'hutbe', 'vaaz', 'ilmihal', 'fıkıh', 'tefsir', 'siyer', 'peygamber', 'sahabe', 'kitap', 'book', 'okuma', 'reading', 'özet', 'summary', 'inceleme', 'review', 'motivasyon', 'motivation', 'kişisel gelişim', 'self improvement', 'psychology', 'mindset'],
+    keywords: ['tutorial', 'nasıl', 'how to', 'öğren', 'learn', 'eğitim', 'ders', 'course', 'lesson', 'tips', 'trick', 'guide', 'rehber', 'bilgi', 'explain', 'explained', 'açıklama', 'nedir', 'what is', 'fact', 'gerçek', 'analiz', 'analysis', 'araştırma', 'research', 'kitap', 'book', 'okuma', 'reading', 'özet', 'summary', 'inceleme', 'review', 'motivasyon', 'motivation', 'kişisel gelişim', 'self improvement', 'psychology', 'psikoloji', 'mindset'],
     temperature: 0.5,
     defaultArchetypes: ['expert_authority', 'mystery_reveal', 'reaction_face'],
     promptStyle: 'clean',
     visualMood: 'Professional, clean, trustworthy, soft lighting with clear focal points',
+  },
+  religion: {
+    id: 'religion',
+    keywords: ['din', 'islam', 'kuran', 'quran', 'allah', 'peygamber', 'prophet', 'muhammed', 'hz', 'hazreti', 'sahabe', 'hadis', 'sünnet', 'namaz', 'prayer', 'ibadet', 'worship', 'oruç', 'fasting', 'ramazan', 'ramadan', 'dua', 'cami', 'mosque', 'kilise', 'church', 'sinagog', 'synagogue', 'bayram', 'iftar', 'sahur', 'teravih', 'zekat', 'hac', 'hajj', 'umre', 'umrah', 'mevlid', 'kandil', 'cuma', 'hutbe', 'vaaz', 'ilmihal', 'fıkıh', 'tefsir', 'siyer', 'maneviyat', 'spirituality', 'meditasyon', 'meditation', 'hristiyanlık', 'christianity', 'budizm', 'buddhism', 'hinduizm', 'hinduism', 'tevrat', 'torah', 'incil', 'bible', 'ayet', 'sure', 'mekke', 'mecca', 'medine', 'medina', 'kabe', 'kaaba', 'minare', 'minaret', 'ezan', 'adhan', 'imam', 'müezzin', 'cennet', 'cehennem', 'ahiret', 'kıyamet', 'melek', 'angel', 'şeytan', 'tasavvuf', 'sufi', 'tarikat', 'evliya', 'fetva', 'helal', 'haram'],
+    temperature: 0.4,
+    defaultArchetypes: ['spiritual_reverence', 'expert_authority', 'mystery_reveal'],
+    promptStyle: 'reverent',
+    visualMood: 'Warm golden light, sacred geometry, reverent atmosphere, soft ethereal glow, contemplative serenity, rich deep colors (gold, deep blue, emerald)',
+  },
+  history: {
+    id: 'history',
+    keywords: ['tarih', 'history', 'imparatorluk', 'empire', 'savaş', 'war', 'fetih', 'conquest', 'antik', 'ancient', 'medeniyet', 'civilization', 'osmanlı', 'ottoman', 'roma', 'roman', 'yunan', 'greek', 'mısır', 'egypt', 'viking', 'moğol', 'mongol', 'bizans', 'byzantine', 'pers', 'persian', 'selçuklu', 'seljuk', 'abbasi', 'emevi', 'endülüs', 'andalusia', 'haçlı', 'crusade', 'ortaçağ', 'medieval', 'rönesans', 'renaissance', 'devrim', 'revolution', 'bağımsızlık', 'independence', 'padişah', 'sultan', 'kral', 'king', 'kraliçe', 'queen', 'hanedan', 'dynasty', 'krallık', 'kingdom', 'yüzyıl', 'century', 'dönem', 'era', 'çağ', 'age', 'arkeoloji', 'archaeology', 'müze', 'museum', 'anıt', 'monument', 'kale', 'castle', 'saray', 'palace', 'piramit', 'pyramid', 'gladyatör', 'gladiator', 'şövalye', 'knight', 'samurai', 'dünya savaşı', 'world war', 'soğuk savaş', 'cold war', 'atatürk', 'kurtuluş', 'çanakkale', 'gallipoli'],
+    temperature: 0.6,
+    defaultArchetypes: ['historical_epic', 'scale_contrast', 'mystery_reveal'],
+    promptStyle: 'epic',
+    visualMood: 'Dramatic, cinematic, painterly, warm golden tones with deep shadows, historically textured, epic scale, oil painting quality',
+  },
+  science: {
+    id: 'science',
+    keywords: ['bilim', 'science', 'fizik', 'physics', 'kimya', 'chemistry', 'biyoloji', 'biology', 'matematik', 'math', 'astronomi', 'astronomy', 'uzay', 'space', 'nasa', 'evren', 'universe', 'galaksi', 'galaxy', 'gezegen', 'planet', 'atom', 'molekül', 'molecule', 'hücre', 'cell', 'dna', 'gen', 'gene', 'evrim', 'evolution', 'kuantum', 'quantum', 'görelilik', 'relativity', 'einstein', 'newton', 'darwin', 'kara delik', 'black hole', 'fotosentez', 'photosynthesis', 'yerçekimi', 'gravity', 'ışık', 'light', 'enerji', 'energy', 'deney', 'experiment', 'laboratuvar', 'laboratory', 'formül', 'formula', 'teori', 'theory', 'keşif', 'discovery', 'icat', 'invention', 'mühendislik', 'engineering', 'tıp', 'medicine', 'beyin', 'brain', 'nöron', 'neuron', 'yapay zeka', 'artificial intelligence', 'robot', 'mars', 'ay', 'moon', 'güneş', 'sun', 'yıldız', 'star', 'teleskop', 'telescope', 'mikroskop', 'microscope', 'belgesel', 'documentary'],
+    temperature: 0.5,
+    defaultArchetypes: ['science_wonder', 'expert_authority', 'mystery_reveal'],
+    promptStyle: 'futuristic',
+    visualMood: 'Awe-inspiring, cosmic depth, bioluminescent accents, clean scientific precision with dramatic reveals, deep space blues and electric highlights',
   },
   vlog: {
     id: 'vlog',
@@ -210,6 +234,37 @@ const CTR_ARCHETYPES = [
     category: 'gaming',
     prompt: 'BEFORE/AFTER COMPOSITION: Clear left/right split showing transformation. Person can appear on both sides or just one side (40-50% of frame). Left side should look weak/poor/struggling. Right side should look powerful/rich/successful. Clear visual arrow or divider between sides. Text overlay at the BOTTOM, large and bold.',
     bestFor: ['Builds', 'Economy', 'Strategy', 'Tutorials']
+  },
+  // --- EDUCATION / RELIGION / HISTORY / SCIENCE ARCHETYPES ---
+  {
+    id: 'spiritual_reverence',
+    nameKey: 'arch_spiritual_reverence',
+    descKey: 'arch_spiritual_reverence_desc',
+    icon: '🕌',
+    ctrBoost: 22,
+    category: 'universal',
+    prompt: 'SPIRITUAL REVERENCE COMPOSITION: Create a SACRED, CONTEMPLATIVE atmosphere. The person (35-45% of frame) in a humble, reverent pose — hands together in prayer, looking upward, or in deep reflection. Background: sacred architecture (mosque interior, cathedral light, temple serenity) with warm golden light streaming through windows/arches. Use SACRED GEOMETRY patterns (Islamic arabesque, mandala, rose window) as subtle overlays or light patterns. Color palette: warm gold, deep blue, emerald green, ivory. Soft ethereal glow around the person. Volumetric light rays (god rays) creating divine atmosphere. The mood must feel PEACEFUL, TRANSCENDENT, and DEEPLY SPIRITUAL. No flashy effects — elegance and reverence only.',
+    bestFor: ['Religion', 'Spirituality', 'Prayer', 'Meditation', 'Faith', 'Quran', 'Islamic', 'Christian']
+  },
+  {
+    id: 'historical_epic',
+    nameKey: 'arch_historical_epic',
+    descKey: 'arch_historical_epic_desc',
+    icon: '⚔️',
+    ctrBoost: 24,
+    category: 'universal',
+    prompt: 'HISTORICAL EPIC COMPOSITION: Create a GRAND, CINEMATIC historical scene. The person (40-50% of frame) dressed in period-accurate armor/clothing, standing against a DRAMATIC historical backdrop — ancient battlefield, grand palace, siege, throne room, or vast empire landscape. Use OIL PAINTING quality rendering with rich, warm tones (gold, crimson, deep bronze). Add dramatic elements: banners/flags waving, army silhouettes in background, smoke/fire from battle, dramatic clouds. Lighting: Renaissance painting style — strong directional light, deep shadows (chiaroscuro). The person should look POWERFUL and DETERMINED. The scale should feel EPIC — vast armies, towering architecture, expansive landscapes. The viewer should feel transported to that historical moment.',
+    bestFor: ['History', 'Empire', 'War', 'Ancient', 'Medieval', 'Ottoman', 'Roman', 'Documentary']
+  },
+  {
+    id: 'science_wonder',
+    nameKey: 'arch_science_wonder',
+    descKey: 'arch_science_wonder_desc',
+    icon: '🔬',
+    ctrBoost: 21,
+    category: 'universal',
+    prompt: 'SCIENCE WONDER COMPOSITION: Create an AWE-INSPIRING scientific visualization. The person (35-45% of frame) looking amazed at a spectacular scientific phenomenon dominating the scene. Show the science topic as a GRAND VISUAL: molecular structures floating, DNA helix spiraling, galaxy/nebula expanding, atomic reactions glowing, biological processes at macro scale, chemical reactions with vibrant colors. Use BIOLUMINESCENT and ELECTRIC accent colors (cyan, electric blue, purple plasma, green phosphorescence) against deep dark backgrounds. Add holographic/translucent effects for scientific elements. Precision meets beauty — like a science museum exhibit brought to life. The viewer should think "Science is AMAZING!"',
+    bestFor: ['Science', 'Physics', 'Biology', 'Chemistry', 'Space', 'Documentary', 'Education']
   },
   // --- UNIVERSAL ARCHETYPES ---
   {
@@ -1574,7 +1629,24 @@ YOU MUST search the web. Do NOT guess or make up information.`
             contextPart = contextMatch ? contextMatch[1].trim() : '';
           } else {
             const words = rawClean.split(' ').filter(w => w.length > 2 && !/^\d+$/.test(w));
-            const franchiseWords = new Set(['total', 'war', 'warhammer', 'elden', 'ring', 'dark', 'souls', 'league', 'legends', 'call', 'duty', 'grand', 'theft', 'auto', 'world', 'warcraft', 'monster', 'hunter', 'final', 'fantasy', 'resident', 'evil', 'assassins', 'creed', 'god', 'breath', 'wild', 'tears', 'kingdom', 'counter', 'strike', 'red', 'dead', 'horizon', 'tomb', 'raider', 'age', 'empires']);
+            // Context words: game franchises + historical/religious/scientific context prefixes
+            const franchiseWords = new Set([
+              // Game franchises
+              'total', 'war', 'warhammer', 'elden', 'ring', 'dark', 'souls', 'league', 'legends',
+              'call', 'duty', 'grand', 'theft', 'auto', 'world', 'warcraft', 'monster', 'hunter',
+              'final', 'fantasy', 'resident', 'evil', 'assassins', 'creed', 'god', 'breath', 'wild',
+              'tears', 'kingdom', 'counter', 'strike', 'red', 'dead', 'horizon', 'tomb', 'raider',
+              'age', 'empires',
+              // Historical context
+              'osmanlı', 'ottoman', 'roman', 'roma', 'byzantine', 'bizans', 'persian', 'pers',
+              'empire', 'imparatorluk', 'ancient', 'antik', 'medieval', 'ortaçağ',
+              'history', 'tarih', 'savaş', 'battle', 'dynasty', 'hanedan',
+              // Religious context
+              'islam', 'islamic', 'christian', 'buddhist', 'hindu', 'jewish',
+              'quran', 'kuran', 'bible', 'incil', 'torah', 'tevrat',
+              // Science context
+              'quantum', 'kuantum', 'theory', 'teori',
+            ]);
             let subjectStartIdx = 0;
             for (let i = 0; i < words.length; i++) {
               if (franchiseWords.has(words[i].toLowerCase()) || /^(i{1,3}|iv|v|vi{0,3})$/i.test(words[i])) {
@@ -1605,15 +1677,35 @@ YOU MUST search the web. Do NOT guess or make up information.`
           const subjectWords = subject.toLowerCase().split(/[\s_\-]+/).filter(w => w.length > 2);
           console.log('[RefImage] 🎯 Subject:', subject, '| Context:', contextPart, '| Terms:', uniqueTerms);
 
-          // ── Image Name Scoring ──
+          // ── Image Name Scoring (category-aware) ──
+          const catId = category?.id || 'general';
+          const isNonGaming = ['religion', 'history', 'science', 'education'].includes(catId);
+
           const scoreImageName = (filename) => {
             const lower = filename.toLowerCase().replace(/[_\-]/g, ' ');
             let score = 0;
             if (lower.includes(subject.toLowerCase())) score += 100;
             for (const word of subjectWords) { if (lower.includes(word)) score += 40; }
-            if (/portrait|render|artwork|character|model|splash|promo|official|full|key[\s_]?art|infobox|main|primary|profile/i.test(filename)) score += 25;
-            if (/screenshot|map|loading|wallpaper|roster|campaign|menu|logo|background|trailer/i.test(filename)) score -= 15;
-            if (/icon|badge|flag|symbol|arrow|nav|button|header|footer|placeholder|banner/i.test(filename)) score -= 50;
+
+            // Positive patterns — universal
+            if (/portrait|artwork|official|full|main|primary|profile|photo/i.test(filename)) score += 25;
+            // Positive patterns — gaming specific
+            if (!isNonGaming && /render|character|model|splash|promo|key[\s_]?art|infobox/i.test(filename)) score += 25;
+            // Positive patterns — history/religion/science specific
+            if (catId === 'history' && /painting|battle|siege|empire|sultan|warrior|armor|conquest|historical|miniature|fresco|mosaic/i.test(filename)) score += 30;
+            if (catId === 'religion' && /mosque|church|temple|prayer|quran|calligraphy|sacred|holy|spiritual|minaret|dome|mihrab|geometric|arabesque/i.test(filename)) score += 30;
+            if (catId === 'science' && /diagram|molecule|atom|cell|dna|galaxy|nebula|planet|microscope|telescope|experiment|illustration|anatomy/i.test(filename)) score += 30;
+
+            // Negative patterns — context-aware
+            if (/screenshot|loading|wallpaper|roster|menu|logo|background|trailer/i.test(filename)) score -= 15;
+            // For history/religion: maps, flags, symbols are VALUABLE not penalties
+            if (isNonGaming) {
+              if (/map|flag|symbol|banner|emblem|coat[\s_]?of[\s_]?arms|crest/i.test(filename)) score += 10;
+            } else {
+              if (/map|flag|symbol|banner/i.test(filename)) score -= 15;
+            }
+            if (/arrow|nav|button|header|footer|placeholder/i.test(filename)) score -= 50;
+            if (/icon|badge/i.test(filename) && !isNonGaming) score -= 50;
             if (/\.svg$/i.test(filename)) score -= 100;
             if (/\.gif$/i.test(filename)) score -= 30;
             return score;
@@ -1759,39 +1851,48 @@ YOU MUST search the web. Do NOT guess or make up information.`
                 body: JSON.stringify({
                   contents: [{
                     parts: [{
-                      text: `You are a wiki/fandom expert. For the topic "${topic}", I need to find reference images.
+                      text: `You are a wiki/fandom/encyclopedia expert. For the topic "${topic}", I need to find HIGH-QUALITY reference images.
 
-What are the correct Fandom wiki subdomain names for this topic? Fandom wikis follow the pattern: https://{SUBDOMAIN}.fandom.com
+What are the best sources for images about this topic?
 
 Rules:
-- Give me the EXACT subdomain names (e.g., "eldenring", "leagueoflegends", "totalwar", "naruto", "onepiece", "dragonball")
-- Include the main wiki for the franchise/game AND any related sub-wikis
-- For games: include the game-specific wiki
-- For anime/manga: include the anime wiki
-- For movies/TV: include the show/franchise wiki
-- Also suggest the best Wikipedia search term for this topic
-- Also suggest if there's a dedicated wiki site outside Fandom (e.g., liquipedia for esports)
+- Give me the EXACT Fandom wiki subdomain names (pattern: https://{SUBDOMAIN}.fandom.com)
+- For games: game-specific wiki (e.g., "eldenring", "totalwar", "naruto")
+- For anime/manga: anime wiki (e.g., "naruto", "onepiece", "dragonball")
+- For historical topics: relevant historical wikis if they exist on Fandom
+- For religious topics: suggest the best Wikipedia articles (they have the best images for mosques, churches, religious art, calligraphy)
+- For science topics: suggest Wikipedia articles with scientific illustrations
+- Also suggest the BEST Wikipedia search term — Wikipedia has excellent images for history, religion, science, art, architecture
+- Suggest the best Wikimedia Commons search query for finding images
 
 Reply in this EXACT format (one per line, no extra text):
 WIKI:<subdomain>
-WIKI:<subdomain>
 WPEDIA:<search_term>
-SEARCH:<fandom_search_query>
+SEARCH:<search_query_for_images>
 
 Example for "Naruto Sasuke":
 WIKI:naruto
 WPEDIA:Sasuke Uchiha
 SEARCH:Sasuke
 
-Example for "Stardew Valley":
-WIKI:stardewvalley
-WPEDIA:Stardew Valley
-SEARCH:Stardew Valley
+Example for "Ottoman Empire Conquest 1453":
+WPEDIA:Fall of Constantinople
+WPEDIA:Ottoman Empire
+SEARCH:Ottoman conquest Constantinople 1453
 
-Example for "Age of Empires 4 Ottoman":
-WIKI:ageofempires
-WPEDIA:Ottoman Empire Age of Empires
-SEARCH:Ottomans`
+Example for "Quran Recitation Ramadan":
+WPEDIA:Quran
+WPEDIA:Ramadan
+SEARCH:Quran recitation mosque
+
+Example for "Photosynthesis Explained":
+WPEDIA:Photosynthesis
+SEARCH:photosynthesis plant cell chloroplast
+
+Example for "Viking History":
+WIKI:assassinscreed
+WPEDIA:Vikings
+SEARCH:Viking warrior Norse`
                     }]
                   }],
                   generationConfig: { temperature: 0, maxOutputTokens: 150 }
