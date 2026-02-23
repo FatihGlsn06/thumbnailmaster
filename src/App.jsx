@@ -66,7 +66,7 @@ const CONTENT_CATEGORIES = {
     temperature: 0.4,
     defaultArchetypes: ['spiritual_reverence', 'expert_authority', 'mystery_reveal'],
     promptStyle: 'reverent',
-    visualMood: 'Warm golden light, sacred geometry, reverent atmosphere, soft ethereal glow, contemplative serenity, rich deep colors (gold, deep blue, emerald)',
+    visualMood: 'PHOTOREALISTIC, real-world photography look, warm golden natural light, authentic mosque/church/temple interiors, real textures, NO cartoon NO illustration NO fantasy NO anime — must look like a high-end photograph taken in a real sacred space',
   },
   history: {
     id: 'history',
@@ -243,7 +243,7 @@ const CTR_ARCHETYPES = [
     icon: '🕌',
     ctrBoost: 22,
     category: 'universal',
-    prompt: 'SPIRITUAL REVERENCE COMPOSITION: Create a SACRED, CONTEMPLATIVE atmosphere. The person (35-45% of frame) in a humble, reverent pose — hands together in prayer, looking upward, or in deep reflection. Background: sacred architecture (mosque interior, cathedral light, temple serenity) with warm golden light streaming through windows/arches. Use SACRED GEOMETRY patterns (Islamic arabesque, mandala, rose window) as subtle overlays or light patterns. Color palette: warm gold, deep blue, emerald green, ivory. Soft ethereal glow around the person. Volumetric light rays (god rays) creating divine atmosphere. The mood must feel PEACEFUL, TRANSCENDENT, and DEEPLY SPIRITUAL. No flashy effects — elegance and reverence only.',
+    prompt: 'SPIRITUAL REVERENCE COMPOSITION — PHOTOREALISTIC ONLY: The person (35-45% of frame) in a humble, reverent pose — hands in prayer, looking down with closed eyes, or in deep contemplation. Background: a REAL modern mosque interior with actual marble floors, real carpets, real chandeliers, real stained glass — NOT fantasy, NOT cartoon, NOT Aladdin-style. Use NATURAL warm golden light coming through real windows. Real architectural details: actual tile work, real wooden minbar, authentic Islamic geometric patterns on walls. Color palette: warm natural gold, cream, deep green, mahogany brown. ABSOLUTELY NO ethereal glow, NO magical effects, NO fantasy elements, NO cartoon style. This must look like a PHOTOGRAPH taken inside a REAL place of worship. Professional DSLR photography quality — real skin texture, real fabric folds, real light behavior. Think National Geographic photo, NOT Disney animation.',
     bestFor: ['Religion', 'Spirituality', 'Prayer', 'Meditation', 'Faith', 'Quran', 'Islamic', 'Christian']
   },
   {
@@ -2599,6 +2599,8 @@ ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
 
 Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
 
+        const isReligion = effectiveCategoryId === 'religion';
+
         const scenePromptGeneral = `${scenePromptBase}
 
 FORMAT (write each section completely):
@@ -2612,6 +2614,38 @@ FORMAT (write each section completely):
 **CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at subject, dramatic perspective, wide-angle lens feel")
 
 **KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
+
+Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
+
+        const scenePromptReligion = `${scenePromptBase}
+
+⚠️ CRITICAL: This is RELIGIOUS/SPIRITUAL content. The scene MUST be PHOTOREALISTIC — like a real photograph.
+ABSOLUTELY NO cartoon, NO anime, NO fantasy illustration, NO magical/ethereal effects, NO Disney/Aladdin style.
+
+FORMAT (write each section completely):
+
+**SCENE_DESCRIPTION**: Describe a REAL, EXISTING type of sacred space. Use PHOTOGRAPHIC realism:
+- For Islamic content: A real modern mosque interior — actual marble floors with real prayer carpets in rows, genuine Ottoman/Seljuk tile work (Iznik tiles with blue, white, red floral patterns), real wooden minbar, actual Arabic calligraphy on walls, real brass/crystal chandeliers, natural daylight through real stained glass windows. Think: Sultan Ahmed Mosque, Suleymaniye Mosque, or a modern clean mosque.
+- For Christian content: A real cathedral interior — actual stone arches, real stained glass, wooden pews, genuine candlelight.
+- For Buddhist content: A real temple — actual wooden beams, real gold leaf on Buddha statues, genuine incense smoke, stone floors.
+NOT "a magical glowing temple" or "ethereal sacred space" — describe a REAL building you could visit.
+
+**COLOR_PALETTE**: Use NATURAL, WARM colors found in real sacred spaces (e.g., "warm ivory marble, deep turquoise Iznik tile, rich burgundy carpet, aged gold chandelier light, natural wood brown")
+
+**PERSON_COSTUME**: REAL, contemporary religious attire:
+- For Islamic: Clean white thobe/dishdasha, or modest everyday clothes with a prayer cap (takke/kufi), or a woman in hijab with modest elegant clothing
+- For Christian: Sunday church attire or modest formal clothing
+- For Buddhist: Simple monastic robes or casual meditation clothing
+MUST be realistic everyday clothes, NOT fantasy robes or costumes.
+
+**CAMERA_ANGLE**: Eye-level or slightly low angle. Portrait-style framing like an editorial photograph. Shallow depth of field with background softly blurred. Think: professional portrait photographer in a mosque/church.
+
+**KEY_EFFECTS**: ONLY natural photographic effects:
+- Soft natural window light with gentle warm tones
+- Subtle bokeh from shallow depth of field
+- Real dust particles visible in light beams (natural, not magical)
+- NO glow effects, NO magical particles, NO ethereal lighting, NO fantasy elements
+- Think: Canon 5D Mark IV, 85mm f/1.4 lens, natural light photography
 
 Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
 
@@ -2720,7 +2754,7 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
         const scenePayload = {
           contents: [{
             parts: [{
-              text: isHistorical ? scenePromptHistorical : isGaming ? scenePromptGaming : scenePromptGeneral
+              text: isReligion ? scenePromptReligion : isHistorical ? scenePromptHistorical : isGaming ? scenePromptGaming : scenePromptGeneral
             }]
           }],
           generationConfig: {
@@ -2848,7 +2882,17 @@ ${overlayText ? `TEXT: "${overlayText}" - Place at bottom, very large and bold, 
 ` : `NO TEXT on this image. Zero letters, words, numbers, or symbols anywhere. The user will add text later.
 `}
 Style: ${selectedTypo.prompt}. Mood: ${contentCategory.visualMood}.
-Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture. Must look like a professional YouTube thumbnail, not generic AI art.
+${['religion'].includes(contentCategory.id) ? `
+⚠️ PHOTOREALISM MANDATE — THIS IS NOT A GAME OR FANTASY SCENE:
+- PHOTOREALISTIC rendering ONLY — this must look like a real photograph
+- Real human skin with pores, real fabric textures, real architectural materials
+- NO cartoon, NO anime, NO illustration, NO fantasy, NO magical effects, NO ethereal glow
+- NO Disney/Pixar/Aladdin style — this is REAL LIFE religious content
+- Natural photography lighting — soft window light, ambient mosque/church light
+- Think: professional documentary photography, National Geographic, editorial portrait
+- Real-world settings only: actual mosques, real prayer rooms, genuine worship spaces
+` : `Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture.`}
+Must look like a professional YouTube thumbnail, not generic AI art.
 ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
       // Build parts — REFERENCE IMAGES FIRST so model prioritizes them
@@ -3053,14 +3097,22 @@ TEXT: "${optimizedText}"
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
 
-CINEMATIC QUALITY (NON-NEGOTIABLE):
+${['religion'].includes(optimizeCategory?.id) ? `
+⚠️ PHOTOREALISM MANDATE — RELIGIOUS CONTENT:
+- PHOTOREALISTIC rendering ONLY — must look like a real photograph
+- Real human skin, real fabric textures, real architectural materials
+- NO cartoon, NO anime, NO illustration, NO fantasy, NO magical/ethereal effects
+- NO Disney/Pixar/Aladdin style — this is REAL LIFE religious content
+- Natural photography lighting, real-world mosque/church/temple settings
+- Think: professional editorial photography, National Geographic quality
+` : `CINEMATIC QUALITY (NON-NEGOTIABLE):
 - 3-point dramatic lighting with strong rim light separation
 - Shallow depth of field, background bokeh, subject tack sharp
 - Professional color grading - crushed blacks, controlled highlights
 - Real skin texture with subsurface scattering, NO plastic/waxy AI look
 - Volumetric atmosphere (god rays, particles, haze)
 - Film grain aesthetic (ISO 400-800), subtle chromatic aberration on edges
-- High dynamic range contrast that POPS at 120px thumbnail size
+- High dynamic range contrast that POPS at 120px thumbnail size`}
 
 ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
 
