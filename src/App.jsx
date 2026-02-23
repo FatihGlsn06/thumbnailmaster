@@ -1714,6 +1714,141 @@ YOU MUST search the web. Do NOT guess or make up information.`
           // ── PHASE 1: Collect candidate URLs from all sources ──
           const allCandidates = []; // { url, score, source, label }
 
+          // ═══ Strategy 0: AI Internet Image Search (PRIMARY for non-gaming) ═══
+          // Uses Gemini with Google Search grounding to find actual image URLs from the internet
+          if (isNonGaming || allCandidates.length < 5) {
+            try {
+              console.log(`[RefImage] 🌐 AI Internet Image Search for "${subject}" (category: ${catId})`);
+
+              const imageSearchHints = {
+                religion: 'high quality photograph, sacred art, religious artwork, mosque interior, church, temple, calligraphy',
+                history: 'historical painting, artwork, illustration, battle scene, portrait, period photograph, museum artifact',
+                science: 'scientific visualization, photograph, microscope image, space photo, diagram, illustration, nature photography',
+                education: 'professional photograph, illustration, infographic, diagram',
+              };
+              const hint = imageSearchHints[catId] || 'high quality photograph illustration';
+
+              const imageSearchPayload = {
+                contents: [{
+                  parts: [{
+                    text: `TASK: Find high-quality reference images for creating a YouTube thumbnail about "${topic}".
+
+Search the internet for: "${subject}" ${hint}
+
+I need you to find 5-8 SPECIFIC image URLs that show "${subject}" clearly.
+
+Look for images from:
+- Wikipedia/Wikimedia Commons (direct file URLs ending in .jpg/.png)
+- Museum websites, art databases
+- News/media sites with editorial photos
+- Official websites, press kits
+- Educational resources with quality visuals
+
+For each image found, give me the DIRECT image URL (must end in .jpg, .jpeg, .png, or .webp, or contain /thumb/ or /images/).
+
+Reply in this EXACT format (one per line):
+IMG:<full_url>|<short_description>
+
+Example:
+IMG:https://upload.wikimedia.org/wikipedia/commons/thumb/example.jpg|Ottoman miniature painting of the siege
+IMG:https://example.com/photo.jpg|Historical photograph of the mosque interior
+
+IMPORTANT: Only give REAL URLs you found via search. Do NOT make up URLs.`
+                  }]
+                }],
+                tools: [{ googleSearch: {} }],
+                generationConfig: { temperature: 0.1, maxOutputTokens: 800 }
+              };
+
+              const imageSearchResponse = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(imageSearchPayload),
+                  signal: AbortSignal.timeout(15000)
+                }
+              );
+
+              if (imageSearchResponse.ok) {
+                const imageSearchData = await imageSearchResponse.json();
+                const imageSearchText = imageSearchData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+                const imageGrounding = imageSearchData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+                console.log('[RefImage] 🌐 AI image search response length:', imageSearchText.length);
+
+                // Parse IMG: lines from AI response
+                const imgRegex = /IMG:\s*(https?:\/\/[^\s|]+)\|?\s*(.*)/g;
+                let imgMatch;
+                let aiImageCount = 0;
+                while ((imgMatch = imgRegex.exec(imageSearchText)) !== null) {
+                  const url = imgMatch[1].trim();
+                  const desc = imgMatch[2]?.trim() || 'AI-found reference';
+                  // Validate URL looks like an image
+                  if (url.match(/\.(jpg|jpeg|png|webp)/i) || url.includes('/thumb/') || url.includes('/images/') || url.includes('upload.wikimedia')) {
+                    allCandidates.push({
+                      url,
+                      score: scoreImageName(url.split('/').pop() || desc) + 50, // High priority for AI-found images
+                      source: 'ai-internet-search',
+                      label: `AI Search: ${desc.substring(0, 50)}`
+                    });
+                    aiImageCount++;
+                    console.log(`[RefImage] 🌐 AI found: ${desc.substring(0, 60)}`);
+                  }
+                }
+
+                // Also extract image URLs from grounding chunks of this search
+                for (const chunk of imageGrounding) {
+                  const uri = chunk.web?.uri;
+                  if (uri && uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i)) {
+                    allCandidates.push({
+                      url: uri,
+                      score: scoreImageName(uri.split('/').pop() || '') + 40,
+                      source: 'ai-search-grounding',
+                      label: `AI Grounding: ${chunk.web?.title?.substring(0, 40) || uri.split('/').pop()?.substring(0, 40)}`
+                    });
+                    aiImageCount++;
+                  }
+                }
+
+                // Extract Wikipedia/Wikimedia image URLs from grounding
+                for (const chunk of imageGrounding) {
+                  const uri = chunk.web?.uri;
+                  if (uri && (uri.includes('wikipedia.org/wiki/') || uri.includes('wikimedia.org'))) {
+                    // Try to get image from this Wikipedia page
+                    const wikiMatch = uri.match(/\/wiki\/([^?#]+)/);
+                    if (wikiMatch) {
+                      const pageName = decodeURIComponent(wikiMatch[1].replace(/_/g, ' '));
+                      try {
+                        const summaryRes = await fetch(
+                          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageName.replace(/ /g, '_'))}`,
+                          { signal: AbortSignal.timeout(5000) }
+                        );
+                        if (summaryRes.ok) {
+                          const summary = await summaryRes.json();
+                          if (summary.originalimage?.source) {
+                            allCandidates.push({
+                              url: summary.originalimage.source,
+                              score: scoreImageName(summary.title || pageName) + 45,
+                              source: 'ai-search-wikipedia',
+                              label: `AI→Wikipedia: ${summary.title || pageName}`
+                            });
+                            aiImageCount++;
+                            console.log(`[RefImage] 🌐→📖 Wikipedia image via AI search: ${summary.title}`);
+                          }
+                        }
+                      } catch {}
+                    }
+                  }
+                }
+
+                console.log(`[RefImage] 🌐 AI Internet Search found ${aiImageCount} image candidates`);
+              }
+            } catch (e) {
+              console.log('[RefImage] ⚠️ AI Internet Image Search failed:', e.message);
+            }
+          }
+
           // Helper: get candidates from a Fandom wiki page
           const collectFandomCandidates = async (wiki, pageTitle, sourceLabel) => {
             const pageCandidates = [];
@@ -1771,6 +1906,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
           };
 
           // Strategy 1: Extract ALL wiki sources from grounding (fandom + wikipedia + others)
+          const skipFandomSearch = isNonGaming && allCandidates.length >= 8;
+          if (skipFandomSearch) {
+            console.log(`[RefImage] ⏭️ Skipping Fandom search — AI internet search found ${allCandidates.length} candidates`);
+          }
+
           const groundingWikiSubdomains = new Set(); // collect fandom subdomains for Strategy 2
 
           // 1a: Fandom pages from grounding
@@ -1840,8 +1980,11 @@ YOU MUST search the web. Do NOT guess or make up information.`
           const topicLower = topic.toLowerCase();
 
           // Step 2a: Ask Gemini to find the correct fandom wiki names for ANY topic
+          // Skip if AI internet search already found plenty of candidates for non-gaming
           let aiDiscoveredWikis = [];
-          try {
+          if (skipFandomSearch) {
+            console.log('[RefImage] ⏭️ Wiki discovery skipped (non-gaming, AI found enough)');
+          } else try {
             console.log('[RefImage] 🤖 Asking Gemini to discover relevant wikis for:', topic);
             const wikiDiscoveryResponse = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -1996,8 +2139,11 @@ SEARCH:Viking warrior Norse`
           const wikis = [...new Set([...aiDiscoveredWikis, ...groundingWikiSubdomains, ...matchedWikis, ...fallbackWikis])];
           console.log('[RefImage] 🎮 Final wiki list:', wikis, `(AI:${aiDiscoveredWikis.length} Grounding:${groundingWikiSubdomains.size} Static:${matchedWikis.length} Fallback:${fallbackWikis.length})`);
 
-          // Search Fandom wikis — collect candidates, don't stop at first
-          for (const wiki of wikis.slice(0, 4)) {
+          // Search Fandom wikis — skip for non-gaming if AI already found enough
+          if (skipFandomSearch) {
+            console.log('[RefImage] ⏭️ Fandom wiki search skipped (non-gaming, AI found enough)');
+          }
+          for (const wiki of (skipFandomSearch ? [] : wikis.slice(0, 4))) {
             for (const term of uniqueTerms.slice(0, 2)) {
               try {
                 const res = await fetch(
