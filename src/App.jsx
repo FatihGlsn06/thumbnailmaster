@@ -1714,19 +1714,20 @@ YOU MUST search the web. Do NOT guess or make up information.`
           // ── PHASE 1: Collect candidate URLs from all sources ──
           const allCandidates = []; // { url, score, source, label }
 
-          // ═══ Strategy 0: AI Internet Image Search (PRIMARY for non-gaming) ═══
+          // ═══ Strategy 0: AI Internet Image Search (ALL categories) ═══
           // Uses Gemini with Google Search grounding to find actual image URLs from the internet
-          if (isNonGaming || allCandidates.length < 5) {
+          {
             try {
               console.log(`[RefImage] 🌐 AI Internet Image Search for "${subject}" (category: ${catId})`);
 
               const imageSearchHints = {
+                gaming: 'official splash art, key art, promotional artwork, character render, game screenshot cinematic, press kit, fan art high quality',
                 religion: 'high quality photograph, sacred art, religious artwork, mosque interior, church, temple, calligraphy',
                 history: 'historical painting, artwork, illustration, battle scene, portrait, period photograph, museum artifact',
                 science: 'scientific visualization, photograph, microscope image, space photo, diagram, illustration, nature photography',
                 education: 'professional photograph, illustration, infographic, diagram',
               };
-              const hint = imageSearchHints[catId] || 'high quality photograph illustration';
+              const hint = imageSearchHints[catId] || 'high quality photograph illustration artwork';
 
               const imageSearchPayload = {
                 contents: [{
@@ -2850,20 +2851,19 @@ ${conceptAnalysis}
 The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
 ${researchImages.length > 0 ? `
-⚠️⚠️⚠️ MANDATORY REFERENCE IMAGES (${researchImages.length} attached) ⚠️⚠️⚠️
-The following ${researchImages.length} reference images labeled [TOPIC_REF_1], [TOPIC_REF_2], etc. show EXACTLY what "${topic}" looks like in reality.
+REFERENCE IMAGES (${researchImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.):
+These show what "${topic}" actually looks like. Use them for VISUAL ACCURACY:
 
-YOU MUST FOLLOW THESE RULES:
-1. DIRECTLY COPY the visual appearance from these references — exact colors, exact shapes, exact proportions, exact distinctive features, exact clothing/armor/outfit details
-2. DO NOT reimagine or reinterpret the subject. The references ARE the ground truth.
-3. If the references show a character with specific armor, weapons, scars, hair color — reproduce them EXACTLY
-4. If the references show a location/object with specific architecture, colors, textures — reproduce them EXACTLY
-5. The thumbnail subject MUST be visually recognizable as the same thing shown in the references
+HOW TO USE THESE REFERENCES:
+1. ACCURACY: Match the correct colors, distinctive features, clothing/armor details, proportions from the references
+2. CREATIVE FREEDOM: You do NOT need to copy the exact pose, angle, or composition — create a NEW, ORIGINAL, DYNAMIC thumbnail composition
+3. COMBINE & ENHANCE: Take the best visual details from multiple references and place them in a fresh, exciting scene
+4. The subject must be RECOGNIZABLE as "${topic}" but the SCENE, ANGLE, LIGHTING and MOOD should be YOUR creative choice
+5. Think of references as a COSTUME/DESIGN GUIDE, not a photo to replicate
 
-What each reference shows:
 ${researchImages.map((img, i) => `  [TOPIC_REF_${i + 1}]: ${img.reason || 'Visual reference'}`).join('\n')}
 
-Use ALL references together to build the most accurate depiction possible.
+IMPORTANT: Each thumbnail generation should look DIFFERENT even with the same references. Vary the angle, composition, background, and mood.
 ` : ''}
 ${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
@@ -2898,12 +2898,14 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       // Build parts — REFERENCE IMAGES FIRST so model prioritizes them
       const promptParts = [{ text: prompt }];
 
-      // 1. TOPIC REFERENCE IMAGES — sent first with explicit labels
+      // 1. TOPIC REFERENCE IMAGES — shuffled order each generation for variety
       if (researchImages.length > 0) {
-        console.log(`[Generate] 🖼️ Including ${researchImages.length} research reference images in payload (FIRST)`);
-        for (let i = 0; i < researchImages.length; i++) {
-          const refImg = researchImages[i];
-          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — ${refImg.reason || 'Reference image'}. COPY the visual details from this image:` });
+        // Shuffle reference order so model doesn't fixate on the same primary image
+        const shuffled = [...researchImages].sort(() => Math.random() - 0.5);
+        console.log(`[Generate] 🖼️ Including ${shuffled.length} reference images (shuffled order: ${shuffled.map(img => img.label?.substring(0, 20)).join(', ')})`);
+        for (let i = 0; i < shuffled.length; i++) {
+          const refImg = shuffled[i];
+          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — ${refImg.reason || 'Reference image'}. Use for visual accuracy (colors, features, outfit):` });
           promptParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
       } else {
@@ -3029,11 +3031,10 @@ MAXIMUM CLICK-THROUGH PRINCIPLES:
 ${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
 
 ${researchImages.length > 0 ? `
-⚠️⚠️⚠️ MANDATORY REFERENCE IMAGES (${researchImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.) ⚠️⚠️⚠️
-These reference images show EXACTLY what "${topic}" looks like. You MUST DIRECTLY COPY the visual appearance:
-- Exact colors, shapes, proportions, distinctive features, clothing/armor/outfit details
-- DO NOT reimagine or reinterpret — the references ARE the ground truth
-- The subject in the thumbnail MUST be visually recognizable as the same thing in the references
+REFERENCE IMAGES (${researchImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.):
+Use these for VISUAL ACCURACY of "${topic}" — match correct colors, features, clothing/armor details.
+But create a COMPLETELY NEW composition — different angle, different pose, different mood than the references.
+The subject must be RECOGNIZABLE but the thumbnail must look FRESH and UNIQUE.
 ` : ''}
 
 ${topicResearch ? `
@@ -3121,11 +3122,12 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
       const optimizeParts = [
         { text: optimizedPrompt },
       ];
-      // Reference images FIRST with labels
+      // Reference images shuffled for variety
       if (researchImages.length > 0) {
-        for (let i = 0; i < researchImages.length; i++) {
-          const refImg = researchImages[i];
-          optimizeParts.push({ text: `[TOPIC_REF_${i + 1}] — COPY visual details from this:` });
+        const shuffled = [...researchImages].sort(() => Math.random() - 0.5);
+        for (let i = 0; i < shuffled.length; i++) {
+          const refImg = shuffled[i];
+          optimizeParts.push({ text: `[TOPIC_REF_${i + 1}] — Reference for accuracy (create NEW composition):` });
           optimizeParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
       }
