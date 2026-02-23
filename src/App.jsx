@@ -1099,23 +1099,10 @@ const App = () => {
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
 
-  // Auto-generate after research completes
-  const [autoGenerateAfterResearch, setAutoGenerateAfterResearch] = useState(false);
-
   // Revision
   const [revisionText, setRevisionText] = useState('');
   const [isRevising, setIsRevising] = useState(false);
   const [preRevisionImage, setPreRevisionImage] = useState(null);
-
-  // Auto-generate: when research finishes and autoGenerate flag is set, trigger thumbnail generation
-  useEffect(() => {
-    if (autoGenerateAfterResearch && topicResearch && !isResearchingTopic) {
-      console.log('[AutoGen] ✅ Research complete, auto-triggering thumbnail generation');
-      setAutoGenerateAfterResearch(false);
-      // Small delay to ensure all state (including researchImages) is settled
-      setTimeout(() => generateThumbnail(), 100);
-    }
-  }, [topicResearch, isResearchingTopic, autoGenerateAfterResearch]);
 
   // Calculate CTR score whenever settings change
   useEffect(() => {
@@ -1532,7 +1519,7 @@ Be concise. 1-2 sentences per point.`
 
   // Research topic/concept using AI (gaming/lore knowledge)
   const researchTopic = async () => {
-    if (!topic || !apiKey) return;
+    if (!topic || !apiKey) return null;
 
     setIsResearchingTopic(true);
     setTopicResearch(null);
@@ -1543,6 +1530,10 @@ Be concise. 1-2 sentences per point.`
     setDetectedCategory(category);
 
     let imageSearchPromise = null;
+    // Closure variables to capture results for direct return (bypasses React state timing)
+    let collectedImages = [];
+    let finalResearch = null;
+    let finalCategory = category;
 
     try {
       const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
@@ -1559,6 +1550,11 @@ Be concise. 1-2 sentences per point.`
         fitness: 'fitness workout training',
       };
       const searchHint = categorySearchHints[category.id] || '';
+
+      // ═══════════════════════════════════════════════════════════════
+      // PHASE 1a: Topic Discovery + PHASE 1b: YouTube Trend Analysis
+      // Both run in PARALLEL via Promise.all for speed
+      // ═══════════════════════════════════════════════════════════════
 
       const searchPayload = {
         contents: [{
@@ -1582,12 +1578,9 @@ Search the internet and tell me:
 6. What is the audience/community saying about it?
 7. What do official images/videos/promotional materials show?
 8. What makes "${topic}" visually distinctive and recognizable?
-9. YOUTUBE THUMBNAIL RESEARCH: Search for popular YouTube videos about "${topic}". What do the TOP creators' thumbnails look like? What specific visual techniques make them stand out? (e.g., dramatic close-up of a specific character, a particular iconic moment, contrast between elements, unique color grading)
-10. What is a SPECIFIC dramatic/iconic moment or scene from "${topic}" that would make a compelling thumbnail? NOT a generic scene — a UNIQUE, RECOGNIZABLE moment.
 
 Search terms to try:
 - "${topic} ${searchHint}"
-- "${topic} YouTube thumbnail"
 - "${topic} 2025 2026"
 
 YOU MUST search the web. Do NOT guess or make up information.`
@@ -1602,23 +1595,99 @@ YOU MUST search the web. Do NOT guess or make up information.`
         }
       };
 
-      const searchResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(searchPayload)
+      // Phase 1b: Dedicated YouTube Thumbnail Trend Analysis
+      const trendPayload = {
+        contents: [{
+          parts: [{
+            text: `You MUST use Google Search. Search for YouTube thumbnails and videos about "${topic}".
+
+TASK: Analyze the YouTube thumbnail landscape for "${topic}" content.
+
+SEARCH QUERIES TO TRY:
+- "${topic}" YouTube
+- "${topic}" YouTube thumbnail
+- "${topic}" en iyi thumbnail
+- best "${topic}" YouTube videos 2025 2026
+
+ANALYZE AND REPORT:
+
+1. **TOP CREATORS**: Who are the biggest YouTube creators making "${topic}" content? List 3-5 channels with their subscriber counts.
+
+2. **THUMBNAIL PATTERNS**: What do the MOST VIEWED videos' thumbnails look like?
+   - Common composition (close-up face? wide shot? split screen? before/after?)
+   - Color schemes (what colors dominate? dark vs bright? high contrast?)
+   - Text usage (do they use text? what font style? how many words?)
+   - Facial expressions (shocked? excited? serious? scared?)
+   - Character/subject positioning (center? left third? full body vs close-up?)
+
+3. **WHAT GETS CLICKS**: Based on view counts, which thumbnail STYLE performs best for "${topic}"?
+   - High-view thumbnails: what do they have in common?
+   - Low-view thumbnails: what mistakes do they make?
+
+4. **UNIQUE TECHNIQUES**: Any CREATIVE or UNUSUAL techniques specific to "${topic}" thumbnails?
+   - Special effects, overlays, comparison layouts
+   - Specific iconic moments or scenes frequently used
+   - Color grading trends (cinematic, vibrant, desaturated)
+
+5. **STANDOUT OPPORTUNITY**: Based on your analysis, what thumbnail approach would STAND OUT from the crowd?
+   - What's overdone that we should avoid?
+   - What's an UNTAPPED visual angle no one is using?
+   - What specific scene/moment would be most eye-catching?
+
+6. **SPECIFIC SCENE RECOMMENDATION**: Describe ONE specific, detailed thumbnail scene that would outperform competitors.
+   Include: exact composition, subject placement, background, color scheme, mood, lighting.
+
+Be SPECIFIC with real data. Name actual channels and video titles when possible.
+YOU MUST search the web. Do NOT guess.`
+          }]
+        }],
+        tools: [{
+          google_search: {}
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 2000
         }
-      );
+      };
+
+      // Run Phase 1a + 1b in PARALLEL
+      console.log('[Research] 🚀 Phase 1a (Topic Discovery) + Phase 1b (YouTube Trends) — running in parallel...');
+      const [searchResponse, trendResponse] = await Promise.all([
+        fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(searchPayload) }
+        ),
+        fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(trendPayload) }
+        ).catch(err => {
+          console.warn('[Research] ⚠️ Phase 1b (YouTube Trends) failed:', err.message);
+          return null;
+        })
+      ]);
 
       const searchData = await searchResponse.json();
 
-      // Extract search result text AND grounding metadata
+      // Extract Phase 1a: search result text AND grounding metadata
       const searchParts = searchData.candidates?.[0]?.content?.parts || [];
       const searchResult = searchParts.map(p => p.text || '').join('\n');
       const groundingMetadata = searchData.candidates?.[0]?.groundingMetadata;
       const searchSuggestions = groundingMetadata?.searchEntryPoint?.renderedContent || '';
       const groundingChunks = groundingMetadata?.groundingChunks || [];
+
+      // Extract Phase 1b: YouTube trend analysis
+      let trendAnalysis = '';
+      if (trendResponse && trendResponse.ok) {
+        try {
+          const trendData = await trendResponse.json();
+          trendAnalysis = trendData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+          console.log(`[Research] ✅ Phase 1b: YouTube trend analysis received (${trendAnalysis.length} chars)`);
+        } catch (e) {
+          console.warn('[Research] ⚠️ Phase 1b parse error:', e.message);
+        }
+      } else {
+        console.log('[Research] ⚠️ Phase 1b: No trend data available, continuing without it');
+      }
 
       // Build source info from grounding
       const sourceInfo = groundingChunks
@@ -2341,6 +2410,7 @@ If NONE of the images show "${subject}", reply with: NONE` }
                     }));
                     console.log(`[RefImage] ✅ Gemini selected ${selectedImages.length} diverse references:`);
                     selectedImages.forEach((img, i) => console.log(`  ${i + 1}. ${img.label} — ${img.reason}`));
+                    collectedImages = selectedImages;
                     setResearchImages(selectedImages);
                     return;
                   }
@@ -2364,6 +2434,7 @@ If NONE of the images show "${subject}", reply with: NONE` }
             reason: i === 0 ? 'En yüksek skor (birincil referans)' : 'Ek referans görsel'
           }));
           console.log(`[RefImage] 📌 Using fallback: top ${fallbackImages.length} scored candidates`);
+          collectedImages = fallbackImages;
           setResearchImages(fallbackImages);
 
         } catch (e) {
@@ -2384,9 +2455,10 @@ ${topicDescription ? `Kullanıcının ek açıklaması: ${topicDescription}` : '
 ${searchResult}
 
 ${sourceInfo ? `\n📎 Kaynaklar:\n${sourceInfo}\n` : ''}
-
+${trendAnalysis ? `\n🎯 YOUTUBE THUMBNAIL TREND ANALİZİ (ÖNEMLİ — BU VERİYİ DE KULLAN!):\n${trendAnalysis}\n` : ''}
 ⚠️ ÖNEMLİ: Yukarıdaki internet araştırması sonuçlarını TEMEL AL.
 "${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
+YouTube trend analizi varsa, başarılı kanalların thumbnail stratejilerini de dikkate al.
 
 Lütfen Türkçe olarak çok detaylı yaz:
 
@@ -2596,6 +2668,7 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
             ? { ...GENERAL_CATEGORY, id: 'historical', visualMood: 'Cinematic, epic, historically authentic, dramatic lighting' }
             : CONTENT_CATEGORIES[aiDetectedCategoryId];
           if (aiCategory) {
+            finalCategory = aiCategory;
             setDetectedCategory(aiCategory);
           }
         }
@@ -2609,7 +2682,15 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
 
 RESEARCH:
 ${researchText}
+${trendAnalysis ? `
+YOUTUBE THUMBNAIL TREND DATA (USE THIS!):
+${trendAnalysis}
 
+Use the trend analysis above to make INFORMED creative decisions:
+- What compositions work best for "${topic}" on YouTube?
+- What do TOP creators do that gets millions of views?
+- What's an UNTAPPED visual angle that would STAND OUT from competitors?
+` : ''}
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
 
@@ -2806,26 +2887,36 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
           console.warn('Scene direction was truncated. Using partial result.');
         }
 
-        // Combine research + scene description
-        const combinedResearch = sceneDescription
-          ? `${researchText}\n\n🎬 READY-TO-USE SCENE DIRECTION:\n${sceneDescription}`
-          : researchText;
+        // Combine research + trend analysis + scene description
+        let combinedResearch = researchText;
+        if (trendAnalysis) {
+          combinedResearch += `\n\n📊 YOUTUBE THUMBNAIL TREND ANALİZİ:\n${trendAnalysis}`;
+        }
+        if (sceneDescription) {
+          combinedResearch += `\n\n🎬 READY-TO-USE SCENE DIRECTION:\n${sceneDescription}`;
+        }
 
+        finalResearch = combinedResearch;
         setTopicResearch(combinedResearch);
       } else {
+        finalResearch = 'Araştırma yapılamadı.';
         setTopicResearch('Araştırma yapılamadı.');
       }
     } catch (err) {
+      finalResearch = 'Araştırma hatası: ' + err.message;
       setTopicResearch('Araştırma hatası: ' + err.message);
     } finally {
       // Wait for background image search to complete before marking research done
       if (imageSearchPromise) {
         console.log('[Research] ⏳ Waiting for reference image search to complete...');
         await imageSearchPromise;
-        console.log('[Research] ✅ Reference image search finished, researchImageBase64 set:', !!researchImageBase64);
+        console.log('[Research] ✅ Reference image search finished, images collected:', collectedImages.length);
       }
       setIsResearchingTopic(false);
     }
+
+    // Return collected data for direct use (bypasses React state timing)
+    return { research: finalResearch, images: collectedImages, category: finalCategory };
   };
 
   const generateThumbnail = async () => {
@@ -2836,14 +2927,6 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
     if (!topic) {
       setError(t('uploadPhotoAndTopic'));
       return;
-    }
-
-    // AUTO-RESEARCH: If research hasn't been done yet, do it first then re-trigger generate
-    if (!topicResearch && !isResearchingTopic) {
-      console.log('[Generate] 🔄 Auto-triggering research before generation...');
-      setAutoGenerateAfterResearch(true);
-      researchTopic();
-      return; // Will be re-triggered by useEffect when research completes
     }
 
     // Günlük kullanım limiti kontrolü
@@ -2860,11 +2943,39 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
     setPreviousImage(null);
     setPreviousCtrScore(null);
 
+    // ── Determine research data: from existing state OR fresh auto-research ──
+    let effectiveResearch = topicResearch;
+    let effectiveImages = researchImages;
+    let effectiveCategory = detectedCategory;
+
+    // AUTO-RESEARCH: If research hasn't been done, await it and use returned data directly
+    if (!effectiveResearch && !isResearchingTopic) {
+      console.log('[Generate] 🔄 Auto-triggering research before generation...');
+      try {
+        const result = await researchTopic();
+        if (!result || !result.research) {
+          console.log('[Generate] ❌ Auto-research failed or returned no data');
+          setLoading(false);
+          return;
+        }
+        // Use returned data directly — no React state timing dependency
+        effectiveResearch = result.research;
+        effectiveImages = result.images || [];
+        effectiveCategory = result.category || detectContentCategory(topic, topicDescription);
+        console.log(`[Generate] ✅ Auto-research complete: ${effectiveResearch.length} chars, ${effectiveImages.length} images`);
+      } catch (err) {
+        console.error('[Generate] ❌ Auto-research error:', err);
+        setError('Araştırma sırasında hata oluştu: ' + err.message);
+        setLoading(false);
+        return;
+      }
+    }
+
     const selectedTypo = typographyOptions.find(t => t.id === typoStyle);
 
     try {
       // Smart content detection for parameter tuning
-      const contentCategory = detectedCategory || detectContentCategory(topic, topicDescription);
+      const contentCategory = effectiveCategory || detectContentCategory(topic, topicDescription);
 
       const prompt = `Create a cinematic YouTube thumbnail for "${topic}".
 ${topicDescription ? `Context: ${topicDescription}` : ''}
@@ -2873,8 +2984,8 @@ ${topicDescription ? `Context: ${topicDescription}` : ''}
 Show a UNIQUE, RECOGNIZABLE moment/element that makes this INSTANTLY identifiable as "${topic}".
 Avoid generic compositions like "two armies fighting" or "person standing in front of landscape".
 
-${topicResearch ? `VISUAL RESEARCH (follow this closely):
-${topicResearch}
+${effectiveResearch ? `VISUAL RESEARCH (follow this closely):
+${effectiveResearch}
 
 Follow the SCENE DIRECTION sections above precisely:
 - Use SCENE_DESCRIPTION for background, COLOR_PALETTE for colors, CHARACTER_VISUAL for character details.
@@ -2886,8 +2997,8 @@ ${conceptAnalysis ? `REFERENCE STYLE (match this exactly):
 ${conceptAnalysis}
 The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
-${researchImages.length > 0 ? `
-REFERENCE IMAGES (${researchImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.):
+${effectiveImages.length > 0 ? `
+REFERENCE IMAGES (${effectiveImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.):
 These show what "${topic}" actually looks like. Use them for VISUAL ACCURACY:
 
 HOW TO USE THESE REFERENCES:
@@ -2897,7 +3008,7 @@ HOW TO USE THESE REFERENCES:
 4. The subject must be RECOGNIZABLE as "${topic}" but the SCENE, ANGLE, LIGHTING and MOOD should be YOUR creative choice
 5. Think of references as a COSTUME/DESIGN GUIDE, not a photo to replicate
 
-${researchImages.map((img, i) => `  [TOPIC_REF_${i + 1}]: ${img.reason || 'Visual reference'}`).join('\n')}
+${effectiveImages.map((img, i) => `  [TOPIC_REF_${i + 1}]: ${img.reason || 'Visual reference'}`).join('\n')}
 
 IMPORTANT: Each thumbnail generation should look DIFFERENT even with the same references. Vary the angle, composition, background, and mood.
 ` : ''}
@@ -2912,7 +3023,7 @@ ${base64Image ? `PERSON PHOTO UPLOADED:
 - For game content with non-human CHARACTER_TYPE: Person stays human, appears smaller in corner reacting to the game creature.
 - For game content with human CHARACTER_TYPE: Transform clothing to match the character's exact armor/outfit from research.
 ` : `No person photo provided. Create a compelling scene from scratch based on the topic.
-${topicResearch ? 'Follow CHARACTER_VISUAL and THUMBNAIL_COMPOSITION from research for character appearance and layout.' : ''}
+${effectiveResearch ? 'Follow CHARACTER_VISUAL and THUMBNAIL_COMPOSITION from research for character appearance and layout.' : ''}
 `}
 ${overlayText ? `TEXT: "${overlayText}" - Place at bottom, very large and bold, thick black outline, glow effect in scene's dominant color. Never over the face. Avoid bottom-right corner.
 ` : `NO TEXT on this image. Zero letters, words, numbers, or symbols anywhere. The user will add text later.
@@ -2935,9 +3046,9 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       const promptParts = [{ text: prompt }];
 
       // 1. TOPIC REFERENCE IMAGES — shuffled order each generation for variety
-      if (researchImages.length > 0) {
+      if (effectiveImages.length > 0) {
         // Shuffle reference order so model doesn't fixate on the same primary image
-        const shuffled = [...researchImages].sort(() => Math.random() - 0.5);
+        const shuffled = [...effectiveImages].sort(() => Math.random() - 0.5);
         console.log(`[Generate] 🖼️ Including ${shuffled.length} reference images (shuffled order: ${shuffled.map(img => img.label?.substring(0, 20)).join(', ')})`);
         for (let i = 0; i < shuffled.length; i++) {
           const refImg = shuffled[i];
