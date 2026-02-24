@@ -379,7 +379,7 @@ const CTR_ARCHETYPES = [
 
 // CTR Score Calculator
 const calculateCTRScore = (settings, t) => {
-  let score = 50; // Base score
+  let score = 62; // Base score — a well-prompted AI thumbnail starts decent
   const issues = [];
   const boosts = [];
 
@@ -392,28 +392,25 @@ const calculateCTRScore = (settings, t) => {
     }
   }
 
-  // Topic description bonus
+  // Topic description bonus (optional — not a penalty if missing)
   if (settings.topicDescription && settings.topicDescription.length > 50) {
-    score += 10;
-    boosts.push({ text: t('detailedDescription'), value: '+10' });
-  } else if (!settings.topicDescription) {
-    score -= 5;
-    issues.push({ text: t('missingDescription'), fix: t('addDescription'), impact: 5 });
+    score += 8;
+    boosts.push({ text: t('detailedDescription'), value: '+8' });
+  } else if (settings.topicDescription && settings.topicDescription.length > 0) {
+    score += 3;
+    boosts.push({ text: t('detailedDescription'), value: '+3' });
   }
 
-  // Overlay text check
+  // Overlay text check (many pro thumbnails have no text — not a harsh penalty)
   if (settings.overlayText) {
     const words = settings.overlayText.trim().split(/\s+/).length;
     if (words <= 3) {
-      score += 8;
-      boosts.push({ text: t('shortText'), value: '+8' });
+      score += 6;
+      boosts.push({ text: t('shortText'), value: '+6' });
     } else if (words > 5) {
-      score -= 10;
-      issues.push({ text: t('textTooLong'), fix: t('shortenText'), impact: 10 });
+      score -= 5;
+      issues.push({ text: t('textTooLong'), fix: t('shortenText'), impact: 5 });
     }
-  } else {
-    score -= 5;
-    issues.push({ text: t('noThumbnailText'), fix: t('addAttentionText'), impact: 5 });
   }
 
   // Typography style bonus (2026 - color harmony focused)
@@ -421,23 +418,23 @@ const calculateCTRScore = (settings, t) => {
   const goodTypoStyles = ['cinematic_epic', 'comic_action', 'elegant_modern'];
 
   if (highCtrTypoStyles.includes(settings.typoStyle)) {
-    score += 10;
-    boosts.push({ text: t('colorMatchedStyle'), value: '+10' });
+    score += 8;
+    boosts.push({ text: t('colorMatchedStyle'), value: '+8' });
   } else if (goodTypoStyles.includes(settings.typoStyle)) {
-    score += 6;
-    boosts.push({ text: t('qualityTypo'), value: '+6' });
+    score += 5;
+    boosts.push({ text: t('qualityTypo'), value: '+5' });
   }
 
   // Photo/visual bonus
   if (settings.hasPhoto) {
-    score += 8;
-    boosts.push({ text: t('containsFace'), value: '+8' });
+    score += 7;
+    boosts.push({ text: t('containsFace'), value: '+7' });
   }
 
   // Optimization bonus - when "Make it more clickable" was used
   if (settings.isOptimized) {
-    score += 15;
-    boosts.push({ text: t('aiOptimizationApplied'), value: '+15' });
+    score += 12;
+    boosts.push({ text: t('aiOptimizationApplied'), value: '+12' });
   }
 
   // Clamp score
@@ -446,13 +443,13 @@ const calculateCTRScore = (settings, t) => {
   // Determine CTR likelihood
   let likelihood = t('ctrLow');
   let likelihoodColor = 'text-red-400';
-  if (score >= 80) {
+  if (score >= 85) {
     likelihood = t('ctrVeryHigh');
     likelihoodColor = 'text-green-400';
-  } else if (score >= 65) {
+  } else if (score >= 70) {
     likelihood = t('ctrHigh');
     likelihoodColor = 'text-emerald-400';
-  } else if (score >= 50) {
+  } else if (score >= 55) {
     likelihood = t('ctrMedium');
     likelihoodColor = 'text-yellow-400';
   }
@@ -4015,8 +4012,18 @@ Respond in ENGLISH. Be specific to "${topic}", not generic.`
       // Smart content detection for parameter tuning
       const contentCategory = effectiveCategory || detectContentCategory(topic, topicDescription);
 
-      const prompt = `Create a cinematic YouTube thumbnail for "${topic}".
+      const prompt = `Create a HIGH-CTR cinematic YouTube thumbnail for "${topic}".
 ${topicDescription ? `Context: ${topicDescription}` : ''}
+
+🎯 HIGH-CTR THUMBNAIL PRINCIPLES (APPLY ALL):
+- EXTREME close-up or dramatic angle — fill the frame, no dead space
+- HIGH CONTRAST — subject pops from background with strong rim lighting and color separation
+- BOLD FOCAL POINT — one dominant element takes 50-70% of the frame
+- CINEMATIC DEPTH — sharp foreground subject, blurred/atmospheric background (bokeh effect)
+- SATURATED COLORS — boost vibrancy 20-30% above realistic, make colors POP on a small screen
+- DRAMATIC LIGHTING — strong 3-point lighting with visible rim/back light, volumetric rays or god rays where fitting
+- EMOTIONAL INTENSITY — facial expressions exaggerated, action frozen at peak moment
+- VISUAL HIERARCHY — viewer's eye goes immediately to the main subject, no competing elements
 
 ⚠️ CRITICAL RULE #1: ${effectiveImages.length > 0 ? `I am attaching ${effectiveImages.length} REFERENCE IMAGES labeled [TOPIC_REF_1] etc. These show the REAL visual appearance of "${topic}". Your generated thumbnail MUST visually match these references — same character designs, same color schemes, same visual identity. Study each reference image pixel by pixel before generating.` : `This thumbnail must be SPECIFIC to "${topic}" — not a generic scene.`}
 Show a UNIQUE, RECOGNIZABLE moment/element that makes this INSTANTLY identifiable as "${topic}".
@@ -4071,7 +4078,7 @@ ${['religion'].includes(contentCategory.id) ? `
 - Think: professional documentary photography, National Geographic, editorial portrait
 - Real-world settings only: actual mosques, real prayer rooms, genuine worship spaces
 ` : `Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture.`}
-Must look like a professional YouTube thumbnail, not generic AI art.
+This must look like a TOP 1% YouTube thumbnail — the kind that gets 10M+ views. Ultra-polished, maximum visual impact, zero dead space.
 ${effectiveVisualDNA ? `
 ═══ VISUAL DNA — HARD STYLE CONSTRAINTS (${effectiveImages.length > 0 ? 'EXTRACTED FROM REFERENCE IMAGES' : 'INFERRED FROM RESEARCH — NO VERIFIED IMAGES AVAILABLE'}) ═══
 ${effectiveImages.length === 0 ? `⚠️ WARNING: There are NO verified reference images for "${topic}". Do NOT default to generic gaming setups, esports PCs, keyboards, or controller imagery. Generate based PURELY on the game's own described visual style below.` : `The following rules were extracted by analyzing the actual reference images of "${topic}".`}
@@ -4610,10 +4617,10 @@ VERDICT rules UPDATE:
     try {
       const optimizeCategory = detectedCategory || detectContentCategory(topic, topicDescription);
 
-      const optimizedPrompt = `You are a world-class YouTube thumbnail designer specializing in HIGH-CTR thumbnails.
+      const optimizedPrompt = `You are MrBeast's personal thumbnail designer. Your ONLY goal: MAXIMUM CLICKS. This thumbnail must be in the TOP 0.1% of YouTube.
 
-⚠️ CRITICAL: I am showing you the CURRENT THUMBNAIL first. Your job is to IMPROVE it — NOT replace it with something completely different.
-Keep the SAME subject, SAME concept, SAME character, SAME scene. Only enhance the VISUAL IMPACT and CLICKABILITY.
+⚠️ CRITICAL: I am showing you the CURRENT THUMBNAIL first. Your job is to make it IRRESISTIBLE to click — NOT replace it with something completely different.
+Keep the SAME subject, SAME concept, SAME character, SAME scene. TRANSFORM the visual impact to 11/10.
 
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
@@ -4621,15 +4628,18 @@ ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
 WHAT TO KEEP (DO NOT CHANGE):
 - The main subject/character — keep the SAME visual identity
 - The overall scene/setting — keep the SAME world
-- Color palette — keep the SAME mood (you may boost saturation/contrast)
 - Any specific visual details from the reference images
 
-WHAT TO IMPROVE (ENHANCE ONLY):
-- Make composition more DRAMATIC (closer crop, more dynamic angle)
-- Boost CONTRAST — subject must POP from background more
-- Add ENERGY effects (glow, rim lighting, particles) if not already present
-- Make the focal point LARGER and more dominant
-- Enhance lighting — stronger 3-point setup, dramatic shadows
+🔥 MAXIMUM CTR TRANSFORMATION — APPLY ALL:
+- EXTREME CLOSE-UP — crop tighter, subject fills 60-80% of frame, zero dead space
+- HYPER CONTRAST — boost contrast to the max, subject EXPLODES from background
+- SATURATE +40% — colors must POP even on a tiny phone screen
+- DRAMATIC RIM LIGHTING — strong bright edge light behind subject, makes them glow
+- CINEMATIC DEPTH — ultra-blurred background (f/1.4 bokeh), razor-sharp subject
+- VOLUMETRIC ATMOSPHERE — add light rays, particles, smoke, or energy for depth
+- EMOTIONAL PEAK — capture the most intense moment, exaggerated expressions
+- COLOR GRADING — professional Hollywood-grade color grading (teal-orange, cold-warm split)
+- FOCAL DOMINANCE — one thing grabs attention, everything else serves it
 
 ${archetype ? `COMPOSITION ARCHETYPE: ${archetype.name}
 ${archetype.prompt}` : ''}
