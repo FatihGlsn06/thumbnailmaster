@@ -1761,11 +1761,26 @@ SEARCH FOR: "${topic}"${userContext}
 
 The user is creating a YouTube thumbnail about "${topic}".
 IMPORTANT: "${topic}" is a specific topic/product/subject — treat it as a PROPER NOUN first.
+${topicDescription ? `USER CONTEXT: "${topicDescription}" — use this to understand what the user means.` : ''}
 
 Search terms to try:
 - "${topic} ${searchHint}"
 - "${topic} 2025 2026"
 - "${topic} YouTube thumbnail"
+
+⚠️ CRITICAL — TOPIC IDENTITY VERIFICATION:
+Before writing your answer, VERIFY that what you found actually matches "${topic}".
+Search engines often return results for SIMILAR-SOUNDING but DIFFERENT topics.
+Examples of common confusion:
+- "Eldagarde" (indie game) ≠ "Edelgard von Hresvelg" (Fire Emblem character)
+- "Valorant" (game) ≠ "Valiant" (comics)
+- "Apex" (game) ≠ "Apex" (company)
+
+If search results are about a DIFFERENT topic than "${topic}":
+1. State clearly: "MISMATCH: Search returned results about [X] but user asked about [Y]"
+2. Try additional searches with quotes: "${topic}" exact match
+3. If no exact match found, state: "TOPIC_NOT_FOUND: Could not find specific information about '${topic}'"
+4. In that case, describe ONLY what can be inferred from the name and user context
 
 PART A — TOPIC IDENTITY:
 1. What EXACTLY is "${topic}"? (game, product, concept, place, person, event, etc.)
@@ -1782,7 +1797,8 @@ PART B — YOUTUBE THUMBNAIL TRENDS:
 4. **STANDOUT OPPORTUNITY**: What's overdone? What's an untapped visual angle?
 5. **SCENE RECOMMENDATION**: One specific thumbnail scene that would outperform competitors (composition, colors, mood, lighting).
 
-YOU MUST search the web. Do NOT guess. Be SPECIFIC with real data.`
+YOU MUST search the web. Do NOT guess. Be SPECIFIC with real data.
+NEVER confuse "${topic}" with a different topic that has a similar name.`
           }]
         }],
         tools: [{
@@ -1812,7 +1828,13 @@ YOU MUST search the web. Do NOT guess. Be SPECIFIC with real data.`
       // Extract trend section from unified response (Part B)
       const trendSectionMatch = searchResult.match(/PART B[\s\S]*([\s\S]*)/i);
       let trendAnalysis = trendSectionMatch ? trendSectionMatch[0] : '';
-      console.log(`[Research] ✅ Phase 1: Unified research received (${searchResult.length} chars, trend section: ${trendAnalysis.length} chars)`);
+
+      // ── Topic Mismatch Detection ──
+      const hasMismatch = /MISMATCH:|TOPIC_NOT_FOUND:/i.test(searchResult);
+      if (hasMismatch) {
+        console.warn(`[Research] ⚠️ TOPIC MISMATCH DETECTED — research may be about a different topic than "${topic}"`);
+      }
+      console.log(`[Research] ✅ Phase 1: Unified research received (${searchResult.length} chars, trend: ${trendAnalysis.length} chars${hasMismatch ? ', ⚠️ MISMATCH' : ''})`);
 
       // Build source info from grounding
       const sourceInfo = groundingChunks
@@ -1942,14 +1964,21 @@ YOU MUST search the web. Do NOT guess. Be SPECIFIC with real data.`
                 contents: [{
                   parts: [{
                     text: `TASK: Find high-quality reference images for creating a YouTube thumbnail about "${topic}".
+${topicDescription ? `USER CONTEXT: "${topicDescription}"` : ''}
 
 Search the internet for: "${subject}" ${hint}
+
+⚠️ CRITICAL — TOPIC IDENTITY: You are searching for "${topic}" EXACTLY as typed.
+Do NOT search for similar-sounding topics. For example:
+- If topic is "Eldagarde", do NOT search for "Edelgard" or "Edelgard von Hresvelg"
+- If topic is "Apex", search for the SPECIFIC context given by the user
+Search with EXACT spelling: "${topic}"
 
 I need you to find 5-8 SPECIFIC image URLs that show "${subject}" clearly.
 
 Look for images from:
 - Wikipedia/Wikimedia Commons (direct file URLs ending in .jpg/.png)
-- Museum websites, art databases
+- Official game/product websites, Steam store pages
 - News/media sites with editorial photos
 - Official websites, press kits
 - Educational resources with quality visuals
@@ -1963,7 +1992,8 @@ Example:
 IMG:https://upload.wikimedia.org/wikipedia/commons/thumb/example.jpg|Ottoman miniature painting of the siege
 IMG:https://example.com/photo.jpg|Historical photograph of the mosque interior
 
-IMPORTANT: Only give REAL URLs you found via search. Do NOT make up URLs.`
+IMPORTANT: Only give REAL URLs you found via search. Do NOT make up URLs.
+IMPORTANT: Images MUST be about "${topic}" specifically, NOT about similar-named topics.`
                   }]
                 }],
                 tools: [{ googleSearch: {} }],
@@ -2585,6 +2615,11 @@ ${trendAnalysis ? `\n🎯 YOUTUBE THUMBNAIL TREND ANALİZİ (ÖNEMLİ — BU VER
 "${topic}" kelimesinin sözlük anlamını DEĞİL, yukarıda bulunan GERÇEK bilgileri kullan.
 YouTube trend analizi varsa, başarılı kanalların thumbnail stratejilerini de dikkate al.
 
+⚠️ KONU DOĞRULAMA: Araştırma sonuçları "${topic}" İLE BİREBİR eşleşiyor mu kontrol et!
+Eğer araştırma sonuçları FARKLI bir konu hakkındaysa (benzer isim ama farklı şey), bunu REDDET.
+Örnek: Kullanıcı "Eldagarde" yazdıysa ama araştırma "Edelgard von Hresvelg (Fire Emblem)" döndüyse → bu YANLIŞ KONU!
+Bu durumda araştırma sonuçlarını görmezden gel ve sadece konu adından + kullanıcı bağlamından çıkarım yap.
+
 Lütfen Türkçe olarak çok detaylı yaz:
 
 ⚡ 0. **İÇERİK KATEGORİSİ** (İLK ÖNCE BUNU BELİRLE!):
@@ -2818,6 +2853,8 @@ Use the trend analysis above to make INFORMED creative decisions:
 ` : ''}
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
+
+⚠️ TOPIC GUARD: Your scene MUST be about "${topic}" EXACTLY. If the research above seems to be about a DIFFERENT topic with a similar name (e.g. research says "Edelgard von Hresvelg" but topic is "Eldagarde"), IGNORE the wrong research and create a scene based on what "${topic}" actually is (use user context and common sense).
 
 Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
 
