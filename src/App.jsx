@@ -917,15 +917,15 @@ const YouTubeMockup = ({ thumbnail, title, channelName, onClose, position = 'top
           <div className="absolute bottom-0 left-0 right-0 h-14 bg-[#0f0f0f] border-t border-white/10 flex items-center justify-around px-4">
             <button className="flex flex-col items-center text-white">
               <Home className="w-5 h-5" />
-              <span className="text-[10px]">Ana Sayfa</span>
+              <span className="text-[10px]">{t('home')}</span>
             </button>
             <button className="flex flex-col items-center text-white/50">
               <PlaySquare className="w-5 h-5" />
-              <span className="text-[10px]">Shorts</span>
+              <span className="text-[10px]">{t('shorts')}</span>
             </button>
             <button className="flex flex-col items-center text-white/50">
               <Film className="w-5 h-5" />
-              <span className="text-[10px]">Abonelikler</span>
+              <span className="text-[10px]">{t('subscriptions')}</span>
             </button>
             <button className="flex flex-col items-center text-white/50">
               <User className="w-5 h-5" />
@@ -1087,7 +1087,7 @@ const App = () => {
 
   const availableModels = [
     { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
-    { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: 'Hızlı ve ekonomik görsel üretim' },
+    { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: t('modelGemini25FlashDesc') },
     // ── HYBRID PIPELINES (Gemini research → FAL generation) ──
     { id: 'hybrid-flux2-edit', name: 'Hybrid: FLUX.2 Edit', desc: 'Gemini araştırır + FLUX.2 ref ile çizer ($0.03)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/flux-2-pro/edit', supportsRefs: 8, hybrid: true },
     { id: 'hybrid-seedream-edit', name: 'Hybrid: Seedream Edit', desc: 'Gemini araştırır + Seedream 10 ref blend ($0.04)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/bytedance/seedream/v4.5/edit', supportsRefs: 10, hybrid: true },
@@ -3632,13 +3632,18 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
 
+      // Use content category temperature (e.g., religion=0.4, education=0.5, gaming=0.7, music=0.8)
+      const categoryTemperature = contentCategory?.temperature ?? 0.6;
+      // Gemini image generation needs higher temp for creativity, but respect category ratios
+      const generationTemperature = Math.min(1.0, categoryTemperature + 0.3);
+
       const payload = {
         contents: [{
           parts: promptParts
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 1.0,
+          temperature: generationTemperature,
           imageConfig: {
             aspectRatio: '16:9'
           }
@@ -3650,6 +3655,7 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
         ]
       };
+      console.log(`[Generate] 🌡️ Temperature: ${generationTemperature} (category: ${contentCategory?.id}, base: ${categoryTemperature})`);
 
       // ═══ GENERATION ENGINE ROUTING ═══
       const useFal = isFalModel(selectedModel);
@@ -4288,8 +4294,11 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
         ]
       };
 
+      // FAL/Hybrid modeller text removal desteklemez — Gemini'ye fallback yap
+      const geminiModel = isFalModel(selectedModel) ? 'gemini-2.5-flash-preview-05-20' : selectedModel;
+
       const result = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -4365,8 +4374,11 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
         ]
       };
 
+      // FAL/Hybrid modeller revision desteklemez — Gemini'ye fallback yap
+      const geminiModel = isFalModel(selectedModel) ? 'gemini-2.5-flash-preview-05-20' : selectedModel;
+
       const result = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -4966,22 +4978,22 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                         {isVerifying ? (
                           <>
                             <RefreshCcw className="w-4 h-4 text-blue-400 animate-spin" />
-                            <span className="text-xs font-bold text-blue-400">Konu doğrulaması yapılıyor...</span>
+                            <span className="text-xs font-bold text-blue-400">{t('verifyingTopic')}</span>
                           </>
                         ) : verificationResult?.verdict === 'PASS' ? (
                           <>
                             <CheckCircle className="w-4 h-4 text-green-400" />
-                            <span className="text-xs font-bold text-green-400">Konu Doğrulandı</span>
+                            <span className="text-xs font-bold text-green-400">{t('topicVerified')}</span>
                           </>
                         ) : verificationResult?.verdict === 'WARN' ? (
                           <>
                             <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                            <span className="text-xs font-bold text-yellow-400">Kısmi Eşleşme</span>
+                            <span className="text-xs font-bold text-yellow-400">{t('partialMatch')}</span>
                           </>
                         ) : (
                           <>
                             <XCircle className="w-4 h-4 text-red-400" />
-                            <span className="text-xs font-bold text-red-400">Konu Eşleşmiyor</span>
+                            <span className="text-xs font-bold text-red-400">{t('topicMismatch')}</span>
                           </>
                         )}
                       </div>
@@ -5008,13 +5020,13 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                           <p className="text-xs text-amber-300 mb-2">💡 {verificationResult.suggestion}</p>
                         )}
                         <div className="flex items-center gap-2">
-                          <p className="text-xs text-red-300/70 flex-1">3 deneme sonrası en iyi sonuç gösterildi</p>
+                          <p className="text-xs text-red-300/70 flex-1">3 {t('retryAfterAttempts')}</p>
                           <button
                             onClick={generateThumbnail}
                             disabled={loading}
                             className="text-xs bg-red-500/20 border border-red-500/30 text-red-300 px-3 py-1 rounded-lg hover:bg-red-500/30 transition-all whitespace-nowrap"
                           >
-                            Tekrar Dene
+                            {t('retryButton')}
                           </button>
                         </div>
                       </div>
@@ -5027,7 +5039,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                           disabled={loading}
                           className="text-xs bg-amber-500/20 border border-amber-500/30 text-amber-300 px-3 py-1 rounded-lg hover:bg-amber-500/30 transition-all whitespace-nowrap"
                         >
-                          Yeniden Üret
+                          {t('regenerateButton')}
                         </button>
                       </div>
                     )}
@@ -5159,19 +5171,19 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                   }`} />
                 </div>
                 <p className="text-xl font-black text-white animate-pulse">
-                  {attemptInfo?.status === 'verifying' ? 'Doğrulanıyor...' :
-                   attemptInfo?.status === 'retrying' ? 'Kalite yetersiz, yeniden üretiliyor...' :
+                  {attemptInfo?.status === 'verifying' ? t('verifying') :
+                   attemptInfo?.status === 'retrying' ? t('qualityInsufficient') :
                    t('creating')}
                 </p>
                 <p className="text-sm text-blue-400 mt-1">
                   {attemptInfo?.status === 'retrying' && attemptInfo?.reason
                     ? `❌ ${attemptInfo.reason}`
                     : attemptInfo?.status === 'verifying'
-                    ? 'AI görselin konuya uygunluğunu kontrol ediyor...'
+                    ? t('aiVerifyingTopic')
                     : t('aiDesigningThumbnail')}
                 </p>
                 {attemptInfo && attemptInfo.current > 1 && (
-                  <p className="text-xs text-slate-400 mt-2">Deneme {attemptInfo.current}/{attemptInfo.max}</p>
+                  <p className="text-xs text-slate-400 mt-2">{t('attemptCounter')} {attemptInfo.current}/{attemptInfo.max}</p>
                 )}
               </div>
             </div>
@@ -5256,7 +5268,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
-                      <Gamepad2 className="w-3 h-3" /> {t('aiResearch')}: {topic}
+                      <Search className="w-3 h-3" /> {t('aiResearch')}: {topic}
                     </p>
                     <button onClick={() => { setTopicResearch(null); setResearchImages([]); }} className="text-slate-500 hover:text-white">
                       <X className="w-3 h-3" />
@@ -5269,7 +5281,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     <div className="pt-1 border-t border-amber-500/20 space-y-1.5">
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] text-cyan-400 font-bold">
-                          {researchImages.length} referans görsel bulundu — thumbnail üretiminde kullanılacak
+                          {researchImages.length} {t('refImagesFound')}
                         </p>
                         <button onClick={() => setResearchImages([])} className="text-slate-500 hover:text-white">
                           <X className="w-3 h-3" />

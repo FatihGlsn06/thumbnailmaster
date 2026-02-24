@@ -65,8 +65,8 @@ export const PLANS = {
     features: [
       'Sınırsız thumbnail oluşturma',
       'Tüm AI modelleri (Gemini 3 Pro dahil)',
-      '6 CTR arketipi',
-      '5 tipografi stili',
+      '18 CTR arketipi',
+      '7 tipografi stili',
       '4K kalite çıktı',
       'Filigran yok',
       'Konsept görsel analizi',
@@ -78,7 +78,7 @@ export const PLANS = {
     limits: {
       dailyGenerations: Infinity,
       allowedModels: ['gemini-3-pro-image-preview', 'gemini-2.0-flash-exp', 'gemini-2.0-flash', 'fal-grok', 'fal-ideogram-v3', 'hybrid-flux2-edit', 'hybrid-seedream-edit', 'hybrid-kontext'],
-      allowedArchetypes: ['shocked_threat', 'power_fantasy', 'mystery_object', 'almost_fail', 'scale_contrast', 'before_after', 'reaction_face', 'expert_authority', 'food_desire', 'travel_wonder', 'transformation', 'breaking_news', 'music_energy', 'challenge_fun', 'mystery_reveal'],
+      allowedArchetypes: ['shocked_threat', 'power_fantasy', 'mystery_object', 'almost_fail', 'scale_contrast', 'before_after', 'spiritual_reverence', 'historical_epic', 'science_wonder', 'reaction_face', 'expert_authority', 'food_desire', 'travel_wonder', 'transformation', 'breaking_news', 'music_energy', 'challenge_fun', 'mystery_reveal'],
       allowedTypoStyles: ['auto_harmony', 'cinematic_epic', 'gaming_neon', 'maximum_impact', 'elegant_modern'],
       maxResolution: '4k',
       watermark: false,
