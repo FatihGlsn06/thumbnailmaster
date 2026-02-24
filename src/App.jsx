@@ -1082,14 +1082,20 @@ const App = () => {
     else localStorage.removeItem('fal_api_key');
   };
 
-  const isFalModel = (modelId) => modelId?.startsWith('fal-');
+  const isFalModel = (modelId) => modelId?.startsWith('fal-') || modelId?.startsWith('hybrid-');
+  const isHybridModel = (modelId) => modelId?.startsWith('hybrid-');
 
   const availableModels = [
     { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
     { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: 'Hızlı ve ekonomik görsel üretim' },
-    // FAL AI Models — sorted by recommendation
+    // ── HYBRID PIPELINES (Gemini research → FAL generation) ──
+    { id: 'hybrid-flux2-edit', name: 'Hybrid: FLUX.2 Edit', desc: 'Gemini araştırır + FLUX.2 ref ile çizer ($0.03-0.045)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/flux-2-pro/edit', supportsRefs: 8, hybrid: true },
+    { id: 'hybrid-seedream-edit', name: 'Hybrid: Seedream Edit', desc: 'Gemini araştırır + Seedream 10 ref blend ($0.04)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/bytedance/seedream/v4.5/edit', supportsRefs: 10, hybrid: true },
+    { id: 'hybrid-kontext', name: 'Hybrid: Kontext', desc: 'Gemini araştırır + stil transfer ($0.04)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/flux-pro/kontext', supportsRefs: 1, hybrid: true },
+    // ── FAL AI Direct Models ──
     { id: 'fal-ideogram-v3', name: 'Ideogram V3', desc: 'Yazı desteği + 3 stil ref ($0.03)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/ideogram/v3', supportsRefs: 3, supportsText: true },
-    { id: 'fal-seedream', name: 'Seedream v4.5', desc: '10 referans görsel + edit ($0.04)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/bytedance/seedream/v4.5/text-to-image', supportsRefs: 0 },
+    { id: 'fal-flux2-pro-edit', name: 'FLUX.2 Pro Edit', desc: '8-9 ref composition ($0.03)', badge: 'REF', engine: 'fal', falModel: 'fal-ai/flux-2-pro/edit', supportsRefs: 8 },
+    { id: 'fal-seedream', name: 'Seedream v4.5', desc: 'ByteDance text-to-image ($0.04)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/bytedance/seedream/v4.5/text-to-image', supportsRefs: 0 },
     { id: 'fal-seedream-edit', name: 'Seedream Edit', desc: '10 ref blendleme ($0.04)', badge: 'REF', engine: 'fal', falModel: 'fal-ai/bytedance/seedream/v4.5/edit', supportsRefs: 10 },
     { id: 'fal-kontext', name: 'Kontext Pro', desc: 'Stil transfer + tutarlılık ($0.04)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/flux-pro/kontext', supportsRefs: 1 },
     { id: 'fal-flux2-pro', name: 'FLUX.2 Pro', desc: 'En yeni, zero-config ($0.03)', badge: 'NEW', engine: 'fal', falModel: 'fal-ai/flux-2-pro', supportsRefs: 0 },
@@ -1552,6 +1558,20 @@ VIBE: Professional, clean, gaming channel style`
       if (referenceImages.length > 0) {
         body.image_url = referenceImages[0].url || `data:${referenceImages[0].mimeType || 'image/jpeg'};base64,${referenceImages[0].data}`;
         console.log(`[FAL] 📎 Kontext: reference image attached`);
+      }
+
+    } else if (modelId.includes('flux-2-pro/edit') || modelId.includes('flux-2/edit') || modelId.includes('flux-2-flex/edit')) {
+      // FLUX.2 Pro Edit — multi-reference composition (up to 8-9 refs)
+      body = {
+        prompt,
+        image_size: { width: 1280, height: 720 },
+        safety_tolerance: 6,
+      };
+      if (referenceImages.length > 0) {
+        body.images = referenceImages.slice(0, 8).map(img => ({
+          url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
+        }));
+        console.log(`[FAL] 📎 FLUX.2 Edit: ${body.images.length} reference images attached for composition`);
       }
 
     } else if (modelId.includes('grok-imagine')) {
@@ -3667,14 +3687,43 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
         // ── FAL AI PATH: Single high-quality generation, no retry loop ──
         const falModelInfo = availableModels.find(m => m.id === selectedModel);
         const falModelId = falModelInfo?.falModel || 'fal-ai/flux-pro/v1.1';
+        const hybrid = falModelInfo?.hybrid || false;
 
         if (!falApiKey) {
           throw new Error('FAL AI API anahtarı gerekli. Ayarlardan FAL API key girin.');
         }
 
-        setAttemptInfo({ current: 1, max: 1, status: 'generating' });
+        // ── HYBRID PIPELINE: Auto-research with Gemini if no research exists ──
+        if (hybrid && effectiveImages.length === 0) {
+          console.log(`[Hybrid] 🔍 No reference images found — auto-researching with Gemini...`);
+          setAttemptInfo({ current: 1, max: 2, status: 'researching' });
+
+          // Use Gemini to find reference images for the topic
+          try {
+            const searchPrompt = `Search for high quality reference images of "${topic}". ${topicDescription ? `Context: ${topicDescription}. ` : ''}Find screenshots, official artwork, key characters, iconic scenes, and visual style references. Return at least 4-6 diverse reference images showing different aspects: characters, environments, UI elements, key moments.`;
+
+            const searchResult = await callGeminiAPI(searchPrompt, [], {
+              isSearch: true,
+              enableSearch: true,
+              returnImages: true,
+            });
+
+            if (searchResult?.images?.length > 0) {
+              effectiveImages = [...effectiveImages, ...searchResult.images];
+              console.log(`[Hybrid] ✅ Found ${searchResult.images.length} reference images via Gemini search`);
+            }
+            if (searchResult?.text && !effectiveResearch) {
+              effectiveResearch = searchResult.text;
+              console.log(`[Hybrid] ✅ Got research text (${effectiveResearch.length} chars)`);
+            }
+          } catch (err) {
+            console.warn(`[Hybrid] ⚠️ Auto-research failed, continuing with text-only:`, err.message);
+          }
+        }
+
         const supportsRefs = falModelInfo?.supportsRefs || 0;
-        console.log(`[Generate] 🎨 FAL AI generation with ${falModelId}${supportsRefs > 0 ? ` (supports ${supportsRefs} refs)` : ''}`);
+        setAttemptInfo({ current: hybrid ? 2 : 1, max: hybrid ? 2 : 1, status: 'generating' });
+        console.log(`[Generate] 🎨 ${hybrid ? 'HYBRID' : 'FAL AI'} generation with ${falModelId}${supportsRefs > 0 ? ` (supports ${supportsRefs} refs, have ${effectiveImages.length} imgs)` : ''}`);
 
         // Compile research into a Flux-optimized prompt
         const falPrompt = compileFalPrompt(topic, effectiveResearch, effectiveVisualDNA, {
@@ -3691,7 +3740,7 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
             }
           }
           if (falRefImages.length > 0) {
-            console.log(`[Generate] 📎 Passing ${falRefImages.length} reference images to ${falModelId}`);
+            console.log(`[Generate] 📎 Passing ${falRefImages.length}/${effectiveImages.length} reference images to ${falModelId}`);
           }
         }
 
@@ -4726,7 +4775,8 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     <div className="space-y-2">
                       {availableModels.map((model) => {
                         const isModelAllowed = TEST_MODE || currentPlan.limits.allowedModels.includes(model.id);
-                        const isFal = model.engine === 'fal';
+                        const isFal = model.engine === 'fal' || model.engine === 'hybrid';
+                        const isHybrid = model.engine === 'hybrid';
                         const isFalDisabled = isFal && !falApiKey;
                         const isDisabled = !isModelAllowed || isFalDisabled;
                         return (
@@ -4741,20 +4791,25 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                               isDisabled
                                 ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
                                 : selectedModel === model.id
-                                ? isFal ? 'bg-blue-600 border-blue-500 text-white' : 'bg-purple-600 border-purple-500 text-white'
-                                : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
+                                ? isHybrid ? 'bg-gradient-to-r from-purple-600 to-blue-600 border-purple-400 text-white ring-1 ring-purple-400/50' : isFal ? 'bg-blue-600 border-blue-500 text-white' : 'bg-purple-600 border-purple-500 text-white'
+                                : isHybrid ? 'bg-gradient-to-r from-purple-900/40 to-blue-900/40 border-purple-500/30 text-slate-300 hover:border-purple-400/50' : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
                             }`}
                           >
                             <div className="flex items-center gap-2">
                               <p className="text-xs font-bold">{model.name}</p>
                               {model.badge && (
-                                <span className={`text-[8px] ${isFal ? 'bg-blue-500' : 'bg-green-500'} text-white px-1.5 py-0.5 rounded font-bold`}>
+                                <span className={`text-[8px] ${isHybrid ? 'bg-gradient-to-r from-purple-500 to-blue-500' : isFal ? 'bg-blue-500' : 'bg-green-500'} text-white px-1.5 py-0.5 rounded font-bold`}>
                                   {model.badge}
+                                </span>
+                              )}
+                              {model.supportsRefs > 0 && (
+                                <span className="text-[8px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded font-bold">
+                                  {model.supportsRefs} REF
                                 </span>
                               )}
                               {!isModelAllowed && !isFal && <ProBadge size="xs" />}
                             </div>
-                            <p className={`text-[10px] ${selectedModel === model.id ? (isFal ? 'text-blue-200' : 'text-purple-200') : 'text-slate-600'}`}>
+                            <p className={`text-[10px] ${selectedModel === model.id ? (isHybrid ? 'text-purple-100' : isFal ? 'text-blue-200' : 'text-purple-200') : 'text-slate-600'}`}>
                               {isFalDisabled ? 'FAL API key gerekli (yukarıda girin)' : model.desc}
                             </p>
                           </button>
