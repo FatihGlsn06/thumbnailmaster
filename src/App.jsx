@@ -1100,6 +1100,9 @@ const App = () => {
   // Smart Content Detection - otomatik kategori algılama
   const [detectedCategory, setDetectedCategory] = useState(null);
 
+  // Visual DNA - style rules extracted from reference images
+  const [visualDNA, setVisualDNA] = useState(null);
+
   // Post-generation verification
   const [verificationResult, setVerificationResult] = useState(null); // { score, passed, reason, suggestion }
   const [isVerifying, setIsVerifying] = useState(false);
@@ -1540,6 +1543,7 @@ Be concise. 1-2 sentences per point.`
     let collectedImages = [];
     let finalResearch = null;
     let finalCategory = category;
+    let extractedVisualDNA = null;
 
     try {
       const userContext = topicDescription ? ` Context: ${topicDescription}` : '';
@@ -2918,11 +2922,105 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
         await imageSearchPromise;
         console.log('[Research] ✅ Reference image search finished, images collected:', collectedImages.length);
       }
+
+      // ═══════════════════════════════════════════════════════════════
+      // VISUAL DNA EXTRACTION — Extract style rules from reference images
+      // Runs AFTER images are collected, produces hard style constraints
+      // ═══════════════════════════════════════════════════════════════
+      if (collectedImages.length > 0 && apiKey) {
+        try {
+          console.log(`[VisualDNA] 🧬 Extracting Visual DNA from ${collectedImages.length} reference images...`);
+
+          const dnaParts = [
+            { text: `You are a VISUAL DNA ANALYST and ART DIRECTOR. Analyze these reference images and extract STRICT STYLE RULES for "${topic}".
+
+TASK: Look at ONLY what you SEE in these images. Do NOT invent lore or guess. Extract observable visual rules.
+
+FOR EACH SECTION, write observations from the images:
+
+1. **COLOR_PALETTE**: List the exact dominant colors you see (max 6). Use hex codes.
+   Format: COLOR: #hex colorName — where it appears
+
+2. **SILHOUETTE**: Character proportions, armor/clothing shapes, weapon types, body language.
+   What makes these characters/subjects visually distinct from generic alternatives?
+
+3. **MATERIALS**: Metal types (gold, steel, bronze, blackened iron?), fabric types, glow behavior, surface quality (matte, glossy, worn, pristine?).
+
+4. **LIGHTING**: Hard or soft? Rim light present? Bloom? Painterly vs photorealistic? Color temperature?
+
+5. **SIGNATURES**: 3-5 UNIQUE visual traits that make this INSTANTLY recognizable. These are the "if you see THIS, you know it's ${topic}" elements.
+
+6. **STYLE_LOCK_RULES**: Write 8-10 hard rules that MUST be followed to stay authentic.
+   Format each as:
+   MUST: [something that must be present/followed]
+   or
+   NEVER: [something that would break authenticity]
+
+   Focus on:
+   - Specific colors/materials that must be correct
+   - Character features that must not be changed
+   - Common AI drift errors to avoid (generic fantasy, wrong art style, wrong proportions)
+   - What makes this IP different from visually similar IPs
+
+7. **NEGATIVE_TOKENS**: List 10-15 keywords/phrases that would cause the AI to generate WRONG output.
+   These are words that lead to "generic fantasy drift" or wrong IP. One per line.
+   Format: NEGATIVE: keyword — why it's wrong
+
+Write concisely. Every rule must come from what you OBSERVE in these images.
+Respond in ENGLISH for maximum compatibility with image generation models.` }
+          ];
+
+          // Add reference images
+          for (let i = 0; i < Math.min(collectedImages.length, 3); i++) {
+            if (collectedImages[i].data) {
+              dnaParts.push({ text: `\nReference ${i + 1}: ${collectedImages[i].reason || collectedImages[i].label || 'Visual reference'}` });
+              dnaParts.push({ inlineData: { mimeType: collectedImages[i].mimeType || 'image/png', data: collectedImages[i].data } });
+            }
+          }
+
+          const dnaResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: dnaParts }],
+                generationConfig: { temperature: 0.1, maxOutputTokens: 2000 }
+              }),
+              signal: AbortSignal.timeout(20000)
+            }
+          );
+
+          if (dnaResponse.ok) {
+            const dnaData = await dnaResponse.json();
+            const dnaText = dnaData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+            if (dnaText && dnaText.length > 100) {
+              extractedVisualDNA = dnaText;
+              setVisualDNA(dnaText);
+              console.log(`[VisualDNA] ✅ Visual DNA extracted (${dnaText.length} chars)`);
+
+              // Also append to research for UI display
+              if (finalResearch) {
+                finalResearch += `\n\n🧬 VISUAL DNA (STYLE LOCK):\n${dnaText}`;
+                setTopicResearch(finalResearch);
+              }
+            } else {
+              console.log('[VisualDNA] ⚠️ Visual DNA response too short, skipping');
+            }
+          } else {
+            console.warn('[VisualDNA] ⚠️ Visual DNA API failed:', dnaResponse.status);
+          }
+        } catch (e) {
+          console.warn('[VisualDNA] ⚠️ Visual DNA extraction failed:', e.message);
+        }
+      }
+
       setIsResearchingTopic(false);
     }
 
     // Return collected data for direct use (bypasses React state timing)
-    return { research: finalResearch, images: collectedImages, category: finalCategory };
+    return { research: finalResearch, images: collectedImages, category: finalCategory, visualDNA: extractedVisualDNA };
   };
 
   const generateThumbnail = async () => {
@@ -2955,6 +3053,7 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
     let effectiveResearch = topicResearch;
     let effectiveImages = researchImages;
     let effectiveCategory = detectedCategory;
+    let effectiveVisualDNA = visualDNA;
 
     // AUTO-RESEARCH: If research hasn't been done, await it and use returned data directly
     if (!effectiveResearch && !isResearchingTopic) {
@@ -2970,7 +3069,8 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
         effectiveResearch = result.research;
         effectiveImages = result.images || [];
         effectiveCategory = result.category || detectContentCategory(topic, topicDescription);
-        console.log(`[Generate] ✅ Auto-research complete: ${effectiveResearch.length} chars, ${effectiveImages.length} images`);
+        effectiveVisualDNA = result.visualDNA || null;
+        console.log(`[Generate] ✅ Auto-research complete: ${effectiveResearch.length} chars, ${effectiveImages.length} images, DNA: ${effectiveVisualDNA ? 'yes' : 'no'}`);
       } catch (err) {
         console.error('[Generate] ❌ Auto-research error:', err);
         setError('Araştırma sırasında hata oluştu: ' + err.message);
@@ -3048,6 +3148,17 @@ ${['religion'].includes(contentCategory.id) ? `
 - Real-world settings only: actual mosques, real prayer rooms, genuine worship spaces
 ` : `Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture.`}
 Must look like a professional YouTube thumbnail, not generic AI art.
+${effectiveVisualDNA ? `
+═══ VISUAL DNA — HARD STYLE CONSTRAINTS (EXTRACTED FROM REFERENCE IMAGES) ═══
+The following rules were extracted by analyzing the actual reference images of "${topic}".
+These are NOT suggestions — they are MANDATORY constraints. Violating them = wrong output.
+
+${effectiveVisualDNA}
+
+⚠️ CRITICAL: Follow ALL "MUST:" rules above. Avoid ALL "NEVER:" and "NEGATIVE:" items above.
+These rules define the AUTHENTIC visual identity of "${topic}". Generic fantasy/sci-fi that ignores these rules is a FAILURE.
+═══════════════════════════════════════════════════════════════════════════════
+` : ''}
 ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
       // Build parts — REFERENCE IMAGES FIRST so model prioritizes them
@@ -3134,7 +3245,7 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
         setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'verifying' });
         console.log(`[Generate] 🔍 Attempt ${attempt}/${MAX_ATTEMPTS} — Verifying thumbnail...`);
 
-        const verification = await verifyThumbnail(generatedBase64, topic, effectiveResearch, effectiveImages, { silent: true });
+        const verification = await verifyThumbnail(generatedBase64, topic, effectiveResearch, effectiveImages, { silent: true, styleDNA: effectiveVisualDNA });
         lastVerification = verification;
 
         if (!verification) {
@@ -3186,7 +3297,7 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
   // ═══ Post-generation Verification ═══
   // Checks if generated thumbnail actually represents the requested topic
-  const verifyThumbnail = async (generatedBase64, topicName, researchData, refImages, { silent = false } = {}) => {
+  const verifyThumbnail = async (generatedBase64, topicName, researchData, refImages, { silent = false, styleDNA = null } = {}) => {
     if (!apiKey || !generatedBase64) return null;
 
     if (!silent) {
@@ -3233,7 +3344,21 @@ Rules:
 - VERDICT is WARN if average >= 5 but either score < 7
 - VERDICT is FAIL if average < 5 or either score <= 3
 - Be STRICT. A generic dark fantasy warrior is NOT a specific game character.
-- A beautiful image that doesn't match the topic is still a FAIL.` },
+- A beautiful image that doesn't match the topic is still a FAIL.
+${styleDNA ? `
+3. **STYLE CONSISTENCY** (0-10): Does this image follow the Visual DNA style rules?
+   Check against these extracted style rules:
+${styleDNA.substring(0, 1500)}
+   - 10: Perfectly matches colors, materials, silhouette, and style rules
+   - 5: Some elements match but others drift into generic art
+   - 0: Completely ignores the style rules (wrong colors, wrong materials, wrong art style)
+
+Add to your response:
+STYLE:<score 0-10>
+
+VERDICT rules UPDATE:
+- VERDICT is FAIL if STYLE score <= 3 (even if topic is correct but style is completely wrong)
+- STYLE score below 5 should pull the verdict toward WARN or FAIL` : ''}` },
         { text: '[GENERATED_THUMBNAIL] — The thumbnail to verify:' },
         { inlineData: { mimeType: 'image/png', data: generatedBase64 } }
       ];
@@ -3256,7 +3381,7 @@ Rules:
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: verifyParts }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 300 }
+            generationConfig: { temperature: 0.1, maxOutputTokens: 400 }
           })
         }
       );
@@ -3273,21 +3398,28 @@ Rules:
       // Parse response
       const accuracyMatch = responseText.match(/ACCURACY:\s*(\d+)/i);
       const specificityMatch = responseText.match(/SPECIFICITY:\s*(\d+)/i);
+      const styleMatch = responseText.match(/STYLE:\s*(\d+)/i);
       const verdictMatch = responseText.match(/VERDICT:\s*(PASS|WARN|FAIL)/i);
       const reasonMatch = responseText.match(/REASON:\s*(.+)/i);
       const suggestionMatch = responseText.match(/SUGGESTION:\s*(.+)/i);
 
       const accuracy = accuracyMatch ? parseInt(accuracyMatch[1]) : null;
       const specificity = specificityMatch ? parseInt(specificityMatch[1]) : null;
+      const styleScore = styleMatch ? parseInt(styleMatch[1]) : null;
       const verdict = verdictMatch ? verdictMatch[1].toUpperCase() : null;
       const reason = reasonMatch ? reasonMatch[1].trim() : '';
       const suggestion = suggestionMatch ? suggestionMatch[1].trim() : '';
 
       if (verdict) {
+        // Calculate weighted score: if style DNA was used, include style score
+        const scores = [accuracy, specificity, styleScore].filter(s => s !== null);
+        const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+
         const result = {
           accuracy,
           specificity,
-          score: accuracy !== null && specificity !== null ? Math.round((accuracy + specificity) / 2) : null,
+          styleScore,
+          score: avgScore,
           passed: verdict === 'PASS',
           verdict,
           reason,
@@ -3296,7 +3428,7 @@ Rules:
         if (!silent) {
           setVerificationResult(result);
         }
-        console.log(`[Verify] ${verdict === 'PASS' ? '✅' : verdict === 'WARN' ? '⚠️' : '❌'} Verification: ${verdict} (accuracy: ${accuracy}, specificity: ${specificity}) — ${reason}`);
+        console.log(`[Verify] ${verdict === 'PASS' ? '✅' : verdict === 'WARN' ? '⚠️' : '❌'} Verification: ${verdict} (accuracy: ${accuracy}, specificity: ${specificity}${styleScore !== null ? `, style: ${styleScore}` : ''}) — ${reason}`);
         return result;
       }
       return null;
@@ -4245,6 +4377,13 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                         }`}>{verificationResult.score}/10</span>
                       )}
                     </div>
+                    {verificationResult && !isVerifying && (
+                      <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
+                        {verificationResult.accuracy !== null && <span>Doğruluk: {verificationResult.accuracy}/10</span>}
+                        {verificationResult.specificity !== null && <span>Özgünlük: {verificationResult.specificity}/10</span>}
+                        {verificationResult.styleScore !== null && <span>Stil: {verificationResult.styleScore}/10</span>}
+                      </div>
+                    )}
                     {verificationResult?.reason && (
                       <p className="text-xs text-slate-300 mt-1">{verificationResult.reason}</p>
                     )}
