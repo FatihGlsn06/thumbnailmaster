@@ -1089,19 +1089,12 @@ const App = () => {
     { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
     { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: 'Hızlı ve ekonomik görsel üretim' },
     // ── HYBRID PIPELINES (Gemini research → FAL generation) ──
-    { id: 'hybrid-flux2-edit', name: 'Hybrid: FLUX.2 Edit', desc: 'Gemini araştırır + FLUX.2 ref ile çizer ($0.03-0.045)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/flux-2-pro/edit', supportsRefs: 8, hybrid: true },
+    { id: 'hybrid-flux2-edit', name: 'Hybrid: FLUX.2 Edit', desc: 'Gemini araştırır + FLUX.2 ref ile çizer ($0.03)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/flux-2-pro/edit', supportsRefs: 8, hybrid: true },
     { id: 'hybrid-seedream-edit', name: 'Hybrid: Seedream Edit', desc: 'Gemini araştırır + Seedream 10 ref blend ($0.04)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/bytedance/seedream/v4.5/edit', supportsRefs: 10, hybrid: true },
     { id: 'hybrid-kontext', name: 'Hybrid: Kontext', desc: 'Gemini araştırır + stil transfer ($0.04)', badge: 'HYBRID', engine: 'hybrid', falModel: 'fal-ai/flux-pro/kontext', supportsRefs: 1, hybrid: true },
-    // ── FAL AI Direct Models ──
-    { id: 'fal-ideogram-v3', name: 'Ideogram V3', desc: 'Yazı desteği + 3 stil ref ($0.03)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/ideogram/v3', supportsRefs: 3, supportsText: true },
-    { id: 'fal-flux2-pro-edit', name: 'FLUX.2 Pro Edit', desc: '8-9 ref composition ($0.03)', badge: 'REF', engine: 'fal', falModel: 'fal-ai/flux-2-pro/edit', supportsRefs: 8 },
-    { id: 'fal-seedream', name: 'Seedream v4.5', desc: 'ByteDance text-to-image ($0.04)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/bytedance/seedream/v4.5/text-to-image', supportsRefs: 0 },
-    { id: 'fal-seedream-edit', name: 'Seedream Edit', desc: '10 ref blendleme ($0.04)', badge: 'REF', engine: 'fal', falModel: 'fal-ai/bytedance/seedream/v4.5/edit', supportsRefs: 10 },
-    { id: 'fal-kontext', name: 'Kontext Pro', desc: 'Stil transfer + tutarlılık ($0.04)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/flux-pro/kontext', supportsRefs: 1 },
-    { id: 'fal-flux2-pro', name: 'FLUX.2 Pro', desc: 'En yeni, zero-config ($0.03)', badge: 'NEW', engine: 'fal', falModel: 'fal-ai/flux-2-pro', supportsRefs: 0 },
-    { id: 'fal-grok', name: 'Grok Imagine', desc: 'En ucuz kaliteli ($0.02)', badge: 'FAL', engine: 'fal', falModel: 'xai/grok-imagine-image', supportsRefs: 0 },
-    { id: 'fal-flux-pro', name: 'Flux Pro v1.1', desc: 'Premium text-to-image ($0.05)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/flux-pro/v1.1', supportsRefs: 0 },
-    { id: 'fal-flux-dev', name: 'Flux Dev', desc: 'Hızlı ve ekonomik ($0.025)', engine: 'fal', falModel: 'fal-ai/flux/dev', supportsRefs: 0 },
+    // ── FAL AI Direct ──
+    { id: 'fal-ideogram-v3', name: 'Ideogram V3', desc: 'En iyi yazı desteği + 3 stil ref ($0.03)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/ideogram/v3', supportsRefs: 3, supportsText: true },
+    { id: 'fal-grok', name: 'Grok Imagine', desc: 'En ucuz kaliteli seçenek ($0.02)', badge: 'FAL', engine: 'fal', falModel: 'xai/grok-imagine-image', supportsRefs: 0 },
   ];
 
   // Concept/Reference image states
@@ -1542,13 +1535,6 @@ VIBE: Professional, clean, gaming channel style`
         console.log(`[FAL] 📎 Seedream Edit: ${body.image_refs.length} reference images attached`);
       }
 
-    } else if (modelId.includes('seedream')) {
-      // Seedream v4.5 Text-to-Image
-      body = {
-        prompt,
-        image_size: { width: 1280, height: 720 },
-      };
-
     } else if (modelId.includes('kontext')) {
       // Kontext Pro — style transfer with 1 reference
       body = {
@@ -1582,27 +1568,14 @@ VIBE: Professional, clean, gaming channel style`
         n: 1,
       };
 
-    } else if (modelId.includes('flux-2-pro')) {
-      // FLUX.2 Pro — newest, zero-config
-      body = {
-        prompt,
-        image_size: { width: 1280, height: 720 },
-        safety_tolerance: 6,
-      };
-
     } else {
-      // FLUX Pro v1.1 / FLUX Dev — default body
+      // Fallback — generic FAL body
       body = {
         prompt,
         image_size: { width: 1280, height: 720 },
         num_images: 1,
-        safety_tolerance: '6',
         output_format: 'jpeg',
       };
-      if (modelId.includes('flux-pro') || modelId.includes('flux/dev')) {
-        body.num_inference_steps = 28;
-        body.guidance_scale = 3.5;
-      }
     }
 
     const response = await fetch(`https://fal.run/${modelId}`, {

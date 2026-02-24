@@ -46,7 +46,7 @@ export const PLANS = {
     ],
     limits: {
       dailyGenerations: 5,
-      allowedModels: ['gemini-2.0-flash', 'fal-flux-dev', 'fal-flux-pro', 'fal-flux2-pro', 'fal-flux2-pro-edit', 'fal-grok', 'fal-ideogram-v3', 'fal-seedream', 'fal-seedream-edit', 'fal-kontext', 'hybrid-flux2-edit', 'hybrid-seedream-edit', 'hybrid-kontext'],
+      allowedModels: ['gemini-2.0-flash', 'fal-grok', 'fal-ideogram-v3', 'hybrid-flux2-edit', 'hybrid-seedream-edit', 'hybrid-kontext'],
       allowedArchetypes: ['shocked_threat', 'power_fantasy', 'before_after', 'reaction_face', 'expert_authority', 'challenge_fun'],
       allowedTypoStyles: ['auto_harmony', 'maximum_impact'],
       maxResolution: '720p',
@@ -77,7 +77,7 @@ export const PLANS = {
     ],
     limits: {
       dailyGenerations: Infinity,
-      allowedModels: ['gemini-3-pro-image-preview', 'gemini-2.0-flash-exp', 'gemini-2.0-flash', 'fal-flux-pro', 'fal-flux-dev', 'fal-flux2-pro', 'fal-flux2-pro-edit', 'fal-grok', 'fal-ideogram-v3', 'fal-seedream', 'fal-seedream-edit', 'fal-kontext', 'hybrid-flux2-edit', 'hybrid-seedream-edit', 'hybrid-kontext'],
+      allowedModels: ['gemini-3-pro-image-preview', 'gemini-2.0-flash-exp', 'gemini-2.0-flash', 'fal-grok', 'fal-ideogram-v3', 'hybrid-flux2-edit', 'hybrid-seedream-edit', 'hybrid-kontext'],
       allowedArchetypes: ['shocked_threat', 'power_fantasy', 'mystery_object', 'almost_fail', 'scale_contrast', 'before_after', 'reaction_face', 'expert_authority', 'food_desire', 'travel_wonder', 'transformation', 'breaking_news', 'music_energy', 'challenge_fun', 'mystery_reveal'],
       allowedTypoStyles: ['auto_harmony', 'cinematic_epic', 'gaming_neon', 'maximum_impact', 'elegant_modern'],
       maxResolution: '4k',
