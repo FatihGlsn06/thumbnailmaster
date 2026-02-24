@@ -2471,6 +2471,59 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
           }
 
           // ── PHASE 2: Filter, deduplicate and download top candidates ──
+
+          // ── Steam CDN Recovery ──
+          // AI hallucinates Steam screenshot URLs (random hashes → all 404).
+          // Extract App IDs from hallucinated URLs and generate KNOWN-GOOD predictable URLs.
+          const steamAppIds = new Set();
+          for (const c of allCandidates) {
+            const steamMatch = c.url?.match(/steam\/apps\/(\d+)/);
+            if (steamMatch) steamAppIds.add(steamMatch[1]);
+          }
+          if (steamAppIds.size > 0) {
+            console.log(`[RefImage] 🎮 Steam CDN Recovery: found ${steamAppIds.size} App IDs: ${[...steamAppIds].join(', ')}`);
+            for (const appId of steamAppIds) {
+              // These URLs are predictable — no hash needed, always exist for real games
+              allCandidates.push({
+                url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`,
+                score: 200, source: 'steam-cdn', label: `Steam Header: ${appId}`
+              });
+              allCandidates.push({
+                url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_616x353.jpg`,
+                score: 150, source: 'steam-cdn', label: `Steam Capsule: ${appId}`
+              });
+              allCandidates.push({
+                url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`,
+                score: 100, source: 'steam-cdn', label: `Steam Library Art: ${appId}`
+              });
+            }
+            // Also try Steam Store API to get REAL screenshot URLs
+            for (const appId of steamAppIds) {
+              try {
+                const storeRes = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(`https://store.steampowered.com/api/appdetails?appids=${appId}`)}&output=json`, { signal: AbortSignal.timeout(5000) });
+                if (storeRes.ok) {
+                  const storeText = await storeRes.text();
+                  // Extract screenshot URLs from the response
+                  const ssMatches = storeText.matchAll(/"path_full"\s*:\s*"(https?:[^"]+)"/g);
+                  let ssCount = 0;
+                  for (const m of ssMatches) {
+                    const ssUrl = m[1].replace(/\\\//g, '/');
+                    if (ssUrl.includes('/ss_') && ssCount < 4) {
+                      allCandidates.push({
+                        url: ssUrl, score: 180 - ssCount * 10,
+                        source: 'steam-api', label: `Steam Screenshot ${ssCount + 1}: ${appId}`
+                      });
+                      ssCount++;
+                    }
+                  }
+                  if (ssCount > 0) console.log(`[RefImage] 🎮 Steam API: found ${ssCount} real screenshot URLs for App ${appId}`);
+                }
+              } catch (e) {
+                console.log(`[RefImage] ⚠️ Steam API fetch failed for ${appId}:`, e.message);
+              }
+            }
+          }
+
           // Filter out clearly invalid/garbage candidates before download
           const filteredCandidates = allCandidates.filter(c => {
             const url = c.url?.toLowerCase() || '';
@@ -2481,6 +2534,8 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
             if (label.includes('cargo') && label.includes('train')) return false;
             if (label.includes('catalog of copyright')) return false;
             if (label.includes('sukkah') || label.includes('congregation')) return false;
+            // Remove AI-hallucinated Steam screenshot URLs (keep steam-cdn and steam-api ones)
+            if (url.includes('/ss_') && c.source !== 'steam-api') return false;
             return true;
           });
           const uniqueCandidates = [];
