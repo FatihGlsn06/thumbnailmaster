@@ -2576,12 +2576,19 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
 
           // ── Steam CDN Recovery ──
           // AI hallucinates Steam screenshot URLs (random hashes → all 404).
-          // Extract App IDs from hallucinated URLs and generate KNOWN-GOOD predictable URLs.
+          // Extract App IDs from hallucinated URLs AND from research text, then generate KNOWN-GOOD predictable URLs.
           const steamAppIds = new Set();
           for (const c of allCandidates) {
             const steamMatch = c.url?.match(/steam\/apps\/(\d+)/);
             if (steamMatch) steamAppIds.add(steamMatch[1]);
           }
+          // Also extract App ID from research text (e.g., "Steam App ID: 2259110")
+          const researchTextForSteam = searchResult || '';
+          const researchSteamIdMatch = researchTextForSteam.match(/(?:Steam\s*App\s*ID|app[_\s]?id|appid)[:\s]*(\d{4,})/i);
+          if (researchSteamIdMatch) steamAppIds.add(researchSteamIdMatch[1]);
+          // Also look for store.steampowered.com/app/ pattern
+          const storeUrlMatch = researchTextForSteam.match(/store\.steampowered\.com\/app\/(\d+)/i);
+          if (storeUrlMatch) steamAppIds.add(storeUrlMatch[1]);
           if (steamAppIds.size > 0) {
             console.log(`[RefImage] 🎮 Steam CDN Recovery: found ${steamAppIds.size} App IDs: ${[...steamAppIds].join(', ')}`);
             for (const appId of steamAppIds) {
@@ -3742,6 +3749,57 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
                 const uri = chunk.web?.uri;
                 if (uri && uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i)) {
                   imgUrls.push({ url: uri, label: chunk.web?.title || 'Grounding ref' });
+                }
+              }
+
+              // ── Steam CDN Recovery for Hybrid Pipeline ──
+              // AI hallucinates Steam screenshot URLs (/ss_ with random hashes → all 404).
+              // Extract App IDs and use KNOWN-GOOD predictable URLs instead.
+              const hybridSteamAppIds = new Set();
+              for (const img of imgUrls) {
+                const steamMatch = img.url?.match(/steam\/apps\/(\d+)/);
+                if (steamMatch) hybridSteamAppIds.add(steamMatch[1]);
+              }
+              // Also try to extract App ID from research text
+              const researchAppIdMatch = (effectiveResearch || searchText || '').match(/(?:Steam\s*App\s*ID|app[_\s]?id|appid)[:\s]*(\d{4,})/i);
+              if (researchAppIdMatch) hybridSteamAppIds.add(researchAppIdMatch[1]);
+
+              if (hybridSteamAppIds.size > 0) {
+                console.log(`[Hybrid] 🎮 Steam CDN Recovery: App IDs: ${[...hybridSteamAppIds].join(', ')}`);
+                // Filter out hallucinated /ss_ URLs (random hash → always 404)
+                const realImgUrls = imgUrls.filter(img => !img.url?.includes('/ss_'));
+                imgUrls.length = 0;
+                imgUrls.push(...realImgUrls);
+
+                // Add known-good predictable Steam CDN URLs
+                for (const appId of hybridSteamAppIds) {
+                  imgUrls.unshift(
+                    { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`, label: `Steam Header` },
+                    { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_616x353.jpg`, label: `Steam Capsule` },
+                    { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`, label: `Steam Library Art` },
+                  );
+                }
+
+                // Try Steam Store API for real screenshot URLs
+                for (const appId of hybridSteamAppIds) {
+                  try {
+                    const storeRes = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(`https://store.steampowered.com/api/appdetails?appids=${appId}`)}&output=json`, { signal: AbortSignal.timeout(5000) });
+                    if (storeRes.ok) {
+                      const storeText = await storeRes.text();
+                      const ssMatches = storeText.matchAll(/"path_full"\s*:\s*"(https?:[^"]+)"/g);
+                      let ssCount = 0;
+                      for (const m of ssMatches) {
+                        const ssUrl = m[1].replace(/\\\//g, '/');
+                        if (ssUrl.includes('/ss_') && ssCount < 4) {
+                          imgUrls.push({ url: ssUrl, label: `Steam Screenshot ${ssCount + 1}` });
+                          ssCount++;
+                        }
+                      }
+                      if (ssCount > 0) console.log(`[Hybrid] 🎮 Steam API: ${ssCount} real screenshots for App ${appId}`);
+                    }
+                  } catch (e) {
+                    console.log(`[Hybrid] ⚠️ Steam API failed for ${appId}:`, e.message);
+                  }
                 }
               }
 
