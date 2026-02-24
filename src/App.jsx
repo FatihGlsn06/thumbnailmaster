@@ -3671,23 +3671,92 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
           console.log(`[Hybrid] 🔍 No reference images found — auto-researching with Gemini...`);
           setAttemptInfo({ current: 1, max: 2, status: 'researching' });
 
-          // Use Gemini to find reference images for the topic
           try {
-            const searchPrompt = `Search for high quality reference images of "${topic}". ${topicDescription ? `Context: ${topicDescription}. ` : ''}Find screenshots, official artwork, key characters, iconic scenes, and visual style references. Return at least 4-6 diverse reference images showing different aspects: characters, environments, UI elements, key moments.`;
+            // Step 1: Gemini search grounding to find image URLs
+            const searchPayload = {
+              contents: [{
+                parts: [{
+                  text: `Search for high quality reference images of "${topic}".${topicDescription ? ` Context: ${topicDescription}.` : ''}
 
-            const searchResult = await callGeminiAPI(searchPrompt, [], {
-              isSearch: true,
-              enableSearch: true,
-              returnImages: true,
-            });
+Find 5-8 SPECIFIC image URLs showing: official artwork, screenshots, key characters, iconic scenes, promotional material.
 
-            if (searchResult?.images?.length > 0) {
-              effectiveImages = [...effectiveImages, ...searchResult.images];
-              console.log(`[Hybrid] ✅ Found ${searchResult.images.length} reference images via Gemini search`);
-            }
-            if (searchResult?.text && !effectiveResearch) {
-              effectiveResearch = searchResult.text;
-              console.log(`[Hybrid] ✅ Got research text (${effectiveResearch.length} chars)`);
+Sources to look for:
+- Wikipedia/Wikimedia Commons (direct file URLs)
+- Official websites, Steam store pages, press kits
+- News/media sites with quality visuals
+
+Reply in this EXACT format (one per line):
+IMG:<full_url>|<short_description>
+
+Example:
+IMG:https://upload.wikimedia.org/wikipedia/en/thumb/a/example.jpg|Official game artwork
+IMG:https://example.com/screenshot.png|In-game screenshot
+
+IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
+                }]
+              }],
+              tools: [{ google_search: {} }],
+              generationConfig: { temperature: 0.1, maxOutputTokens: 800 }
+            };
+
+            const searchRes = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(searchPayload),
+                signal: AbortSignal.timeout(15000)
+              }
+            );
+
+            if (searchRes.ok) {
+              const searchData = await searchRes.json();
+              const searchText = searchData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+              const groundingChunks = searchData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+              // Extract research text
+              if (searchText && !effectiveResearch) {
+                effectiveResearch = searchText;
+                console.log(`[Hybrid] ✅ Got research text (${searchText.length} chars)`);
+              }
+
+              // Parse IMG: lines
+              const imgUrls = [];
+              const imgRegex = /IMG:\s*(https?:\/\/[^\s|]+)\|?\s*(.*)/g;
+              let match;
+              while ((match = imgRegex.exec(searchText)) !== null) {
+                const url = match[1].trim();
+                if (url.match(/\.(jpg|jpeg|png|webp)/i) || url.includes('/thumb/') || url.includes('/images/') || url.includes('upload.wikimedia')) {
+                  imgUrls.push({ url, label: match[2]?.trim() || 'Reference' });
+                }
+              }
+
+              // Also extract image URLs from grounding chunks
+              for (const chunk of groundingChunks) {
+                const uri = chunk.web?.uri;
+                if (uri && uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i)) {
+                  imgUrls.push({ url: uri, label: chunk.web?.title || 'Grounding ref' });
+                }
+              }
+
+              console.log(`[Hybrid] 🔗 Found ${imgUrls.length} image URLs, downloading...`);
+
+              // Step 2: Download images in parallel (max 6)
+              const downloadPromises = imgUrls.slice(0, 6).map(async (img) => {
+                const result = await fetchImageAsBase64(img.url);
+                if (result) {
+                  return { ...result, url: img.url, reason: img.label };
+                }
+                return null;
+              });
+
+              const downloaded = (await Promise.all(downloadPromises)).filter(Boolean);
+              if (downloaded.length > 0) {
+                effectiveImages = [...effectiveImages, ...downloaded];
+                console.log(`[Hybrid] ✅ Downloaded ${downloaded.length} reference images`);
+              } else {
+                console.log(`[Hybrid] ⚠️ No images could be downloaded`);
+              }
             }
           } catch (err) {
             console.warn(`[Hybrid] ⚠️ Auto-research failed, continuing with text-only:`, err.message);
