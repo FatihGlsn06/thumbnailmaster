@@ -4018,7 +4018,7 @@ Respond in ENGLISH. Be specific to "${topic}", not generic.`
       const prompt = `Create a cinematic YouTube thumbnail for "${topic}".
 ${topicDescription ? `Context: ${topicDescription}` : ''}
 
-⚠️ ANTI-GENERIC: This thumbnail must be SPECIFIC to "${topic}" — not a generic scene.
+⚠️ CRITICAL RULE #1: ${effectiveImages.length > 0 ? `I am attaching ${effectiveImages.length} REFERENCE IMAGES labeled [TOPIC_REF_1] etc. These show the REAL visual appearance of "${topic}". Your generated thumbnail MUST visually match these references — same character designs, same color schemes, same visual identity. Study each reference image pixel by pixel before generating.` : `This thumbnail must be SPECIFIC to "${topic}" — not a generic scene.`}
 Show a UNIQUE, RECOGNIZABLE moment/element that makes this INSTANTLY identifiable as "${topic}".
 Avoid generic compositions like "two armies fighting" or "person standing in front of landscape".
 
@@ -4037,18 +4037,18 @@ The attached reference image defines the target visual style. Replicate its colo
 ` : ''}
 ${effectiveImages.length > 0 ? `
 REFERENCE IMAGES (${effectiveImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.):
-These show what "${topic}" actually looks like. Use them for VISUAL ACCURACY:
+⚠️ CRITICAL: These images show EXACTLY what "${topic}" looks like. You MUST study them and match the visual details.
 
-HOW TO USE THESE REFERENCES:
-1. ACCURACY: Match the correct colors, distinctive features, clothing/armor details, proportions from the references
-2. CREATIVE FREEDOM: You do NOT need to copy the exact pose, angle, or composition — create a NEW, ORIGINAL, DYNAMIC thumbnail composition
-3. COMBINE & ENHANCE: Take the best visual details from multiple references and place them in a fresh, exciting scene
-4. The subject must be RECOGNIZABLE as "${topic}" but the SCENE, ANGLE, LIGHTING and MOOD should be YOUR creative choice
-5. Think of references as a COSTUME/DESIGN GUIDE, not a photo to replicate
+MANDATORY RULES FOR USING REFERENCES:
+1. VISUAL FIDELITY: Copy the EXACT colors, textures, shapes, distinctive markings, clothing/armor, character design from the references. These are NOT generic — they are the AUTHENTIC appearance.
+2. CHARACTER/SUBJECT: The main subject in your thumbnail must be VISUALLY IDENTICAL to what's shown in the references. Same face structure, same outfit, same color scheme.
+3. COMPOSITION: You may create a new dynamic angle/pose, but the SUBJECT APPEARANCE must faithfully match the references.
+4. If references show a character: draw THAT character with THOSE specific visual features — not a generic substitute.
+5. If references show a place/object: replicate THOSE specific architectural/design details — not a generic version.
 
-${effectiveImages.map((img, i) => `  [TOPIC_REF_${i + 1}]: ${img.reason || 'Visual reference'}`).join('\n')}
+${effectiveImages.map((img, i) => `  [TOPIC_REF_${i + 1}]: ${img.reason || 'Visual reference'} — COPY the visual details from this image`).join('\n')}
 
-IMPORTANT: Each thumbnail generation should look DIFFERENT even with the same references. Vary the angle, composition, background, and mood.
+FAILURE: Generating a thumbnail that looks nothing like the reference images is a FAILURE. The viewer must instantly recognize "${topic}" by comparing your output to the references.
 ` : ''}
 ${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
@@ -4098,14 +4098,12 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       // Build parts — REFERENCE IMAGES FIRST so model prioritizes them
       const promptParts = [{ text: prompt }];
 
-      // 1. TOPIC REFERENCE IMAGES — shuffled order each generation for variety
+      // 1. TOPIC REFERENCE IMAGES — in order matching prompt text labels
       if (effectiveImages.length > 0) {
-        // Shuffle reference order so model doesn't fixate on the same primary image
-        const shuffled = [...effectiveImages].sort(() => Math.random() - 0.5);
-        console.log(`[Generate] 🖼️ Including ${shuffled.length} reference images (shuffled order: ${shuffled.map(img => img.label?.substring(0, 20)).join(', ')})`);
-        for (let i = 0; i < shuffled.length; i++) {
-          const refImg = shuffled[i];
-          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — ${refImg.reason || 'Reference image'}. Use for visual accuracy (colors, features, outfit):` });
+        console.log(`[Generate] 🖼️ Including ${effectiveImages.length} reference images`);
+        for (let i = 0; i < effectiveImages.length; i++) {
+          const refImg = effectiveImages[i];
+          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — Study this image carefully. This is what "${topic}" ACTUALLY looks like. Copy the exact visual details — colors, textures, shapes, distinctive features, clothing/armor, proportions:` });
           promptParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
       } else {
