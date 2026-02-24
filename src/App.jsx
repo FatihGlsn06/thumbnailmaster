@@ -1087,8 +1087,15 @@ const App = () => {
   const availableModels = [
     { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
     { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: 'Hızlı ve ekonomik görsel üretim' },
-    { id: 'fal-flux-pro', name: 'Flux Pro v1.1', desc: 'En yüksek kalite (FAL AI)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/flux-pro/v1.1' },
-    { id: 'fal-flux-dev', name: 'Flux Dev', desc: 'Hızlı ve ekonomik (FAL AI)', engine: 'fal', falModel: 'fal-ai/flux/dev' },
+    // FAL AI Models — sorted by recommendation
+    { id: 'fal-ideogram-v3', name: 'Ideogram V3', desc: 'Yazı desteği + 3 stil ref ($0.03)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/ideogram/v3', supportsRefs: 3, supportsText: true },
+    { id: 'fal-seedream', name: 'Seedream v4.5', desc: '10 referans görsel + edit ($0.04)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/bytedance/seedream/v4.5/text-to-image', supportsRefs: 0 },
+    { id: 'fal-seedream-edit', name: 'Seedream Edit', desc: '10 ref blendleme ($0.04)', badge: 'REF', engine: 'fal', falModel: 'fal-ai/bytedance/seedream/v4.5/edit', supportsRefs: 10 },
+    { id: 'fal-kontext', name: 'Kontext Pro', desc: 'Stil transfer + tutarlılık ($0.04)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/flux-pro/kontext', supportsRefs: 1 },
+    { id: 'fal-flux2-pro', name: 'FLUX.2 Pro', desc: 'En yeni, zero-config ($0.03)', badge: 'NEW', engine: 'fal', falModel: 'fal-ai/flux-2-pro', supportsRefs: 0 },
+    { id: 'fal-grok', name: 'Grok Imagine', desc: 'En ucuz kaliteli ($0.02)', badge: 'FAL', engine: 'fal', falModel: 'xai/grok-imagine-image', supportsRefs: 0 },
+    { id: 'fal-flux-pro', name: 'Flux Pro v1.1', desc: 'Premium text-to-image ($0.05)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/flux-pro/v1.1', supportsRefs: 0 },
+    { id: 'fal-flux-dev', name: 'Flux Dev', desc: 'Hızlı ve ekonomik ($0.025)', engine: 'fal', falModel: 'fal-ai/flux/dev', supportsRefs: 0 },
   ];
 
   // Concept/Reference image states
@@ -1487,28 +1494,95 @@ VIBE: Professional, clean, gaming channel style`
     return finalPrompt;
   };
 
-  // Generate image using FAL AI
-  const generateWithFal = async (prompt, modelId = 'fal-ai/flux-pro/v1.1') => {
+  // Generate image using FAL AI — supports all FAL model families
+  const generateWithFal = async (prompt, modelId = 'fal-ai/flux-pro/v1.1', options = {}) => {
     if (!falApiKey) throw new Error('FAL AI API key is required');
 
-    console.log(`[FAL] 🚀 Generating with ${modelId}...`);
+    const { referenceImages = [], overlayText: falOverlayText = '' } = options;
+    console.log(`[FAL] 🚀 Generating with ${modelId}${referenceImages.length > 0 ? ` (+${referenceImages.length} refs)` : ''}...`);
     const startTime = Date.now();
 
-    const body = {
-      prompt,
-      image_size: { width: 1280, height: 720 },
-      num_images: 1,
-      safety_tolerance: '6',
-      output_format: 'jpeg',
-    };
+    let body = {};
 
-    // Model-specific params
-    if (modelId.includes('flux-pro')) {
-      body.num_inference_steps = 28;
-      body.guidance_scale = 3.5;
-    } else if (modelId.includes('flux/dev')) {
-      body.num_inference_steps = 28;
-      body.guidance_scale = 3.5;
+    // ── Model-specific body construction ──
+    if (modelId.includes('ideogram')) {
+      // Ideogram V3 — supports style_references + text rendering
+      body = {
+        prompt,
+        aspect_ratio: '16:9',
+        model: 'V_3',
+        rendering_speed: 'TURBO',
+        negative_prompt: 'blurry, low quality, watermark, generic, amateur',
+      };
+      // Attach style references if available (up to 3)
+      if (referenceImages.length > 0) {
+        body.style_references = referenceImages.slice(0, 3).map(img => ({
+          image_url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
+        }));
+        console.log(`[FAL] 📎 Ideogram: ${body.style_references.length} style references attached`);
+      }
+
+    } else if (modelId.includes('seedream') && modelId.includes('edit')) {
+      // Seedream v4.5 Edit — supports up to 10 reference images
+      body = {
+        prompt,
+        image_size: { width: 1280, height: 720 },
+      };
+      if (referenceImages.length > 0) {
+        body.image_refs = referenceImages.slice(0, 10).map((img, i) => ({
+          image_url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
+          label: `img${i + 1}`,
+        }));
+        console.log(`[FAL] 📎 Seedream Edit: ${body.image_refs.length} reference images attached`);
+      }
+
+    } else if (modelId.includes('seedream')) {
+      // Seedream v4.5 Text-to-Image
+      body = {
+        prompt,
+        image_size: { width: 1280, height: 720 },
+      };
+
+    } else if (modelId.includes('kontext')) {
+      // Kontext Pro — style transfer with 1 reference
+      body = {
+        prompt,
+        aspect_ratio: '16:9',
+      };
+      if (referenceImages.length > 0) {
+        body.image_url = referenceImages[0].url || `data:${referenceImages[0].mimeType || 'image/jpeg'};base64,${referenceImages[0].data}`;
+        console.log(`[FAL] 📎 Kontext: reference image attached`);
+      }
+
+    } else if (modelId.includes('grok-imagine')) {
+      // Grok Imagine — xAI
+      body = {
+        prompt,
+        aspect_ratio: '16:9',
+        n: 1,
+      };
+
+    } else if (modelId.includes('flux-2-pro')) {
+      // FLUX.2 Pro — newest, zero-config
+      body = {
+        prompt,
+        image_size: { width: 1280, height: 720 },
+        safety_tolerance: 6,
+      };
+
+    } else {
+      // FLUX Pro v1.1 / FLUX Dev — default body
+      body = {
+        prompt,
+        image_size: { width: 1280, height: 720 },
+        num_images: 1,
+        safety_tolerance: '6',
+        output_format: 'jpeg',
+      };
+      if (modelId.includes('flux-pro') || modelId.includes('flux/dev')) {
+        body.num_inference_steps = 28;
+        body.guidance_scale = 3.5;
+      }
     }
 
     const response = await fetch(`https://fal.run/${modelId}`, {
@@ -1526,9 +1600,13 @@ VIBE: Professional, clean, gaming channel style`
     }
 
     const data = await response.json();
-    const imageUrl = data.images?.[0]?.url;
+    // Different models return images in different fields
+    const imageUrl = data.images?.[0]?.url || data.image?.url || data.data?.[0]?.url;
 
-    if (!imageUrl) throw new Error('FAL AI returned no image');
+    if (!imageUrl) {
+      console.error('[FAL] ❌ No image URL in response:', JSON.stringify(data).substring(0, 500));
+      throw new Error('FAL AI returned no image');
+    }
     console.log(`[FAL] ✅ Image generated in ${Date.now() - startTime}ms`);
 
     // Download generated image and convert to base64
@@ -3595,7 +3673,8 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
         }
 
         setAttemptInfo({ current: 1, max: 1, status: 'generating' });
-        console.log(`[Generate] 🎨 FAL AI generation with ${falModelId}`);
+        const supportsRefs = falModelInfo?.supportsRefs || 0;
+        console.log(`[Generate] 🎨 FAL AI generation with ${falModelId}${supportsRefs > 0 ? ` (supports ${supportsRefs} refs)` : ''}`);
 
         // Compile research into a Flux-optimized prompt
         const falPrompt = compileFalPrompt(topic, effectiveResearch, effectiveVisualDNA, {
@@ -3603,7 +3682,23 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
           contentCategory
         });
 
-        lastGeneratedBase64 = await generateWithFal(falPrompt, falModelId);
+        // Prepare reference images for models that support them
+        const falRefImages = [];
+        if (supportsRefs > 0 && effectiveImages.length > 0) {
+          for (const img of effectiveImages.slice(0, supportsRefs)) {
+            if (img.data) {
+              falRefImages.push({ data: img.data, mimeType: img.mimeType || 'image/jpeg', url: img.url });
+            }
+          }
+          if (falRefImages.length > 0) {
+            console.log(`[Generate] 📎 Passing ${falRefImages.length} reference images to ${falModelId}`);
+          }
+        }
+
+        lastGeneratedBase64 = await generateWithFal(falPrompt, falModelId, {
+          referenceImages: falRefImages,
+          overlayText: overlayText || '',
+        });
 
         // Single verification pass (informational, no retry)
         setAttemptInfo({ current: 1, max: 1, status: 'verifying' });
