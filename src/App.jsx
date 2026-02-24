@@ -1103,6 +1103,7 @@ const App = () => {
   // Post-generation verification
   const [verificationResult, setVerificationResult] = useState(null); // { score, passed, reason, suggestion }
   const [isVerifying, setIsVerifying] = useState(false);
+  const [attemptInfo, setAttemptInfo] = useState(null); // { current: 1, max: 3, status: 'generating'|'verifying'|'retrying' }
 
   // Revision
   const [revisionText, setRevisionText] = useState('');
@@ -3097,23 +3098,81 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
         ]
       };
 
-      const result = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+      // ═══ AUTO-RETRY LOOP: Generate → Verify → Retry if FAIL ═══
+      const MAX_ATTEMPTS = 3;
+      let lastGeneratedBase64 = null;
+      let lastVerification = null;
+      let accepted = false;
+
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        // Update UI with attempt info
+        setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'generating' });
+        console.log(`[Generate] 🎨 Attempt ${attempt}/${MAX_ATTEMPTS} — Generating thumbnail...`);
+
+        const result = await fetchWithRetry(
+          `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }
+        );
+
+        const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+        if (!generatedBase64) {
+          console.warn(`[Generate] ⚠️ Attempt ${attempt} — No image data in response`);
+          if (attempt === MAX_ATTEMPTS) {
+            throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
+          }
+          continue;
         }
-      );
 
-      const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+        lastGeneratedBase64 = generatedBase64;
 
-      if (generatedBase64) {
-        setResultImage(`data:image/png;base64,${generatedBase64}`);
-        incrementDailyUsage(); // Günlük kullanım sayacını artır
+        // ── Verify the generated thumbnail ──
+        setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'verifying' });
+        console.log(`[Generate] 🔍 Attempt ${attempt}/${MAX_ATTEMPTS} — Verifying thumbnail...`);
 
-        // Background verification — non-blocking, user sees image immediately
-        verifyThumbnail(generatedBase64, topic, effectiveResearch, effectiveImages);
+        const verification = await verifyThumbnail(generatedBase64, topic, effectiveResearch, effectiveImages, { silent: true });
+        lastVerification = verification;
+
+        if (!verification) {
+          // Verification failed/error — accept the image (can't verify)
+          console.log(`[Generate] ⚠️ Verification unavailable — accepting image`);
+          accepted = true;
+          break;
+        }
+
+        if (verification.verdict === 'PASS' || verification.verdict === 'WARN') {
+          // Good enough — accept
+          console.log(`[Generate] ✅ Attempt ${attempt} — ${verification.verdict} (score: ${verification.score}/10) — Accepted!`);
+          accepted = true;
+          break;
+        }
+
+        // FAIL — auto-retry
+        console.log(`[Generate] ❌ Attempt ${attempt} — FAIL (score: ${verification.score}/10): ${verification.reason}`);
+        if (attempt < MAX_ATTEMPTS) {
+          setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'retrying', reason: verification.reason });
+          // Small delay before retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      // ── Show the final result ──
+      if (lastGeneratedBase64) {
+        setResultImage(`data:image/png;base64,${lastGeneratedBase64}`);
+        incrementDailyUsage();
+
+        // Set final verification result in state for UI display
+        if (lastVerification) {
+          setVerificationResult(lastVerification);
+        }
+
+        if (!accepted) {
+          console.log(`[Generate] ⚠️ All ${MAX_ATTEMPTS} attempts scored FAIL — showing last result with warning`);
+        }
       } else {
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
@@ -3121,16 +3180,19 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       setError(err.message || t('unknownError'));
     } finally {
       setLoading(false);
+      setAttemptInfo(null);
     }
   };
 
   // ═══ Post-generation Verification ═══
   // Checks if generated thumbnail actually represents the requested topic
-  const verifyThumbnail = async (generatedBase64, topicName, researchData, refImages) => {
-    if (!apiKey || !generatedBase64) return;
+  const verifyThumbnail = async (generatedBase64, topicName, researchData, refImages, { silent = false } = {}) => {
+    if (!apiKey || !generatedBase64) return null;
 
-    setIsVerifying(true);
-    setVerificationResult(null);
+    if (!silent) {
+      setIsVerifying(true);
+      setVerificationResult(null);
+    }
 
     try {
       const verifyParts = [
@@ -3201,7 +3263,7 @@ Rules:
 
       if (!verifyResponse.ok) {
         console.warn('[Verify] ⚠️ Verification API failed:', verifyResponse.status);
-        return;
+        return null;
       }
 
       const verifyData = await verifyResponse.json();
@@ -3231,13 +3293,20 @@ Rules:
           reason,
           suggestion: suggestion !== 'Yok' ? suggestion : ''
         };
-        setVerificationResult(result);
+        if (!silent) {
+          setVerificationResult(result);
+        }
         console.log(`[Verify] ${verdict === 'PASS' ? '✅' : verdict === 'WARN' ? '⚠️' : '❌'} Verification: ${verdict} (accuracy: ${accuracy}, specificity: ${specificity}) — ${reason}`);
+        return result;
       }
+      return null;
     } catch (err) {
       console.warn('[Verify] ❌ Verification error:', err.message);
+      return null;
     } finally {
-      setIsVerifying(false);
+      if (!silent) {
+        setIsVerifying(false);
+      }
     }
   };
 
@@ -4179,7 +4248,24 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     {verificationResult?.reason && (
                       <p className="text-xs text-slate-300 mt-1">{verificationResult.reason}</p>
                     )}
-                    {verificationResult?.suggestion && verificationResult.verdict !== 'PASS' && (
+                    {verificationResult?.verdict === 'FAIL' && (
+                      <div className="mt-2">
+                        {verificationResult.suggestion && (
+                          <p className="text-xs text-amber-300 mb-2">💡 {verificationResult.suggestion}</p>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-red-300/70 flex-1">3 deneme sonrası en iyi sonuç gösterildi</p>
+                          <button
+                            onClick={generateThumbnail}
+                            disabled={loading}
+                            className="text-xs bg-red-500/20 border border-red-500/30 text-red-300 px-3 py-1 rounded-lg hover:bg-red-500/30 transition-all whitespace-nowrap"
+                          >
+                            Tekrar Dene
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {verificationResult?.suggestion && verificationResult.verdict === 'WARN' && (
                       <div className="mt-2 flex items-center gap-2">
                         <p className="text-xs text-amber-300 flex-1">💡 {verificationResult.suggestion}</p>
                         <button
@@ -4307,11 +4393,32 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
             <div className="bg-[#101014] rounded-2xl p-8 border border-white/5 mb-6">
               <div className="text-center">
                 <div className="relative inline-block mb-4">
-                  <div className="w-20 h-20 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
-                  <BrainCircuit className="w-8 h-8 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                  <div className={`w-20 h-20 border-4 rounded-full animate-spin ${
+                    attemptInfo?.status === 'retrying' ? 'border-red-500/10 border-t-red-500' :
+                    attemptInfo?.status === 'verifying' ? 'border-yellow-500/10 border-t-yellow-500' :
+                    'border-blue-500/10 border-t-blue-500'
+                  }`} />
+                  <BrainCircuit className={`w-8 h-8 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse ${
+                    attemptInfo?.status === 'retrying' ? 'text-red-500' :
+                    attemptInfo?.status === 'verifying' ? 'text-yellow-500' :
+                    'text-blue-500'
+                  }`} />
                 </div>
-                <p className="text-xl font-black text-white animate-pulse">{t('creating')}</p>
-                <p className="text-sm text-blue-400 mt-1">{t('aiDesigningThumbnail')}</p>
+                <p className="text-xl font-black text-white animate-pulse">
+                  {attemptInfo?.status === 'verifying' ? 'Doğrulanıyor...' :
+                   attemptInfo?.status === 'retrying' ? 'Kalite yetersiz, yeniden üretiliyor...' :
+                   t('creating')}
+                </p>
+                <p className="text-sm text-blue-400 mt-1">
+                  {attemptInfo?.status === 'retrying' && attemptInfo?.reason
+                    ? `❌ ${attemptInfo.reason}`
+                    : attemptInfo?.status === 'verifying'
+                    ? 'AI görselin konuya uygunluğunu kontrol ediyor...'
+                    : t('aiDesigningThumbnail')}
+                </p>
+                {attemptInfo && attemptInfo.current > 1 && (
+                  <p className="text-xs text-slate-400 mt-2">Deneme {attemptInfo.current}/{attemptInfo.max}</p>
+                )}
               </div>
             </div>
           )}
