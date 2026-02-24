@@ -4123,8 +4123,8 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
       // Use content category temperature (e.g., religion=0.4, education=0.5, gaming=0.7, music=0.8)
       const categoryTemperature = contentCategory?.temperature ?? 0.6;
-      // Gemini image generation needs higher temp for creativity, but respect category ratios
-      const generationTemperature = Math.min(1.0, categoryTemperature + 0.3);
+      // Keep temperature moderate to ensure reference fidelity while allowing some creativity
+      const generationTemperature = Math.min(0.8, categoryTemperature + 0.1);
 
       const payload = {
         contents: [{
@@ -4630,98 +4630,49 @@ VERDICT rules UPDATE:
     try {
       const optimizeCategory = detectedCategory || detectContentCategory(topic, topicDescription);
 
-      const optimizedPrompt = `You are a world-class YouTube thumbnail designer specializing in HIGH-CTR thumbnails. Create a HORIZONTAL LANDSCAPE thumbnail for "${topic}".
+      const optimizedPrompt = `You are a world-class YouTube thumbnail designer specializing in HIGH-CTR thumbnails.
 
-⚠️ ABSOLUTE REQUIREMENT - IMAGE ORIENTATION:
-- THE IMAGE MUST BE HORIZONTAL/LANDSCAPE (width > height)
-- DIMENSIONS: 1280 pixels WIDE x 720 pixels TALL (16:9 ratio)
-- ❌ NEVER create vertical/portrait images
-- ✅ ONLY create WIDE horizontal images
+⚠️ CRITICAL: I am showing you the CURRENT THUMBNAIL first. Your job is to IMPROVE it — NOT replace it with something completely different.
+Keep the SAME subject, SAME concept, SAME character, SAME scene. Only enhance the VISUAL IMPACT and CLICKABILITY.
 
-🎯 HIGH-CTR OPTIMIZATION MODE - APPLY ALL OF THESE:
+TOPIC: "${topic}"
+${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
 
-${archetype ? `ARCHETYPE: ${archetype.name}
+WHAT TO KEEP (DO NOT CHANGE):
+- The main subject/character — keep the SAME visual identity
+- The overall scene/setting — keep the SAME world
+- Color palette — keep the SAME mood (you may boost saturation/contrast)
+- Any specific visual details from the reference images
+
+WHAT TO IMPROVE (ENHANCE ONLY):
+- Make composition more DRAMATIC (closer crop, more dynamic angle)
+- Boost CONTRAST — subject must POP from background more
+- Add ENERGY effects (glow, rim lighting, particles) if not already present
+- Make the focal point LARGER and more dominant
+- Enhance lighting — stronger 3-point setup, dramatic shadows
+
+${archetype ? `COMPOSITION ARCHETYPE: ${archetype.name}
 ${archetype.prompt}` : ''}
 
-⚠️ CRITICAL SIZE REQUIREMENTS (LIKE PROFESSIONAL YOUTUBE THUMBNAILS):
-- Face must be HUGE - taking up 40-50% of the frame HEIGHT
-- Person should be CENTERED or slightly below center
-- The face is the MAIN FOCAL POINT of the entire thumbnail
-- Show from chest-up or shoulders-up so face is LARGE
-- Add dramatic colored rim lighting (green, red, blue, orange) on the person
-
-MAXIMUM CLICK-THROUGH PRINCIPLES:
-- HIGH CONTRAST - subject must POP from background
-- Add GLOW and ENERGY effects around the subject
-- Create CURIOSITY GAP - something unexpected or dramatic
-- Colors must be VIBRANT and match a theme (green glow, red danger, blue ice, etc.)
-
-${topicDescription ? `TOPIC CONTEXT: ${topicDescription}` : ''}
-
-${researchImages.length > 0 ? `
-REFERENCE IMAGES (${researchImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.):
-Use these for VISUAL ACCURACY of "${topic}" — match correct colors, features, clothing/armor details.
-But create a COMPLETELY NEW composition — different angle, different pose, different mood than the references.
-The subject must be RECOGNIZABLE but the thumbnail must look FRESH and UNIQUE.
-` : ''}
-
 ${topicResearch ? `
-📋 EXPERT RESEARCH (CRITICAL - USE THIS FOR AUTHENTICITY):
-${topicResearch}
-Apply the visual identity, colors, and atmosphere described above!
-
-🏛️ HISTORICAL SCENE (IF APPLICABLE):
-If the research contains "READY-TO-USE SCENE DIRECTION", follow it EXACTLY:
-- Use SCENE_DESCRIPTION for background (do NOT substitute modern city visuals!)
-- Use PERSON_COSTUME for the person's outfit
-- Follow ABSOLUTELY_NOT list strictly - zero tolerance for listed items
-- Do NOT use modern city names internally - build scene from architectural descriptions only
+VISUAL RESEARCH (for topic accuracy — keep the same visual identity):
+${topicResearch.substring(0, 2000)}
 ` : ''}
 
-${conceptAnalysis ? `
-🎨 STYLE REFERENCE (CRITICAL - Match this style from user's reference image):
+${conceptAnalysis ? `STYLE REFERENCE (maintain this style):
 ${conceptAnalysis}
-You MUST apply this exact visual style, color palette, lighting, and atmosphere to the thumbnail.
-The reference image is attached - LOOK AT IT and replicate its visual DNA.
 ` : ''}
 
-${photoAnalysis ? `
-👤 IMAGE ANALYSIS:
-${photoAnalysis}
-` : ''}
+${photoAnalysis ? `PERSON ANALYSIS: ${photoAnalysis}` : ''}
 
-UPLOADED IMAGE INTEGRATION:
-If the image contains a person:
-- Face should take up 40-50% of the frame HEIGHT - make it BIG
-- Transform clothing to match theme
-- Add dramatic colored lighting matching the scene
-- Keep face unchanged and recognizable
-- NEVER crop the head - leave headroom above
-If the image is not a person (screenshot, product, etc.):
-- Use it as the primary visual element, enhanced with professional effects
-- Integrate its colors, style, and elements into a compelling thumbnail
+${base64Image ? `PERSON PHOTO: Keep this person's face LARGE (40-50% of frame height), centered, with dramatic rim lighting. Face must remain IDENTICAL.` : ''}
 
 ${optimizedText ? `
 TEXT: "${optimizedText}"
-- Place at the BOTTOM of the image (bottom 20-25%)
-- MASSIVE bold font, 3D effect with strong shadow
-- Thick black stroke (3-5px) for readability
-- Glowing outline in the scene's dominant color
-- Text should span most of the width
-- NEVER cover the person's face with text
-
-⚠️ CRITICAL - TEXT COLOR HARMONY:
-1. Analyze scene colors → Choose COMPLEMENTARY text color
-2. Dark scene → Bright text (white/yellow/gold)
-3. Warm scene → Cool accent text (white + blue glow)
-4. Text GLOW must use a color FROM the scene
-5. Maximum contrast for 120px thumbnail readability
+- Place at BOTTOM (bottom 20-25%), MASSIVE bold font, thick black stroke, glow in scene's dominant color
+- NEVER cover the person's face
 ` : `
-⚠️⚠️⚠️ ABSOLUTE ZERO TEXT RULE ⚠️⚠️⚠️
-- There must be ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO NUMBERS anywhere on this image
-- Do NOT add any title, watermark, logo text, game name, or ANY written content
-- The image must be 100% visual only - person, scene, and effects
-- If you add ANY text, the task has FAILED
+⚠️ NO TEXT — zero letters, words, numbers, or symbols anywhere on this image.
 `}
 
 VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, cinematic lighting'}
@@ -4729,36 +4680,36 @@ VISUAL STYLE: ${selectedTypo?.prompt || 'Ultra high contrast, vibrant colors, ci
 ${['religion'].includes(optimizeCategory?.id) ? `
 ⚠️ PHOTOREALISM MANDATE — RELIGIOUS CONTENT:
 - PHOTOREALISTIC rendering ONLY — must look like a real photograph
-- Real human skin, real fabric textures, real architectural materials
-- NO cartoon, NO anime, NO illustration, NO fantasy, NO magical/ethereal effects
-- NO Disney/Pixar/Aladdin style — this is REAL LIFE religious content
-- Natural photography lighting, real-world mosque/church/temple settings
+- NO cartoon, NO anime, NO illustration, NO fantasy effects
 - Think: professional editorial photography, National Geographic quality
-` : `CINEMATIC QUALITY (NON-NEGOTIABLE):
-- 3-point dramatic lighting with strong rim light separation
-- Shallow depth of field, background bokeh, subject tack sharp
-- Professional color grading - crushed blacks, controlled highlights
-- Real skin texture with subsurface scattering, NO plastic/waxy AI look
-- Volumetric atmosphere (god rays, particles, haze)
-- Film grain aesthetic (ISO 400-800), subtle chromatic aberration on edges
-- High dynamic range contrast that POPS at 120px thumbnail size`}
+` : `CINEMATIC QUALITY: dramatic lighting, shallow depth of field, volumetric atmosphere, film grain aesthetic, professional color grading.`}
 
 ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
 
-MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
+⚠️ FINAL REMINDER: This is an OPTIMIZATION — improve the existing thumbnail, do NOT create something completely different. The viewer should recognize this as the SAME concept but MORE clickable.`;
 
-      const optimizeParts = [
-        { text: optimizedPrompt },
-      ];
-      // Reference images shuffled for variety
+      const optimizeParts = [];
+
+      // 1. CURRENT THUMBNAIL FIRST — model must see what it's improving
+      const currentBase64 = resultImage.startsWith('data:') ? resultImage.split(',')[1] : null;
+      if (currentBase64) {
+        optimizeParts.push({ text: `[CURRENT_THUMBNAIL] — This is the CURRENT thumbnail. IMPROVE this image — keep the same subject, same concept, same visual identity. Only enhance clickability:` });
+        optimizeParts.push({ inlineData: { mimeType: 'image/png', data: currentBase64 } });
+      }
+
+      // 2. Reference images for accuracy (in order, no shuffle)
       if (researchImages.length > 0) {
-        const shuffled = [...researchImages].sort(() => Math.random() - 0.5);
-        for (let i = 0; i < shuffled.length; i++) {
-          const refImg = shuffled[i];
-          optimizeParts.push({ text: `[TOPIC_REF_${i + 1}] — Reference for accuracy (create NEW composition):` });
+        optimizeParts.push({ text: `\n[REFERENCE IMAGES] — These show what "${topic}" really looks like. Your optimized version must STILL match these:` });
+        for (let i = 0; i < researchImages.length; i++) {
+          const refImg = researchImages[i];
           optimizeParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
       }
+
+      // 3. Text prompt AFTER images
+      optimizeParts.push({ text: optimizedPrompt });
+
+      // 4. Person photo and style ref
       if (base64Image) {
         optimizeParts.push({ text: '[PERSON_PHOTO]:' });
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
@@ -4774,7 +4725,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         }],
         generationConfig: {
           responseModalities: ['TEXT', 'IMAGE'],
-          temperature: 1.0,
+          temperature: 0.6,
           imageConfig: {
             aspectRatio: '16:9'
           }
