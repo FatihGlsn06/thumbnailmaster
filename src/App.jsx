@@ -2777,8 +2777,64 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
           console.log('[RefImage] 📊 Top:', uniqueCandidates.slice(0, 8).map(c => `${c.label}(${c.score})`));
 
           if (uniqueCandidates.length === 0) {
-            console.log('[RefImage] ⚠️ No candidates found');
-            return;
+            console.log('[RefImage] ⚠️ No candidates from primary search — trying last resort direct search...');
+            // ── LAST RESORT when primary search found nothing ──
+            try {
+              const directSearchPayload = {
+                contents: [{
+                  parts: [{
+                    text: `Search Google Images for: "${topic}"${topicDescription ? ` (${topicDescription})` : ''}
+
+I need direct image URLs of "${topic}". Search for:
+1. "${topic}" image
+2. "${topic}" ${catId === 'gaming' ? 'game' : 'photo'}
+
+Return ONLY image URLs:
+IMG:<url>|<description>
+
+If nothing found, reply: NONE`
+                  }]
+                }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+              };
+              const directRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(directSearchPayload), signal: AbortSignal.timeout(15000) }
+              );
+              if (directRes.ok) {
+                const directData = await directRes.json();
+                const directText = directData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+                const directGrounding = directData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+                const directImgRegex = /IMG:\s*(https?:\/\/[^\s|]+)\|?\s*(.*)/g;
+                let dm;
+                while ((dm = directImgRegex.exec(directText)) !== null) {
+                  const url = dm[1].trim();
+                  if (url.match(/\.(jpg|jpeg|png|webp)/i) || url.includes('/thumb/') || url.includes('/images/') || url.includes('upload.wikimedia') || url.includes('steamstatic')) {
+                    uniqueCandidates.push({ url, score: 30, source: 'last-resort-direct', label: dm[2]?.trim() || 'Direct search result' });
+                  }
+                }
+                for (const chunk of directGrounding) {
+                  const uri = chunk.web?.uri;
+                  if (uri && uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i)) {
+                    uniqueCandidates.push({ url: uri, score: 25, source: 'last-resort-grounding', label: chunk.web?.title || 'Grounding image' });
+                  }
+                }
+                if (uniqueCandidates.length > 0) {
+                  console.log(`[RefImage] 🔄 Last resort direct search found ${uniqueCandidates.length} candidates!`);
+                } else {
+                  console.log('[RefImage] 🚫 Last resort also found nothing — proceeding without references');
+                  return;
+                }
+              } else {
+                console.log('[RefImage] ⚠️ Last resort search HTTP error:', directRes.status);
+                return;
+              }
+            } catch (e) {
+              console.log('[RefImage] ❌ Last resort search failed:', e.message);
+              return;
+            }
           }
 
           // Download top candidates (max 5 for Gemini verification)
@@ -2853,12 +2909,103 @@ If NONE of the images actually show "${subject}", reply with: NONE` }
                 console.log(`[RefImage] 🤖 Gemini multi-select response:\n${responseText}`);
 
                 if (responseText === 'NONE') {
-                  // Gemini explicitly rejected ALL candidates as wrong topic
-                  // CRITICAL: Do NOT fall through to fallback — these images would poison Visual DNA
-                  console.log(`[RefImage] 🚫 Gemini explicitly rejected all ${downloadedCandidates.length} images as WRONG TOPIC — proceeding without reference images`);
+                  // Gemini rejected ALL candidates as wrong topic — try LAST RESORT direct search
+                  console.log(`[RefImage] 🚫 Gemini rejected all ${downloadedCandidates.length} images as WRONG TOPIC`);
+                  console.log(`[RefImage] 🔄 Attempting LAST RESORT direct image search for "${topic}"...`);
+
+                  // ── LAST RESORT: Direct Google Image Search via Gemini ──
+                  // Use a very simple, direct prompt — just find ANY image of the exact topic
+                  try {
+                    const lastResortPayload = {
+                      contents: [{
+                        parts: [{
+                          text: `Search Google Images for: "${topic}"${topicDescription ? ` (${topicDescription})` : ''}
+
+Find 3-5 direct image URLs showing "${topic}". Try these searches:
+1. "${topic}" official image
+2. "${topic}" ${catId === 'gaming' ? 'game screenshot gameplay' : 'photo'}
+3. "${topic}" ${catId === 'gaming' ? 'Steam store page' : 'visual'}
+
+Return ONLY direct image URLs in this format:
+IMG:<url>|<description>
+
+If you truly cannot find ANY image of "${topic}", reply with: NONE`
+                        }]
+                      }],
+                      tools: [{ google_search: {} }],
+                      generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+                    };
+
+                    const lastResortRes = await fetch(
+                      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+                      {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(lastResortPayload),
+                        signal: AbortSignal.timeout(15000)
+                      }
+                    );
+
+                    if (lastResortRes.ok) {
+                      const lastResortData = await lastResortRes.json();
+                      const lastResortText = lastResortData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+                      const lastResortGrounding = lastResortData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+
+                      console.log(`[RefImage] 🔄 Last resort response (${lastResortText.length} chars)`);
+
+                      // Parse IMG: lines
+                      const lastResortUrls = [];
+                      const lrImgRegex = /IMG:\s*(https?:\/\/[^\s|]+)\|?\s*(.*)/g;
+                      let lrMatch;
+                      while ((lrMatch = lrImgRegex.exec(lastResortText)) !== null) {
+                        const url = lrMatch[1].trim();
+                        if (url.match(/\.(jpg|jpeg|png|webp)/i) || url.includes('/thumb/') || url.includes('/images/') || url.includes('upload.wikimedia') || url.includes('steamstatic')) {
+                          lastResortUrls.push({ url, label: lrMatch[2]?.trim() || 'Last resort image' });
+                        }
+                      }
+
+                      // Also check grounding chunks for image URLs
+                      for (const chunk of lastResortGrounding) {
+                        const uri = chunk.web?.uri;
+                        if (uri && uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i)) {
+                          lastResortUrls.push({ url: uri, label: chunk.web?.title || 'Grounding image' });
+                        }
+                      }
+
+                      if (lastResortUrls.length > 0) {
+                        console.log(`[RefImage] 🔄 Last resort found ${lastResortUrls.length} image URLs — downloading...`);
+                        const lastResortImages = [];
+                        for (const lr of lastResortUrls.slice(0, 4)) {
+                          const imgResult = await fetchImageAsBase64(lr.url);
+                          if (imgResult) {
+                            lastResortImages.push({
+                              data: imgResult.data,
+                              mimeType: imgResult.mimeType,
+                              url: lr.url,
+                              label: lr.label,
+                              score: 30, // Moderate score — these are unverified
+                              reason: 'Son şans aramasından bulundu (doğrulanmamış)'
+                            });
+                            console.log(`[RefImage] 🔄 ✅ Last resort downloaded: ${lr.label}`);
+                          }
+                        }
+                        if (lastResortImages.length > 0) {
+                          console.log(`[RefImage] 🔄 ✅ LAST RESORT SUCCESS: ${lastResortImages.length} images found!`);
+                          collectedImages = lastResortImages;
+                          setResearchImages(lastResortImages);
+                          return;
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.log(`[RefImage] 🔄 ❌ Last resort search failed: ${e.message}`);
+                  }
+
+                  // If last resort also failed — NOW give up
+                  console.log(`[RefImage] 🚫 Last resort also failed — proceeding without reference images`);
                   collectedImages = [];
                   setResearchImages([]);
-                  return; // Exit the image search completely — bad images = worse than no images
+                  return;
                 }
 
                 // Parse PICK lines: PICK:2|reason text
