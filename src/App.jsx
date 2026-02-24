@@ -3053,27 +3053,28 @@ If nothing found, reply: NONE`
             console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for multi-selection (max ${maxSelections})...`);
 
             const verifyParts = [
-              { text: `You are an expert image analyst. I need to find the BEST reference images of "${subject}"${contextPart ? ` (context: "${contextPart}")` : ''} for creating a YouTube thumbnail.
+              { text: `You are an expert visual identity analyst. I need the BEST reference images of "${subject}"${contextPart ? ` (context: "${contextPart}")` : ''} to create an ACCURATE YouTube thumbnail.
 
-⚠️ CRITICAL: Images must be about "${subject}" EXACTLY — not about similar-named or similar-spelled topics.
-Reject images from a DIFFERENT game/topic/character even if the name sounds similar.
+⚠️ CRITICAL: Your picks will be given to an image generation AI as "THIS IS WHAT ${subject} LOOKS LIKE — COPY THIS." So you MUST pick the images that BEST show the UNIQUE, DISTINCTIVE visual identity of "${subject}".
 
 I have ${downloadedCandidates.length} candidate images below. Your job:
-1. Select up to ${maxSelections} images that BEST depict "${subject}" from DIFFERENT ANGLES, POSES, or PERSPECTIVES
-2. Each image should show the actual subject — not a map, logo, faction icon, PDF, or unrelated item
-3. Prioritize VARIETY: pick images showing different aspects (close-up, full body, action, different scenes)
-4. If images are too similar, pick fewer but more diverse ones
-5. REJECT images that are clearly about a DIFFERENT topic than "${subject}"
 
-Reply in this EXACT format (one line per selection, no extra text):
-PICK:<number>|<reason>
+SELECTION CRITERIA (in order of priority):
+1. ✅ VISUAL ACCURACY — Does it show THE REAL "${subject}"? Not a similar-looking thing, not a generic version — the EXACT subject.
+2. ✅ DISTINCTIVE FEATURES — Does it show what makes "${subject}" UNIQUE? (specific armor, colors, body shape, face design, logo, etc.)
+3. ✅ THUMBNAIL USEFULNESS — Would this help an artist draw "${subject}" correctly? Close-ups and clear shots > blurry/distant/crowded
+4. ✅ VARIETY — Pick images showing DIFFERENT angles/aspects if available
 
-Example for 3 picks:
-PICK:2|Close-up portrait showing facial details and armor
-PICK:5|Full body action pose with weapon
-PICK:1|Different outfit/scene showing environment
+REJECTION CRITERIA:
+- ❌ WRONG SUBJECT — A different character/game/topic with a similar name
+- ❌ TOO GENERIC — Could be "any fantasy warrior" or "any space scene" — doesn't show what's UNIQUE about "${subject}"
+- ❌ LOW QUALITY — Maps, logos, UI screenshots, tiny icons, text-heavy images
+- ❌ REDUNDANT — Two images showing the exact same angle/pose (pick the better one)
 
-If NONE of the images actually show "${subject}", reply with: NONE` }
+Select up to ${maxSelections} images. Reply EXACTLY:
+PICK:<number>|<what unique visual features of "${subject}" this image shows>
+
+If NONE actually show "${subject}", reply: NONE` }
             ];
 
             for (let i = 0; i < downloadedCandidates.length; i++) {
@@ -4043,13 +4044,19 @@ ${conceptAnalysis}
 The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
 ${effectiveImages.length > 0 ? `
-⚠️⚠️⚠️ REFERENCE IMAGES — MANDATORY (YOU SAW THEM ABOVE) ⚠️⚠️⚠️
-You were shown ${effectiveImages.length} reference images at the start. Your thumbnail MUST:
-- Look like a DIRECT DERIVATIVE of those images — same character, same colors, same outfit, same world
-- Copy the EXACT visual identity: face structure, armor/clothing, color palette, distinctive features
-- A viewer comparing your output to the references must INSTANTLY see they are the same subject
-- You may change pose/angle/composition but NEVER change the subject's appearance
-- If you generate something that doesn't match the references, it is a COMPLETE FAILURE
+🔒🔒🔒 REFERENCE IMAGE BINDING — NON-NEGOTIABLE 🔒🔒🔒
+You saw ${effectiveImages.length} reference images. These define the LOCKED visual identity of "${topic}".
+
+DO NOT "interpret" or "reimagine" — COPY the visual identity:
+- SAME exact creature/character design (body shape, proportions, limbs, head shape)
+- SAME color palette (primary colors, accent colors, glow colors)
+- SAME distinctive features (armor plates, horns, weapons, markings, scars)
+- SAME art style (realistic, stylized, cel-shaded — match the references)
+- You may change POSE and CAMERA ANGLE but the subject must be RECOGNIZABLE as the same entity
+
+COMMON MISTAKE TO AVOID: Do NOT replace a specific creature (e.g. Taurox — a biomechanical minotaur) with a GENERIC version (e.g. a regular bull). The SPECIFIC design from the reference images is what matters.
+
+TEST: If someone who knows "${topic}" sees your thumbnail, they must INSTANTLY say "That's ${topic}!" — not "That's some generic ${topic.split(' ').pop() || 'thing'}".
 ` : ''}
 ${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
@@ -4096,19 +4103,22 @@ Generate something SPECIFIC and UNIQUE to "${topic}" based on its name and conte
 `}
 ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
-      // Build parts — REFERENCE IMAGES FIRST so model prioritizes them visually
+      // Build parts — REFERENCE IMAGES FIRST AND LAST (primacy + recency effect)
       const promptParts = [];
 
       // 1. REFERENCE IMAGES FIRST — Gemini pays most attention to early content
       if (effectiveImages.length > 0) {
         console.log(`[Generate] 🖼️ Including ${effectiveImages.length} reference images BEFORE text prompt`);
-        promptParts.push({ text: `⚠️ LOOK AT THESE ${effectiveImages.length} REFERENCE IMAGES FIRST. These show the REAL appearance of "${topic}". Your generated thumbnail MUST look like these images. DO NOT ignore them.\n` });
+        promptParts.push({ text: `🔒 VISUAL IDENTITY LOCK — STUDY THESE ${effectiveImages.length} REFERENCE IMAGES:
+These are VERIFIED images of the REAL "${topic}". Your thumbnail MUST look like it belongs to the SAME franchise/world as these images.
+COPY the exact: color palette, character design, body proportions, armor/clothing, distinctive features, art style.\n` });
         for (let i = 0; i < effectiveImages.length; i++) {
           const refImg = effectiveImages[i];
-          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — THIS IS WHAT "${topic}" LOOKS LIKE. You MUST replicate these exact colors, shapes, character designs, outfits, and visual details in your output:` });
+          const refReason = refImg.reason ? ` (${refImg.reason})` : '';
+          promptParts.push({ text: `[TOPIC_REF_${i + 1}]${refReason} — COPY this visual identity into your thumbnail:` });
           promptParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
-        promptParts.push({ text: `\n⚠️ You have now seen ${effectiveImages.length} reference images above. Your thumbnail MUST visually match them. Now read the generation instructions below:\n` });
+        promptParts.push({ text: `\n🔒 You have now seen the REAL "${topic}". If your output looks NOTHING like these references — wrong colors, wrong design, wrong creature/character — it is a COMPLETE FAILURE. Now read the instructions:\n` });
       } else {
         console.log('[Generate] ⚠️ No research reference images available');
       }
@@ -4122,10 +4132,17 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
         promptParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
       }
 
-      // 3. Style/concept reference (if uploaded)
+      // 4. Style/concept reference (if uploaded)
       if (conceptBase64) {
         promptParts.push({ text: '[STYLE_REF] — Match this visual style:' });
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+
+      // 5. REPEAT best reference image at the END (recency bias — model remembers last content best)
+      if (effectiveImages.length > 0) {
+        const bestRef = effectiveImages[0]; // First image = highest scored
+        promptParts.push({ text: `\n🔒 FINAL REMINDER — Here is "${topic}" ONE MORE TIME. Your output MUST match this visual identity:` });
+        promptParts.push({ inlineData: { mimeType: bestRef.mimeType || "image/png", data: bestRef.data } });
       }
 
       // Use content category temperature (e.g., religion=0.4, education=0.5, gaming=0.7, music=0.8)
@@ -4689,9 +4706,11 @@ ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
 
       // 2. Reference images for accuracy (in order, no shuffle)
       if (researchImages.length > 0) {
-        optimizeParts.push({ text: `\n[REFERENCE IMAGES] — These show what "${topic}" really looks like. Your optimized version must STILL match these:` });
+        optimizeParts.push({ text: `\n🔒 [REFERENCE IMAGES] — The REAL visual identity of "${topic}". Your optimized version MUST still look like the same subject:` });
         for (let i = 0; i < researchImages.length; i++) {
           const refImg = researchImages[i];
+          const refReason = refImg.reason ? ` (${refImg.reason})` : '';
+          optimizeParts.push({ text: `[REF_${i + 1}]${refReason}:` });
           optimizeParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
       }
@@ -4707,6 +4726,12 @@ ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
       if (conceptBase64) {
         optimizeParts.push({ text: '[STYLE_REF]:' });
         optimizeParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
+      }
+
+      // 5. Repeat best reference at the end (recency effect)
+      if (researchImages.length > 0) {
+        optimizeParts.push({ text: `\n🔒 FINAL CHECK — Your optimized thumbnail must still match this visual identity of "${topic}":` });
+        optimizeParts.push({ inlineData: { mimeType: researchImages[0].mimeType || "image/png", data: researchImages[0].data } });
       }
 
       const payload = {
