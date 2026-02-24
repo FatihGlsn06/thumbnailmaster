@@ -4036,19 +4036,13 @@ ${conceptAnalysis}
 The attached reference image defines the target visual style. Replicate its color palette, lighting, composition, atmosphere, and effects.
 ` : ''}
 ${effectiveImages.length > 0 ? `
-REFERENCE IMAGES (${effectiveImages.length} attached as [TOPIC_REF_1], [TOPIC_REF_2], etc.):
-⚠️ CRITICAL: These images show EXACTLY what "${topic}" looks like. You MUST study them and match the visual details.
-
-MANDATORY RULES FOR USING REFERENCES:
-1. VISUAL FIDELITY: Copy the EXACT colors, textures, shapes, distinctive markings, clothing/armor, character design from the references. These are NOT generic — they are the AUTHENTIC appearance.
-2. CHARACTER/SUBJECT: The main subject in your thumbnail must be VISUALLY IDENTICAL to what's shown in the references. Same face structure, same outfit, same color scheme.
-3. COMPOSITION: You may create a new dynamic angle/pose, but the SUBJECT APPEARANCE must faithfully match the references.
-4. If references show a character: draw THAT character with THOSE specific visual features — not a generic substitute.
-5. If references show a place/object: replicate THOSE specific architectural/design details — not a generic version.
-
-${effectiveImages.map((img, i) => `  [TOPIC_REF_${i + 1}]: ${img.reason || 'Visual reference'} — COPY the visual details from this image`).join('\n')}
-
-FAILURE: Generating a thumbnail that looks nothing like the reference images is a FAILURE. The viewer must instantly recognize "${topic}" by comparing your output to the references.
+⚠️⚠️⚠️ REFERENCE IMAGES — MANDATORY (YOU SAW THEM ABOVE) ⚠️⚠️⚠️
+You were shown ${effectiveImages.length} reference images at the start. Your thumbnail MUST:
+- Look like a DIRECT DERIVATIVE of those images — same character, same colors, same outfit, same world
+- Copy the EXACT visual identity: face structure, armor/clothing, color palette, distinctive features
+- A viewer comparing your output to the references must INSTANTLY see they are the same subject
+- You may change pose/angle/composition but NEVER change the subject's appearance
+- If you generate something that doesn't match the references, it is a COMPLETE FAILURE
 ` : ''}
 ${photoAnalysis ? `UPLOADED IMAGE: ${photoAnalysis}
 ` : ''}
@@ -4095,22 +4089,27 @@ Generate something SPECIFIC and UNIQUE to "${topic}" based on its name and conte
 `}
 ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
-      // Build parts — REFERENCE IMAGES FIRST so model prioritizes them
-      const promptParts = [{ text: prompt }];
+      // Build parts — REFERENCE IMAGES FIRST so model prioritizes them visually
+      const promptParts = [];
 
-      // 1. TOPIC REFERENCE IMAGES — in order matching prompt text labels
+      // 1. REFERENCE IMAGES FIRST — Gemini pays most attention to early content
       if (effectiveImages.length > 0) {
-        console.log(`[Generate] 🖼️ Including ${effectiveImages.length} reference images`);
+        console.log(`[Generate] 🖼️ Including ${effectiveImages.length} reference images BEFORE text prompt`);
+        promptParts.push({ text: `⚠️ LOOK AT THESE ${effectiveImages.length} REFERENCE IMAGES FIRST. These show the REAL appearance of "${topic}". Your generated thumbnail MUST look like these images. DO NOT ignore them.\n` });
         for (let i = 0; i < effectiveImages.length; i++) {
           const refImg = effectiveImages[i];
-          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — Study this image carefully. This is what "${topic}" ACTUALLY looks like. Copy the exact visual details — colors, textures, shapes, distinctive features, clothing/armor, proportions:` });
+          promptParts.push({ text: `[TOPIC_REF_${i + 1}] — THIS IS WHAT "${topic}" LOOKS LIKE. You MUST replicate these exact colors, shapes, character designs, outfits, and visual details in your output:` });
           promptParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
         }
+        promptParts.push({ text: `\n⚠️ You have now seen ${effectiveImages.length} reference images above. Your thumbnail MUST visually match them. Now read the generation instructions below:\n` });
       } else {
         console.log('[Generate] ⚠️ No research reference images available');
       }
 
-      // 2. Person photo (if uploaded)
+      // 2. Main text prompt AFTER images
+      promptParts.push({ text: prompt });
+
+      // 3. Person photo (if uploaded)
       if (base64Image) {
         promptParts.push({ text: '[PERSON_PHOTO] — The person to include in the thumbnail:' });
         promptParts.push({ inlineData: { mimeType: "image/png", data: base64Image } });
