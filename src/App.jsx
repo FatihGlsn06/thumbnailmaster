@@ -1849,15 +1849,22 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
           console.log('[RefImage] 🔍 Searching for reference image:', topic);
 
           // ── Subject Extraction ──
+          // Topic format: "Subject — Description" or "Subject: Description"
+          // The FIRST part (before separator) is the topic name/subject
+          // The SECOND part (after separator) is context/description
           const rawClean = topic.replace(/[:\-–—|]/g, ' ').replace(/\s+/g, ' ').trim();
           const separatorMatch = topic.match(/[:|\-–—]\s*(.+)/);
           const contextMatch = topic.match(/^(.+?)[\s]*[:|\-–—]/);
 
           let subject = '';
           let contextPart = '';
-          if (separatorMatch) {
+          if (separatorMatch && contextMatch) {
+            // BEFORE separator = topic name (e.g., "Eldegarde")
+            // AFTER separator = description (e.g., "Yeni çıkan Full Loot RPG")
+            subject = contextMatch[1].trim();
+            contextPart = separatorMatch[1].trim();
+          } else if (separatorMatch) {
             subject = separatorMatch[1].trim();
-            contextPart = contextMatch ? contextMatch[1].trim() : '';
           } else {
             const words = rawClean.split(' ').filter(w => w.length > 2 && !/^\d+$/.test(w));
             // Context words: game franchises + historical/religious/scientific context prefixes
@@ -2235,8 +2242,17 @@ IMPORTANT: Images MUST be about "${topic}" specifically, NOT about similar-named
                   contents: [{
                     parts: [{
                       text: `You are a wiki/fandom/encyclopedia expert. For the topic "${topic}", I need to find HIGH-QUALITY reference images.
+${topicDescription ? `USER CONTEXT: "${topicDescription}"` : ''}
 
 What are the best sources for images about this topic?
+
+⚠️ CRITICAL — EXACT TOPIC MATCH:
+You MUST find images for "${topic}" EXACTLY as written. Do NOT confuse it with similar-sounding topics.
+- "${topic}" is NOT necessarily a well-known character/franchise
+- If "${topic}" sounds similar to something famous but is DIFFERENT, search for the EXACT name
+- Example: "Eldegarde" (indie game) ≠ "Edelgard von Hresvelg" (Fire Emblem) — these are COMPLETELY DIFFERENT
+- Example: "Palworld" ≠ "Pokémon World"
+- If you cannot find a specific wiki for "${topic}", say NONE instead of guessing a similar topic's wiki
 
 Rules:
 - Give me the EXACT Fandom wiki subdomain names (pattern: https://{SUBDOMAIN}.fandom.com)
@@ -2247,6 +2263,7 @@ Rules:
 - For science topics: suggest Wikipedia articles with scientific illustrations
 - Also suggest the BEST Wikipedia search term — Wikipedia has excellent images for history, religion, science, art, architecture
 - Suggest the best Wikimedia Commons search query for finding images
+- If the topic is a NEW or OBSCURE game/product with no wiki, suggest: SEARCH:<topic name> game screenshot OR SEARCH:<topic name> steam
 
 Reply in this EXACT format (one per line, no extra text):
 WIKI:<subdomain>
@@ -2263,19 +2280,16 @@ WPEDIA:Fall of Constantinople
 WPEDIA:Ottoman Empire
 SEARCH:Ottoman conquest Constantinople 1453
 
+Example for "Eldegarde" (new indie game):
+SEARCH:Eldegarde game screenshot
+SEARCH:Eldegarde steam
+
 Example for "Quran Recitation Ramadan":
 WPEDIA:Quran
 WPEDIA:Ramadan
 SEARCH:Quran recitation mosque
 
-Example for "Photosynthesis Explained":
-WPEDIA:Photosynthesis
-SEARCH:photosynthesis plant cell chloroplast
-
-Example for "Viking History":
-WIKI:assassinscreed
-WPEDIA:Vikings
-SEARCH:Viking warrior Norse`
+IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than "${topic}".`
                     }]
                   }],
                   generationConfig: { temperature: 0, maxOutputTokens: 150 }
@@ -2456,10 +2470,22 @@ SEARCH:Viking warrior Norse`
             } catch {}
           }
 
-          // ── PHASE 2: Deduplicate and download top candidates ──
+          // ── PHASE 2: Filter, deduplicate and download top candidates ──
+          // Filter out clearly invalid/garbage candidates before download
+          const filteredCandidates = allCandidates.filter(c => {
+            const url = c.url?.toLowerCase() || '';
+            const label = c.label?.toLowerCase() || '';
+            // Remove PDFs, documents
+            if (url.endsWith('.pdf') || label.includes('.pdf')) return false;
+            // Remove obviously unrelated wikimedia results
+            if (label.includes('cargo') && label.includes('train')) return false;
+            if (label.includes('catalog of copyright')) return false;
+            if (label.includes('sukkah') || label.includes('congregation')) return false;
+            return true;
+          });
           const uniqueCandidates = [];
           const seenUrls = new Set();
-          for (const c of allCandidates.sort((a, b) => b.score - a.score)) {
+          for (const c of filteredCandidates.sort((a, b) => b.score - a.score)) {
             const urlKey = c.url.replace(/\/\d+px-/, '/X-');
             if (!seenUrls.has(urlKey)) {
               seenUrls.add(urlKey);
@@ -2499,13 +2525,18 @@ SEARCH:Viking warrior Norse`
             console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for multi-selection (max ${maxSelections})...`);
 
             const verifyParts = [
-              { text: `You are an expert image analyst. I need to find the BEST reference images of "${subject}"${contextPart ? ` from "${contextPart}"` : ''} for creating a YouTube thumbnail.
+              { text: `You are an expert image analyst. I need to find the BEST reference images of "${subject}"${contextPart ? ` (context: "${contextPart}")` : ''} for creating a YouTube thumbnail.
+
+⚠️ CRITICAL: Images must be about "${subject}" EXACTLY — not about similar-named topics.
+Example: If subject is "Eldegarde" (a game), do NOT pick images of "Edelgard von Hresvelg" (Fire Emblem character) — they are DIFFERENT things.
+Reject cosplay photos, fan art, or screenshots from a DIFFERENT game/topic.
 
 I have ${downloadedCandidates.length} candidate images below. Your job:
 1. Select up to ${maxSelections} images that BEST depict "${subject}" from DIFFERENT ANGLES, POSES, or PERSPECTIVES
-2. Each image should show the actual character/subject — not a map, logo, faction icon, or unrelated item
-3. Prioritize VARIETY: pick images showing different aspects (close-up face, full body, action pose, different outfits, different scenes)
+2. Each image should show the actual subject — not a map, logo, faction icon, PDF, or unrelated item
+3. Prioritize VARIETY: pick images showing different aspects (close-up, full body, action, different scenes)
 4. If images are too similar, pick fewer but more diverse ones
+5. REJECT images that are clearly about a DIFFERENT topic than "${subject}"
 
 Reply in this EXACT format (one line per selection, no extra text):
 PICK:<number>|<reason>
@@ -2515,7 +2546,7 @@ PICK:2|Close-up portrait showing facial details and armor
 PICK:5|Full body action pose with weapon
 PICK:1|Different outfit/scene showing environment
 
-If NONE of the images show "${subject}", reply with: NONE` }
+If NONE of the images actually show "${subject}", reply with: NONE` }
             ];
 
             for (let i = 0; i < downloadedCandidates.length; i++) {
@@ -2579,8 +2610,20 @@ If NONE of the images show "${subject}", reply with: NONE` }
             }
           }
 
-          // Fallback: use top scored downloaded candidates (up to 3)
-          const fallbackImages = downloadedCandidates.slice(0, maxSelections).map((c, i) => ({
+          // Fallback: use top scored downloaded candidates — but FILTER OUT garbage
+          // Skip PDFs, irrelevant images (score <= 0), and non-image files
+          const validFallbacks = downloadedCandidates.filter(c => {
+            // Filter out PDFs and documents
+            if (c.url?.toLowerCase().includes('.pdf')) return false;
+            if (c.mimeType?.includes('pdf')) return false;
+            // Filter out clearly irrelevant labels
+            if (c.label?.toLowerCase().includes('catalog of copyright')) return false;
+            if (c.label?.toLowerCase().includes('cargo') && c.label?.toLowerCase().includes('net')) return false;
+            // Filter out very low scored candidates
+            if (c.score < 0) return false;
+            return true;
+          });
+          const fallbackImages = validFallbacks.slice(0, maxSelections).map((c, i) => ({
             data: c.data,
             mimeType: c.mimeType,
             url: c.url,
@@ -2588,9 +2631,15 @@ If NONE of the images show "${subject}", reply with: NONE` }
             score: c.score,
             reason: i === 0 ? 'En yüksek skor (birincil referans)' : 'Ek referans görsel'
           }));
-          console.log(`[RefImage] 📌 Using fallback: top ${fallbackImages.length} scored candidates`);
-          collectedImages = fallbackImages;
-          setResearchImages(fallbackImages);
+          if (fallbackImages.length > 0) {
+            console.log(`[RefImage] 📌 Using fallback: top ${fallbackImages.length} valid candidates (filtered from ${downloadedCandidates.length})`);
+            collectedImages = fallbackImages;
+            setResearchImages(fallbackImages);
+          } else {
+            console.log('[RefImage] ⚠️ No valid reference images found — proceeding without references');
+            collectedImages = [];
+            setResearchImages([]);
+          }
 
         } catch (e) {
           console.log('[RefImage] ❌ Search failed:', e.message);
