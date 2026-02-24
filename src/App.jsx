@@ -3011,22 +3011,19 @@ If nothing found, reply: NONE`
                 if (uniqueCandidates.length > 0) {
                   console.log(`[RefImage] 🔄 Last resort direct search found ${uniqueCandidates.length} candidates!`);
                 } else {
-                  console.log('[RefImage] 🚫 Last resort also found nothing — proceeding without references');
-                  return;
+                  console.log('[RefImage] 🚫 Last resort found nothing — will try emergency download');
                 }
               } else {
-                console.log('[RefImage] ⚠️ Last resort search HTTP error:', directRes.status);
-                return;
+                console.log('[RefImage] ⚠️ Last resort search HTTP error:', directRes.status, '— will try emergency download');
               }
             } catch (e) {
-              console.log('[RefImage] ❌ Last resort search failed:', e.message);
-              return;
+              console.log('[RefImage] ❌ Last resort search failed:', e.message, '— will try emergency download');
             }
           }
 
           // Download top candidates (max 5 for Gemini verification)
           const downloadedCandidates = [];
-          for (const candidate of uniqueCandidates.slice(0, 12)) {
+          for (const candidate of uniqueCandidates.slice(0, 16)) {
             try {
               let imgResult = await fetchImageAsBase64(candidate.url);
               // If main URL failed and this is a web search result, try the thumbnail
@@ -3043,8 +3040,65 @@ If nothing found, reply: NONE`
           }
 
           if (downloadedCandidates.length === 0) {
-            console.log('[RefImage] ⚠️ Failed to download any candidates');
-            return;
+            console.log('[RefImage] ⚠️ Failed to download any candidates from primary sources');
+            // Don't give up — try a DIRECT Gemini image search as emergency fallback
+            console.log('[RefImage] 🚨 Emergency: trying direct Gemini image search...');
+            try {
+              const emergencyPayload = {
+                contents: [{
+                  parts: [{
+                    text: `Search for images of "${topic}"${topicDescription ? ` (${topicDescription})` : ''}. Find 3-5 high quality image URLs showing "${subject}".
+
+Return ONLY image URLs:
+IMG:<url>|<description>
+
+If nothing found: NONE`
+                  }]
+                }],
+                tools: [{ google_search: {} }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+              };
+              const emergencyRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(emergencyPayload), signal: AbortSignal.timeout(15000) }
+              );
+              if (emergencyRes.ok) {
+                const emergencyData = await emergencyRes.json();
+                const emergencyText = emergencyData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
+                const emergencyGrounding = emergencyData.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+                const emergencyUrls = [];
+                const emImgRegex = /IMG:\s*(https?:\/\/[^\s|]+)\|?\s*(.*)/g;
+                let emMatch;
+                while ((emMatch = emImgRegex.exec(emergencyText)) !== null) {
+                  const url = emMatch[1].trim();
+                  if (url.match(/\.(jpg|jpeg|png|webp)/i) || url.includes('/thumb/') || url.includes('upload.wikimedia') || url.includes('steamstatic')) {
+                    emergencyUrls.push(url);
+                  }
+                }
+                for (const chunk of emergencyGrounding) {
+                  const uri = chunk.web?.uri;
+                  if (uri && uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i)) emergencyUrls.push(uri);
+                }
+                for (const url of emergencyUrls.slice(0, 5)) {
+                  const imgResult = await fetchImageAsBase64(url);
+                  if (imgResult) {
+                    downloadedCandidates.push({ url, data: imgResult.data, mimeType: imgResult.mimeType, score: 20, source: 'emergency', label: 'Emergency search result' });
+                    console.log(`[RefImage] 🚨 Emergency download OK: ${url.substring(0, 60)}`);
+                    if (downloadedCandidates.length >= 3) break;
+                  }
+                }
+              }
+            } catch (e) {
+              console.log(`[RefImage] 🚨 Emergency search failed: ${e.message}`);
+            }
+
+            if (downloadedCandidates.length === 0) {
+              console.log('[RefImage] ❌ All image sources exhausted — proceeding without references');
+              collectedImages = [];
+              setResearchImages([]);
+              return;
+            }
+            console.log(`[RefImage] 🚨 Emergency recovered ${downloadedCandidates.length} images!`);
           }
 
           // ── PHASE 3: Gemini Multi-Image Verification & Selection ──
@@ -3193,8 +3247,20 @@ If you truly cannot find ANY image of "${topic}", reply with: NONE`
                     console.log(`[RefImage] 🔄 ❌ Last resort search failed: ${e.message}`);
                   }
 
-                  // If last resort also failed — NOW give up
-                  console.log(`[RefImage] 🚫 Last resort also failed — proceeding without reference images`);
+                  // If last resort also failed — use the downloaded candidates anyway
+                  // Gemini said "NONE" but it might be wrong. Having SOME reference is better than NOTHING.
+                  if (downloadedCandidates.length > 0) {
+                    console.log(`[RefImage] 🔄 Last resort failed but using ${downloadedCandidates.length} downloaded candidates as safety net`);
+                    const safetyImages = downloadedCandidates.slice(0, maxSelections).map((c, i) => ({
+                      data: c.data, mimeType: c.mimeType, url: c.url,
+                      label: c.label || `Image ${i + 1}`, score: c.score,
+                      reason: 'Otomatik seçim (doğrulanmamış)'
+                    }));
+                    collectedImages = safetyImages;
+                    setResearchImages(safetyImages);
+                    return;
+                  }
+                  console.log(`[RefImage] 🚫 All sources exhausted — proceeding without reference images`);
                   collectedImages = [];
                   setResearchImages([]);
                   return;
