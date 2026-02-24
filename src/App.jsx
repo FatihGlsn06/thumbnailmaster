@@ -24,6 +24,23 @@ import {
   PLANS, TEST_MODE,
 } from '@/lib/polar';
 
+// Safe error message extractor — never returns [object Object]
+const safeErrorMsg = (err, fallback = 'Bir hata oluştu') => {
+  if (typeof err === 'string') return err;
+  if (err instanceof Error) return err.message || fallback;
+  if (err && typeof err === 'object') {
+    // FAL API: {detail: [{msg, type}]}
+    if (Array.isArray(err.detail)) return err.detail.map(d => d.msg || d.message || JSON.stringify(d)).join('; ');
+    if (typeof err.detail === 'string') return err.detail;
+    // Gemini API: {error: {message: "..."}}
+    if (typeof err.error?.message === 'string') return err.error.message;
+    if (typeof err.message === 'string') return err.message;
+    // Last resort: try JSON
+    try { return JSON.stringify(err).substring(0, 200); } catch { return fallback; }
+  }
+  return fallback;
+};
+
 // =============================================================================
 // SMART CONTENT DETECTION - İçerik tipine göre otomatik parametre ayarı
 // =============================================================================
@@ -1347,7 +1364,7 @@ VIBE: Professional, clean, gaming channel style`
       if (!response.ok) {
         if (response.status === 429 && retries > 0) throw new Error('Rate limit');
         const errorBody = await response.json().catch(() => ({}));
-        throw new Error(errorBody?.error?.message || `Error ${response.status}`);
+        throw new Error(safeErrorMsg(errorBody?.error, `Error ${response.status}`));
       }
       return await response.json();
     } catch (err) {
@@ -1740,7 +1757,7 @@ The AI image generator will use your analysis to replicate this exact style.`
         setConceptAnalysis('Analiz yapılamadı.');
       }
     } catch (err) {
-      setConceptAnalysis('Analiz hatası: ' + err.message);
+      setConceptAnalysis('Analiz hatası: ' + safeErrorMsg(err));
     } finally {
       setIsAnalyzingConcept(false);
     }
@@ -1805,7 +1822,7 @@ Be concise. 1-2 sentences per point.`
         setPhotoAnalysis('Analiz yapılamadı.');
       }
     } catch (err) {
-      setPhotoAnalysis('Analiz hatası: ' + err.message);
+      setPhotoAnalysis('Analiz hatası: ' + safeErrorMsg(err));
     } finally {
       setIsAnalyzingPhoto(false);
     }
@@ -3283,8 +3300,8 @@ Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
         setTopicResearch('Araştırma yapılamadı.');
       }
     } catch (err) {
-      finalResearch = 'Araştırma hatası: ' + err.message;
-      setTopicResearch('Araştırma hatası: ' + err.message);
+      finalResearch = 'Araştırma hatası: ' + safeErrorMsg(err);
+      setTopicResearch('Araştırma hatası: ' + safeErrorMsg(err));
     } finally {
       // Wait for background image search to complete before marking research done
       if (imageSearchPromise) {
@@ -3527,7 +3544,7 @@ Respond in ENGLISH. Be specific to "${topic}", not generic.`
         console.log(`[Generate] ✅ Auto-research complete: ${effectiveResearch.length} chars, ${effectiveImages.length} images, DNA: ${effectiveVisualDNA ? 'yes' : 'no'}`);
       } catch (err) {
         console.error('[Generate] ❌ Auto-research error:', err);
-        setError('Araştırma sırasında hata oluştu: ' + err.message);
+        setError('Araştırma sırasında hata oluştu: ' + safeErrorMsg(err));
         setLoading(false);
         return;
       }
@@ -3828,7 +3845,7 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
               }
             }
           } catch (err) {
-            console.warn(`[Hybrid] ⚠️ Auto-research failed, continuing with text-only:`, err.message);
+            console.warn(`[Hybrid] ⚠️ Auto-research failed, continuing with text-only:`, safeErrorMsg(err));
           }
         }
 
@@ -3934,8 +3951,7 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
     } catch (err) {
-      const msg = typeof err?.message === 'string' ? err.message : (typeof err === 'string' ? err : t('unknownError'));
-      setError(msg);
+      setError(safeErrorMsg(err, t('unknownError')));
     } finally {
       setLoading(false);
       setAttemptInfo(null);
@@ -4080,7 +4096,7 @@ VERDICT rules UPDATE:
       }
       return null;
     } catch (err) {
-      console.warn('[Verify] ❌ Verification error:', err.message);
+      console.warn('[Verify] ❌ Verification error:', safeErrorMsg(err));
       return null;
     } finally {
       if (!silent) {
@@ -4299,7 +4315,7 @@ MAKE THIS THUMBNAIL IRRESISTIBLE TO CLICK!`;
         throw new Error('Optimizasyon başarısız.');
       }
     } catch (err) {
-      setError(err.message || t('optimizationError'));
+      setError(safeErrorMsg(err, t('optimizationError')));
       setPreviousImage(null); // Reset on error
       setPreviousCtrScore(null);
     } finally {
@@ -4378,7 +4394,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
         throw new Error('Yazı kaldırma başarısız oldu.');
       }
     } catch (err) {
-      setError(err.message);
+      setError(safeErrorMsg(err, t('unknownError')));
       setOverlayText(savedText);
     } finally {
       setLoading(false);
@@ -4459,7 +4475,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
         throw new Error(t('revisionError'));
       }
     } catch (err) {
-      setError(err.message || t('revisionError'));
+      setError(safeErrorMsg(err, t('revisionError')));
       setPreRevisionImage(null);
     } finally {
       setIsRevising(false);
@@ -5590,7 +5606,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
               )}
             </div>
 
-            {error && <p className="text-sm text-red-500 font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl p-3">{error}</p>}
+            {error && <p className="text-sm text-red-500 font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl p-3">{typeof error === 'string' ? error : safeErrorMsg(error)}</p>}
 
             {/* Empty State - Desktop Only */}
             {!resultImage && !loading && (
