@@ -1111,6 +1111,14 @@ const App = () => {
     else localStorage.removeItem('google_cse_key');
   };
 
+  // Serper.dev (Google Images API — no CSE configuration needed, just an API key)
+  const [serperApiKey, setSerperApiKey] = useState(() => localStorage.getItem('serper_api_key') || '');
+  const handleSaveSerperApiKey = (value) => {
+    setSerperApiKey(value);
+    if (value) localStorage.setItem('serper_api_key', value);
+    else localStorage.removeItem('serper_api_key');
+  };
+
   const isFalModel = (modelId) => modelId?.startsWith('fal-') || modelId?.startsWith('hybrid-');
   const isHybridModel = (modelId) => modelId?.startsWith('hybrid-');
 
@@ -1769,6 +1777,58 @@ VIBE: Professional, clean, gaming channel style`
     }
   };
 
+  // ── Serper.dev Google Images API ──
+  // Simple alternative to Google CSE — no search engine configuration needed
+  // Just an API key from serper.dev (2,500 free queries)
+  const searchSerperImages = async (query, numResults = 10) => {
+    if (!serperApiKey) return [];
+
+    try {
+      console.log(`[Serper] 🔍 Searching: "${query}"`);
+      const res = await fetch('https://google.serper.dev/images', {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': serperApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          q: query,
+          num: numResults,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        console.log(`[Serper] ❌ HTTP ${res.status}: ${errText.substring(0, 200)}`);
+        return [];
+      }
+      const data = await res.json();
+      const items = data.images || [];
+      console.log(`[Serper] ✅ Found ${items.length} images for "${query}"`);
+      return items.slice(0, numResults).map((item, i) => ({
+        url: item.imageUrl,
+        thumbnailUrl: item.thumbnailUrl || item.imageUrl,
+        title: item.title || '',
+        contextUrl: item.link || '',
+        width: item.imageWidth || 0,
+        height: item.imageHeight || 0,
+        score: 300 - i * 10, // Same high score as CSE — these are real Google results
+        source: 'serper',
+        label: `Google: ${(item.title || query).substring(0, 50)}`
+      }));
+    } catch (e) {
+      console.log(`[Serper] ❌ Search failed: ${e.message}`);
+      return [];
+    }
+  };
+
+  // Unified image search — uses Serper if available, falls back to Google CSE
+  const searchWebImages = async (query, numResults = 10) => {
+    if (serperApiKey) return searchSerperImages(query, numResults);
+    if (googleCseId) return searchGoogleImages(query, numResults);
+    return [];
+  };
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -2165,48 +2225,49 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
           // ── PHASE 1: Collect candidate URLs from all sources ──
           const allCandidates = []; // { url, score, source, label }
 
-          // ═══ Strategy -1: Google Custom Search Image API (MOST RELIABLE) ═══
+          // ═══ Strategy -1: Web Image Search (Serper.dev or Google CSE — MOST RELIABLE) ═══
           // Returns real, verified, accessible image URLs — not AI hallucinations
-          if (googleCseId) {
+          if (serperApiKey || googleCseId) {
             try {
-              const cseQueries = [];
+              const webQueries = [];
               // Build smart queries based on category
               if (catId === 'gaming') {
-                cseQueries.push(`${topic} game official art`);
-                cseQueries.push(`${subject} game screenshot`);
+                webQueries.push(`${topic} game official art`);
+                webQueries.push(`${subject} game screenshot`);
               } else if (catId === 'history') {
-                cseQueries.push(`${topic} historical painting artwork`);
-                if (contextPart) cseQueries.push(`${subject} ${contextPart} history`);
+                webQueries.push(`${topic} historical painting artwork`);
+                if (contextPart) webQueries.push(`${subject} ${contextPart} history`);
               } else if (catId === 'religion') {
-                cseQueries.push(`${topic} high quality photo`);
+                webQueries.push(`${topic} high quality photo`);
               } else {
-                cseQueries.push(`${topic}`);
-                if (subject !== topic) cseQueries.push(`${subject}`);
+                webQueries.push(`${topic}`);
+                if (subject !== topic) webQueries.push(`${subject}`);
               }
-              if (topicDescription) cseQueries.push(`${topic} ${topicDescription}`);
+              if (topicDescription) webQueries.push(`${topic} ${topicDescription}`);
 
               // Run up to 2 queries in parallel (to stay within free tier)
-              const querySlice = cseQueries.slice(0, 2);
-              console.log(`[RefImage] 🔍 Google CSE: searching ${querySlice.length} queries...`);
-              const cseResults = await Promise.all(
-                querySlice.map(q => searchGoogleImages(q, 8))
+              const querySlice = webQueries.slice(0, 2);
+              const searchSource = serperApiKey ? 'Serper' : 'Google CSE';
+              console.log(`[RefImage] 🔍 ${searchSource}: searching ${querySlice.length} queries...`);
+              const webResults = await Promise.all(
+                querySlice.map(q => searchWebImages(q, 8))
               );
 
-              for (const results of cseResults) {
+              for (const results of webResults) {
                 for (const img of results) {
                   allCandidates.push(img);
                 }
               }
 
-              const cseTotal = cseResults.reduce((sum, r) => sum + r.length, 0);
-              console.log(`[RefImage] 🔍 Google CSE: found ${cseTotal} REAL image candidates`);
+              const webTotal = webResults.reduce((sum, r) => sum + r.length, 0);
+              console.log(`[RefImage] 🔍 ${searchSource}: found ${webTotal} REAL image candidates`);
 
-              // If we got good results from CSE, we can skip the unreliable Gemini URL search
-              if (cseTotal >= 5) {
-                console.log(`[RefImage] 🔍 Google CSE provided enough images — Gemini URL search will be supplementary`);
+              // If we got good results, we can skip the unreliable Gemini URL search
+              if (webTotal >= 5) {
+                console.log(`[RefImage] 🔍 ${searchSource} provided enough images — Gemini URL search will be supplementary`);
               }
             } catch (e) {
-              console.log(`[RefImage] ⚠️ Google CSE failed: ${e.message}`);
+              console.log(`[RefImage] ⚠️ Web image search failed: ${e.message}`);
             }
           }
 
@@ -2971,9 +3032,9 @@ If nothing found, reply: NONE`
           for (const candidate of uniqueCandidates.slice(0, 12)) {
             try {
               let imgResult = await fetchImageAsBase64(candidate.url);
-              // If main URL failed and this is a Google CSE result, try the thumbnail
-              if (!imgResult && candidate.thumbnailUrl && candidate.source === 'google-cse') {
-                console.log(`[RefImage] 🔄 Main URL failed, trying Google thumbnail...`);
+              // If main URL failed and this is a web search result, try the thumbnail
+              if (!imgResult && candidate.thumbnailUrl && (candidate.source === 'google-cse' || candidate.source === 'serper')) {
+                console.log(`[RefImage] 🔄 Main URL failed, trying thumbnail fallback...`);
                 imgResult = await fetchImageAsBase64(candidate.thumbnailUrl);
               }
               if (imgResult) {
@@ -5296,11 +5357,31 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     {!falApiKey && <p className="text-[10px] text-slate-600">Flux Pro/Dev modelleri için gerekli. fal.ai'dan alabilirsiniz.</p>}
                   </div>
 
-                  {/* Google Custom Search (Image Search) */}
+                  {/* Serper.dev — Google Images API (RECOMMENDED) */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
                       <Search className="w-3 h-3" /> Google Görsel Arama
-                      <span className="text-[8px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">Görsel Bulma</span>
+                      <span className="text-[8px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">ÖNERİLEN</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={serperApiKey}
+                      onChange={(e) => handleSaveSerperApiKey(e.target.value)}
+                      placeholder="Serper API Key: ..."
+                      className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-mono"
+                    />
+                    {serperApiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> Serper aktif — Google Görsel arama hazır</p>}
+                    {!serperApiKey && <p className="text-[10px] text-slate-600">
+                      Opsiyonel ama ŞİDDETLE önerilir. serper.dev'den ücretsiz API key alın (2.500 ücretsiz sorgu).
+                      Hiçbir konfigürasyon gerekmez — sadece key yapıştırın.
+                    </p>}
+                  </div>
+
+                  {/* Google Custom Search (Alternative) */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                      <Search className="w-3 h-3" /> Google CSE (Alternatif)
+                      <span className="text-[8px] bg-slate-500/20 text-slate-400 px-1.5 py-0.5 rounded font-bold">İleri Seviye</span>
                     </label>
                     <input
                       type="text"
@@ -5316,10 +5397,10 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                       placeholder="CSE API Key (opsiyonel — Gemini key kullanılır)"
                       className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm font-mono"
                     />
-                    {googleCseId && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> CSE aktif — görsel arama çok daha güvenilir olacak</p>}
-                    {!googleCseId && <p className="text-[10px] text-slate-600">
-                      Opsiyonel ama ŞİDDETLE önerilir. Referans görsel bulma başarısını %5'ten %90'a çıkarır.
-                      programmablesearchengine.google.com'dan ücretsiz oluşturun (günde 100 sorgu).
+                    {googleCseId && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> CSE aktif</p>}
+                    {serperApiKey && googleCseId && <p className="text-[10px] text-amber-400">Serper zaten aktif — Serper öncelikli kullanılacak.</p>}
+                    {!googleCseId && !serperApiKey && <p className="text-[10px] text-slate-600">
+                      Yukarıdaki Serper.dev kullanımı çok daha kolaydır. CSE kurulumu sorunluysa Serper'ı deneyin.
                     </p>}
                   </div>
 
