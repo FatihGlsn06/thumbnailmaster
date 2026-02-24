@@ -1072,9 +1072,23 @@ const App = () => {
 
   // AI Model selection - Gemini 3 is the latest (2026)
   const [selectedModel, setSelectedModel] = useState('gemini-3-pro-image-preview');
+
+  // FAL AI API Key
+  const [falApiKey, setFalApiKey] = useState(() => localStorage.getItem('fal_api_key') || '');
+  const [showFalApiKey, setShowFalApiKey] = useState(false);
+  const handleSaveFalApiKey = (value) => {
+    setFalApiKey(value);
+    if (value) localStorage.setItem('fal_api_key', value);
+    else localStorage.removeItem('fal_api_key');
+  };
+
+  const isFalModel = (modelId) => modelId?.startsWith('fal-');
+
   const availableModels = [
     { id: 'gemini-3-pro-image-preview', name: t('modelGemini3Name'), desc: t('modelGemini3Desc'), badge: t('modelGemini3Badge') },
     { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image', desc: 'Hızlı ve ekonomik görsel üretim' },
+    { id: 'fal-flux-pro', name: 'Flux Pro v1.1', desc: 'En yüksek kalite (FAL AI)', badge: 'FAL', engine: 'fal', falModel: 'fal-ai/flux-pro/v1.1' },
+    { id: 'fal-flux-dev', name: 'Flux Dev', desc: 'Hızlı ve ekonomik (FAL AI)', engine: 'fal', falModel: 'fal-ai/flux/dev' },
   ];
 
   // Concept/Reference image states
@@ -1339,6 +1353,178 @@ VIBE: Professional, clean, gaming channel style`
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════
+  // FAL AI — Prompt Compiler & Generation Engine
+  // ═══════════════════════════════════════════════════════════════
+
+  // Extract a named section from scene direction text
+  const extractSection = (text, sectionName) => {
+    if (!text) return '';
+    const regex = new RegExp(`\\*\\*${sectionName}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*[A-Z_]+\\*\\*|$)`, 'i');
+    const match = text.match(regex);
+    return match ? match[1].trim().replace(/\n+/g, ' ') : '';
+  };
+
+  // Compile research + Visual DNA into an optimized Flux-compatible prompt
+  const compileFalPrompt = (topicName, researchData, dnaData, options = {}) => {
+    const { topicDesc = '', contentCategory = null } = options;
+
+    // Try to find SCENE DIRECTION section in research
+    const sceneDirectionMatch = researchData?.match(/🎬 READY-TO-USE SCENE DIRECTION:\n([\s\S]*?)(?=\n🧬|$)/);
+    const sceneDirection = sceneDirectionMatch ? sceneDirectionMatch[1] : researchData || '';
+
+    // Extract key sections from scene direction
+    const scene = extractSection(sceneDirection, 'SCENE_DESCRIPTION');
+    const colors = extractSection(sceneDirection, 'COLOR_PALETTE');
+    const character = extractSection(sceneDirection, 'CHARACTER_VISUAL');
+    const camera = extractSection(sceneDirection, 'CAMERA_ANGLE');
+    const effects = extractSection(sceneDirection, 'KEY_EFFECTS');
+    const costume = extractSection(sceneDirection, 'PERSON_COSTUME');
+    const gameIdentity = extractSection(sceneDirection, 'GAME_IDENTITY');
+    const faction = extractSection(sceneDirection, 'FACTION_ELEMENTS');
+
+    // Extract Visual DNA style constraints
+    const extractDNASection = (text, key) => {
+      if (!text) return '';
+      const regex = new RegExp(`\\*\\*${key}\\*\\*[:\\s]*([\\s\\S]*?)(?=\\n\\*\\*|\\n\\d+\\.|$)`, 'i');
+      const match = text.match(regex);
+      return match ? match[1].trim().replace(/\n+/g, ' ') : '';
+    };
+    const dnaColors = extractDNASection(dnaData, 'COLOR_PALETTE');
+    const dnaMaterials = extractDNASection(dnaData, 'MATERIAL');
+    const dnaLighting = extractDNASection(dnaData, 'LIGHTING');
+    const dnaSignatures = extractDNASection(dnaData, 'SIGNATURE');
+
+    // Extract MUST rules from Visual DNA
+    const mustRules = [];
+    if (dnaData) {
+      const mustMatches = dnaData.matchAll(/MUST:\s*(.+)/g);
+      for (const m of mustMatches) mustRules.push(m[1].trim());
+    }
+
+    // Build the Flux prompt
+    const parts = [];
+
+    // Opening: quality markers + format
+    parts.push('Professional cinematic YouTube thumbnail, 16:9 aspect ratio, ultra high quality');
+
+    // Core scene
+    if (scene) {
+      parts.push(scene);
+    } else {
+      parts.push(`A dramatic, eye-catching scene about "${topicName}"${topicDesc ? `, ${topicDesc}` : ''}`);
+    }
+
+    // Character/subject (critical for game content)
+    if (character) parts.push(character);
+    if (faction) parts.push(faction);
+    if (gameIdentity) parts.push(gameIdentity);
+
+    // Person costume (if no character defined)
+    if (!character && costume) parts.push(`Person wearing ${costume}`);
+
+    // Color palette (prefer Visual DNA over scene direction)
+    if (dnaColors) parts.push(`Color palette: ${dnaColors}`);
+    else if (colors) parts.push(`Colors: ${colors}`);
+
+    // Materials and textures from DNA
+    if (dnaMaterials) parts.push(`Materials: ${dnaMaterials}`);
+
+    // Camera
+    if (camera) parts.push(camera);
+
+    // Lighting (prefer DNA)
+    if (dnaLighting) parts.push(`Lighting: ${dnaLighting}`);
+
+    // Effects
+    if (effects) parts.push(effects);
+
+    // Visual DNA signature elements
+    if (dnaSignatures) parts.push(`Key visual signatures: ${dnaSignatures}`);
+
+    // MUST rules as style anchors (top 5)
+    for (const rule of mustRules.slice(0, 5)) {
+      parts.push(rule);
+    }
+
+    // Quality tail
+    const catId = contentCategory?.id || 'general';
+    if (catId === 'religion') {
+      parts.push('photorealistic, editorial photography, natural light, Canon 5D, 85mm lens, real photograph');
+    } else if (catId === 'gaming') {
+      parts.push('dramatic 3-point lighting, game art quality, highly detailed, volumetric fog, epic composition');
+    } else {
+      parts.push('dramatic lighting, shallow depth of field, professional color grading, volumetric atmosphere, cinematic composition');
+    }
+
+    // Join and trim to Flux prompt limit (~2000 chars is safe)
+    const compiled = parts.join('. ').replace(/\.\./g, '.').replace(/\s+/g, ' ').trim();
+    const finalPrompt = compiled.substring(0, 2000);
+    console.log(`[FAL] 📝 Compiled prompt (${finalPrompt.length} chars):`, finalPrompt.substring(0, 200) + '...');
+    return finalPrompt;
+  };
+
+  // Generate image using FAL AI
+  const generateWithFal = async (prompt, modelId = 'fal-ai/flux-pro/v1.1') => {
+    if (!falApiKey) throw new Error('FAL AI API key is required');
+
+    console.log(`[FAL] 🚀 Generating with ${modelId}...`);
+    const startTime = Date.now();
+
+    const body = {
+      prompt,
+      image_size: { width: 1280, height: 720 },
+      num_images: 1,
+      safety_tolerance: '6',
+      output_format: 'jpeg',
+    };
+
+    // Model-specific params
+    if (modelId.includes('flux-pro')) {
+      body.num_inference_steps = 28;
+      body.guidance_scale = 3.5;
+    } else if (modelId.includes('flux/dev')) {
+      body.num_inference_steps = 28;
+      body.guidance_scale = 3.5;
+    }
+
+    const response = await fetch(`https://fal.run/${modelId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${falApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || `FAL API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const imageUrl = data.images?.[0]?.url;
+
+    if (!imageUrl) throw new Error('FAL AI returned no image');
+    console.log(`[FAL] ✅ Image generated in ${Date.now() - startTime}ms`);
+
+    // Download generated image and convert to base64
+    const imgResponse = await fetch(imageUrl);
+    if (!imgResponse.ok) throw new Error('Failed to download generated image from FAL');
+    const blob = await imgResponse.blob();
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(',')[1];
+        console.log(`[FAL] 📦 Image downloaded and converted (${Math.round(base64.length / 1024)}KB)`);
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error('Failed to convert FAL image to base64'));
+      reader.readAsDataURL(blob);
+    });
+  };
+
   // Fetch an image URL and convert to base64, with multiple CORS proxy fallbacks
   const fetchImageAsBase64 = async (url) => {
     const targets = [
@@ -1562,11 +1748,11 @@ Be concise. 1-2 sentences per point.`
       const searchHint = categorySearchHints[category.id] || '';
 
       // ═══════════════════════════════════════════════════════════════
-      // PHASE 1a: Topic Discovery + PHASE 1b: YouTube Trend Analysis
-      // Both run in PARALLEL via Promise.all for speed
+      // PHASE 1: UNIFIED Topic Discovery + YouTube Trend Analysis
+      // Single Google Search call saves $0.035 per research
       // ═══════════════════════════════════════════════════════════════
 
-      const searchPayload = {
+      const unifiedSearchPayload = {
         contents: [{
           parts: [{
             text: `You MUST use Google Search to find information. DO NOT rely on your training data.
@@ -1574,26 +1760,29 @@ Be concise. 1-2 sentences per point.`
 SEARCH FOR: "${topic}"${userContext}
 
 The user is creating a YouTube thumbnail about "${topic}".
-This could be about ANYTHING - a video game, movie, educational topic, food, travel destination, tech product, music, fitness, or any other YouTube content category.
-
-IMPORTANT: "${topic}" is a specific topic/product/subject - treat it as a PROPER NOUN first.
-Do NOT interpret it as a generic dictionary word. Search for it as a specific title/brand/concept.
-
-Search the internet and tell me:
-1. What EXACTLY is "${topic}"? (game, product, concept, place, person, event, technique, etc.)
-2. When was it created/released/announced? Is it trending now?
-3. What does it look like visually? (colors, style, aesthetics, setting, environment)
-4. What are the iconic visual elements associated with "${topic}"?
-5. What emotions/feelings does "${topic}" evoke?
-6. What is the audience/community saying about it?
-7. What do official images/videos/promotional materials show?
-8. What makes "${topic}" visually distinctive and recognizable?
+IMPORTANT: "${topic}" is a specific topic/product/subject — treat it as a PROPER NOUN first.
 
 Search terms to try:
 - "${topic} ${searchHint}"
 - "${topic} 2025 2026"
+- "${topic} YouTube thumbnail"
 
-YOU MUST search the web. Do NOT guess or make up information.`
+PART A — TOPIC IDENTITY:
+1. What EXACTLY is "${topic}"? (game, product, concept, place, person, event, etc.)
+2. When was it created/released? Is it trending now?
+3. What does it look like visually? (colors, style, aesthetics, setting)
+4. What are the iconic visual elements? What emotions does it evoke?
+5. What do official images/promotional materials show?
+6. What makes "${topic}" visually distinctive and recognizable?
+
+PART B — YOUTUBE THUMBNAIL TRENDS:
+1. **TOP CREATORS**: Who makes "${topic}" content on YouTube? (2-3 channels)
+2. **THUMBNAIL PATTERNS**: What do high-view thumbnails look like? (composition, colors, text, expressions, subject positioning)
+3. **WHAT GETS CLICKS**: Which thumbnail style performs best? What mistakes do low-view ones make?
+4. **STANDOUT OPPORTUNITY**: What's overdone? What's an untapped visual angle?
+5. **SCENE RECOMMENDATION**: One specific thumbnail scene that would outperform competitors (composition, colors, mood, lighting).
+
+YOU MUST search the web. Do NOT guess. Be SPECIFIC with real data.`
           }]
         }],
         tools: [{
@@ -1601,103 +1790,29 @@ YOU MUST search the web. Do NOT guess or make up information.`
         }],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 2500
+          maxOutputTokens: 3500
         }
       };
 
-      // Phase 1b: Dedicated YouTube Thumbnail Trend Analysis
-      const trendPayload = {
-        contents: [{
-          parts: [{
-            text: `You MUST use Google Search. Search for YouTube thumbnails and videos about "${topic}".
-
-TASK: Analyze the YouTube thumbnail landscape for "${topic}" content.
-
-SEARCH QUERIES TO TRY:
-- "${topic}" YouTube
-- "${topic}" YouTube thumbnail
-- "${topic}" en iyi thumbnail
-- best "${topic}" YouTube videos 2025 2026
-
-ANALYZE AND REPORT:
-
-1. **TOP CREATORS**: Who are the biggest YouTube creators making "${topic}" content? List 3-5 channels with their subscriber counts.
-
-2. **THUMBNAIL PATTERNS**: What do the MOST VIEWED videos' thumbnails look like?
-   - Common composition (close-up face? wide shot? split screen? before/after?)
-   - Color schemes (what colors dominate? dark vs bright? high contrast?)
-   - Text usage (do they use text? what font style? how many words?)
-   - Facial expressions (shocked? excited? serious? scared?)
-   - Character/subject positioning (center? left third? full body vs close-up?)
-
-3. **WHAT GETS CLICKS**: Based on view counts, which thumbnail STYLE performs best for "${topic}"?
-   - High-view thumbnails: what do they have in common?
-   - Low-view thumbnails: what mistakes do they make?
-
-4. **UNIQUE TECHNIQUES**: Any CREATIVE or UNUSUAL techniques specific to "${topic}" thumbnails?
-   - Special effects, overlays, comparison layouts
-   - Specific iconic moments or scenes frequently used
-   - Color grading trends (cinematic, vibrant, desaturated)
-
-5. **STANDOUT OPPORTUNITY**: Based on your analysis, what thumbnail approach would STAND OUT from the crowd?
-   - What's overdone that we should avoid?
-   - What's an UNTAPPED visual angle no one is using?
-   - What specific scene/moment would be most eye-catching?
-
-6. **SPECIFIC SCENE RECOMMENDATION**: Describe ONE specific, detailed thumbnail scene that would outperform competitors.
-   Include: exact composition, subject placement, background, color scheme, mood, lighting.
-
-Be SPECIFIC with real data. Name actual channels and video titles when possible.
-YOU MUST search the web. Do NOT guess.`
-          }]
-        }],
-        tools: [{
-          google_search: {}
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 2000
-        }
-      };
-
-      // Run Phase 1a + 1b in PARALLEL
-      console.log('[Research] 🚀 Phase 1a (Topic Discovery) + Phase 1b (YouTube Trends) — running in parallel...');
-      const [searchResponse, trendResponse] = await Promise.all([
-        fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(searchPayload) }
-        ),
-        fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(trendPayload) }
-        ).catch(err => {
-          console.warn('[Research] ⚠️ Phase 1b (YouTube Trends) failed:', err.message);
-          return null;
-        })
-      ]);
+      console.log('[Research] 🚀 Phase 1: Unified Topic Discovery + YouTube Trends (single search call)...');
+      const searchResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(unifiedSearchPayload) }
+      );
 
       const searchData = await searchResponse.json();
 
-      // Extract Phase 1a: search result text AND grounding metadata
+      // Extract search result text AND grounding metadata
       const searchParts = searchData.candidates?.[0]?.content?.parts || [];
       const searchResult = searchParts.map(p => p.text || '').join('\n');
       const groundingMetadata = searchData.candidates?.[0]?.groundingMetadata;
       const searchSuggestions = groundingMetadata?.searchEntryPoint?.renderedContent || '';
       const groundingChunks = groundingMetadata?.groundingChunks || [];
 
-      // Extract Phase 1b: YouTube trend analysis
-      let trendAnalysis = '';
-      if (trendResponse && trendResponse.ok) {
-        try {
-          const trendData = await trendResponse.json();
-          trendAnalysis = trendData.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || '';
-          console.log(`[Research] ✅ Phase 1b: YouTube trend analysis received (${trendAnalysis.length} chars)`);
-        } catch (e) {
-          console.warn('[Research] ⚠️ Phase 1b parse error:', e.message);
-        }
-      } else {
-        console.log('[Research] ⚠️ Phase 1b: No trend data available, continuing without it');
-      }
+      // Extract trend section from unified response (Part B)
+      const trendSectionMatch = searchResult.match(/PART B[\s\S]*([\s\S]*)/i);
+      let trendAnalysis = trendSectionMatch ? trendSectionMatch[0] : '';
+      console.log(`[Research] ✅ Phase 1: Unified research received (${searchResult.length} chars, trend section: ${trendAnalysis.length} chars)`);
 
       // Build source info from grounding
       const sourceInfo = groundingChunks
@@ -3209,65 +3324,93 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
         ]
       };
 
-      // ═══ AUTO-RETRY LOOP: Generate → Verify → Retry if FAIL ═══
-      const MAX_ATTEMPTS = 3;
+      // ═══ GENERATION ENGINE ROUTING ═══
+      const useFal = isFalModel(selectedModel);
       let lastGeneratedBase64 = null;
       let lastVerification = null;
-      let accepted = false;
 
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        // Update UI with attempt info
-        setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'generating' });
-        console.log(`[Generate] 🎨 Attempt ${attempt}/${MAX_ATTEMPTS} — Generating thumbnail...`);
+      if (useFal) {
+        // ── FAL AI PATH: Single high-quality generation, no retry loop ──
+        const falModelInfo = availableModels.find(m => m.id === selectedModel);
+        const falModelId = falModelInfo?.falModel || 'fal-ai/flux-pro/v1.1';
 
-        const result = await fetchWithRetry(
-          `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }
-        );
-
-        const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-
-        if (!generatedBase64) {
-          console.warn(`[Generate] ⚠️ Attempt ${attempt} — No image data in response`);
-          if (attempt === MAX_ATTEMPTS) {
-            throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
-          }
-          continue;
+        if (!falApiKey) {
+          throw new Error('FAL AI API anahtarı gerekli. Ayarlardan FAL API key girin.');
         }
 
-        lastGeneratedBase64 = generatedBase64;
+        setAttemptInfo({ current: 1, max: 1, status: 'generating' });
+        console.log(`[Generate] 🎨 FAL AI generation with ${falModelId}`);
 
-        // ── Verify the generated thumbnail ──
-        setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'verifying' });
-        console.log(`[Generate] 🔍 Attempt ${attempt}/${MAX_ATTEMPTS} — Verifying thumbnail...`);
+        // Compile research into a Flux-optimized prompt
+        const falPrompt = compileFalPrompt(topic, effectiveResearch, effectiveVisualDNA, {
+          topicDesc: topicDescription,
+          contentCategory
+        });
 
-        const verification = await verifyThumbnail(generatedBase64, topic, effectiveResearch, effectiveImages, { silent: true, styleDNA: effectiveVisualDNA });
+        lastGeneratedBase64 = await generateWithFal(falPrompt, falModelId);
+
+        // Single verification pass (informational, no retry)
+        setAttemptInfo({ current: 1, max: 1, status: 'verifying' });
+        const verification = await verifyThumbnail(lastGeneratedBase64, topic, effectiveResearch, effectiveImages, { silent: true, styleDNA: effectiveVisualDNA });
         lastVerification = verification;
 
-        if (!verification) {
-          // Verification failed/error — accept the image (can't verify)
-          console.log(`[Generate] ⚠️ Verification unavailable — accepting image`);
-          accepted = true;
-          break;
+        if (verification) {
+          console.log(`[Generate] ${verification.verdict === 'PASS' ? '✅' : verification.verdict === 'WARN' ? '⚠️' : '❌'} FAL result: ${verification.verdict} (score: ${verification.score}/10)`);
         }
 
-        if (verification.verdict === 'PASS' || verification.verdict === 'WARN') {
-          // Good enough — accept
-          console.log(`[Generate] ✅ Attempt ${attempt} — ${verification.verdict} (score: ${verification.score}/10) — Accepted!`);
-          accepted = true;
-          break;
+      } else {
+        // ── GEMINI PATH: Generate with optional smart retry ──
+        const MAX_ATTEMPTS = 2; // Reduced from 3 — less waste
+        let accepted = false;
+
+        for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+          setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'generating' });
+          console.log(`[Generate] 🎨 Gemini attempt ${attempt}/${MAX_ATTEMPTS}`);
+
+          const result = await fetchWithRetry(
+            `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }
+          );
+
+          const generatedBase64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+          if (!generatedBase64) {
+            console.warn(`[Generate] ⚠️ Attempt ${attempt} — No image data`);
+            if (attempt === MAX_ATTEMPTS) throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
+            continue;
+          }
+
+          lastGeneratedBase64 = generatedBase64;
+
+          // Verify
+          setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'verifying' });
+          const verification = await verifyThumbnail(generatedBase64, topic, effectiveResearch, effectiveImages, { silent: true, styleDNA: effectiveVisualDNA });
+          lastVerification = verification;
+
+          if (!verification || verification.verdict === 'PASS' || verification.verdict === 'WARN') {
+            accepted = true;
+            break;
+          }
+
+          // FAIL — retry with feedback injected
+          console.log(`[Generate] ❌ Attempt ${attempt} — FAIL (${verification.score}/10): ${verification.reason}`);
+          if (attempt < MAX_ATTEMPTS) {
+            setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'retrying', reason: verification.reason });
+            // Inject verification feedback into prompt for smarter retry
+            const feedbackPart = { text: `\n⚠️ PREVIOUS ATTEMPT FAILED: ${verification.reason}\n${verification.suggestion ? `FIX: ${verification.suggestion}` : ''}\nGenerate a DIFFERENT, BETTER version that addresses this feedback.` };
+            if (!payload.contents[0].parts.some(p => p.text?.includes('PREVIOUS ATTEMPT FAILED'))) {
+              payload.contents[0].parts.push(feedbackPart);
+            }
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
         }
 
-        // FAIL — auto-retry
-        console.log(`[Generate] ❌ Attempt ${attempt} — FAIL (score: ${verification.score}/10): ${verification.reason}`);
-        if (attempt < MAX_ATTEMPTS) {
-          setAttemptInfo({ current: attempt, max: MAX_ATTEMPTS, status: 'retrying', reason: verification.reason });
-          // Small delay before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!accepted && lastGeneratedBase64) {
+          console.log(`[Generate] ⚠️ All ${MAX_ATTEMPTS} attempts FAIL — showing best result`);
         }
       }
 
@@ -3275,15 +3418,7 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       if (lastGeneratedBase64) {
         setResultImage(`data:image/png;base64,${lastGeneratedBase64}`);
         incrementDailyUsage();
-
-        // Set final verification result in state for UI display
-        if (lastVerification) {
-          setVerificationResult(lastVerification);
-        }
-
-        if (!accepted) {
-          console.log(`[Generate] ⚠️ All ${MAX_ATTEMPTS} attempts scored FAIL — showing last result with warning`);
-        }
+        if (lastVerification) setVerificationResult(lastVerification);
       } else {
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
@@ -4170,6 +4305,31 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     {apiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> {t('saved')}</p>}
                   </div>
 
+                  {/* FAL AI API Key */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                      <Key className="w-3 h-3" /> FAL AI API Key
+                      <span className="text-[8px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded font-bold">Flux Pro</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showFalApiKey ? 'text' : 'password'}
+                        value={falApiKey}
+                        onChange={(e) => handleSaveFalApiKey(e.target.value)}
+                        placeholder="fal_..."
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 pr-10 text-sm font-mono"
+                      />
+                      <button
+                        onClick={() => setShowFalApiKey(!showFalApiKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                      >
+                        {showFalApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {falApiKey && <p className="text-xs text-green-500 flex items-center gap-1"><Check className="w-3 h-3" /> {t('saved')}</p>}
+                    {!falApiKey && <p className="text-[10px] text-slate-600">Flux Pro/Dev modelleri için gerekli. fal.ai'dan alabilirsiniz.</p>}
+                  </div>
+
                   {/* Channel Name */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500">{t('channelName')}</label>
@@ -4215,29 +4375,36 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     <div className="space-y-2">
                       {availableModels.map((model) => {
                         const isModelAllowed = TEST_MODE || currentPlan.limits.allowedModels.includes(model.id);
+                        const isFal = model.engine === 'fal';
+                        const isFalDisabled = isFal && !falApiKey;
+                        const isDisabled = !isModelAllowed || isFalDisabled;
                         return (
                           <button
                             key={model.id}
-                            onClick={() => isModelAllowed ? setSelectedModel(model.id) : setShowLicenseModal(true)}
+                            onClick={() => {
+                              if (isFalDisabled) return; // need FAL key first
+                              if (!isModelAllowed) return setShowLicenseModal(true);
+                              setSelectedModel(model.id);
+                            }}
                             className={`w-full p-3 rounded-lg border text-left transition-all relative ${
-                              !isModelAllowed
+                              isDisabled
                                 ? 'bg-black/20 border-white/5 text-slate-600 opacity-60'
                                 : selectedModel === model.id
-                                ? 'bg-purple-600 border-purple-500 text-white'
+                                ? isFal ? 'bg-blue-600 border-blue-500 text-white' : 'bg-purple-600 border-purple-500 text-white'
                                 : 'bg-black/40 border-white/10 text-slate-400 hover:border-white/20'
                             }`}
                           >
                             <div className="flex items-center gap-2">
                               <p className="text-xs font-bold">{model.name}</p>
                               {model.badge && (
-                                <span className="text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold">
+                                <span className={`text-[8px] ${isFal ? 'bg-blue-500' : 'bg-green-500'} text-white px-1.5 py-0.5 rounded font-bold`}>
                                   {model.badge}
                                 </span>
                               )}
-                              {!isModelAllowed && <ProBadge size="xs" />}
+                              {!isModelAllowed && !isFal && <ProBadge size="xs" />}
                             </div>
-                            <p className={`text-[10px] ${selectedModel === model.id ? 'text-purple-200' : 'text-slate-600'}`}>
-                              {model.desc}
+                            <p className={`text-[10px] ${selectedModel === model.id ? (isFal ? 'text-blue-200' : 'text-purple-200') : 'text-slate-600'}`}>
+                              {isFalDisabled ? 'FAL API key gerekli (yukarıda girin)' : model.desc}
                             </p>
                           </button>
                         );
