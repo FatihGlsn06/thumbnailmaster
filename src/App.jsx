@@ -1589,7 +1589,12 @@ VIBE: Professional, clean, gaming channel style`
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || errorData.message || `FAL API error: ${response.status}`);
+      // FAL API returns detail as array of objects (FastAPI style): [{msg: "...", type: "..."}]
+      const detail = errorData.detail;
+      const errorMsg = Array.isArray(detail)
+        ? detail.map(d => d.msg || d.message || JSON.stringify(d)).join('; ')
+        : (typeof detail === 'string' ? detail : null);
+      throw new Error(errorMsg || errorData.message || `FAL API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -3929,7 +3934,8 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
         throw new Error('Görsel sentezleme başarısız. Lütfen tekrar deneyin.');
       }
     } catch (err) {
-      setError(err.message || t('unknownError'));
+      const msg = typeof err?.message === 'string' ? err.message : (typeof err === 'string' ? err : t('unknownError'));
+      setError(msg);
     } finally {
       setLoading(false);
       setAttemptInfo(null);
