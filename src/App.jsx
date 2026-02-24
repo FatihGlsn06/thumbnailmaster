@@ -1402,15 +1402,33 @@ VIBE: Professional, clean, gaming channel style`
       for (const m of mustMatches) mustRules.push(m[1].trim());
     }
 
+    // Extract ART_DIRECTION from text-based DNA (fallback mode)
+    const artDirection = extractDNASection(dnaData, 'ART_DIRECTION');
+
+    // Also try to extract visual info directly from research text (for when DNA is sparse)
+    const extractFromResearch = (text, keyword) => {
+      if (!text) return '';
+      const regex = new RegExp(`(?:${keyword})[:\\s]+([\\s\\S]{20,300}?)(?=\\n\\n|\\n\\d+\\.|\\n\\*\\*|$)`, 'i');
+      const match = text.match(regex);
+      return match ? match[1].trim().replace(/\n+/g, ' ') : '';
+    };
+    const researchVisuals = extractFromResearch(researchData, 'DETAILED VISUAL DESCRIPTION|visual description|art style|color palette');
+    const researchEnvironment = extractFromResearch(researchData, 'environment|setting|world');
+
     // Build the Flux prompt
     const parts = [];
 
     // Opening: quality markers + format
     parts.push('Professional cinematic YouTube thumbnail, 16:9 aspect ratio, ultra high quality');
 
+    // Art direction (from text DNA — sets the overall style first)
+    if (artDirection) parts.push(artDirection);
+
     // Core scene
     if (scene) {
       parts.push(scene);
+    } else if (researchEnvironment) {
+      parts.push(`Scene set in: ${researchEnvironment}`);
     } else {
       parts.push(`A dramatic, eye-catching scene about "${topicName}"${topicDesc ? `, ${topicDesc}` : ''}`);
     }
@@ -1422,6 +1440,11 @@ VIBE: Professional, clean, gaming channel style`
 
     // Person costume (if no character defined)
     if (!character && costume) parts.push(`Person wearing ${costume}`);
+
+    // Research-extracted visual details (fills gaps when DNA/scene are sparse)
+    if (researchVisuals && !character && !artDirection) {
+      parts.push(`Visual style: ${researchVisuals}`);
+    }
 
     // Color palette (prefer Visual DNA over scene direction)
     if (dnaColors) parts.push(`Color palette: ${dnaColors}`);
@@ -1785,10 +1808,18 @@ If search results are about a DIFFERENT topic than "${topic}":
 PART A — TOPIC IDENTITY:
 1. What EXACTLY is "${topic}"? (game, product, concept, place, person, event, etc.)
 2. When was it created/released? Is it trending now?
-3. What does it look like visually? (colors, style, aesthetics, setting)
+3. **DETAILED VISUAL DESCRIPTION** (CRITICAL — be as specific as possible):
+   - Art style: realistic, stylized, cartoon, anime, painterly, pixel art?
+   - Color palette: what are the 4-5 dominant colors? (give hex codes if possible)
+   - Environment/setting: what does the world look like? (medieval, sci-fi, modern, etc.)
+   - Characters: what do the main characters/subjects look like? Describe armor, clothing, weapons, body types
+   - UI/branding: what does the logo/title screen look like?
+   - Similar to: what other games/movies/shows does it look like?
+   - If this is a game: camera perspective (isometric, third-person, FPS?), visual effects, particle systems
 4. What are the iconic visual elements? What emotions does it evoke?
 5. What do official images/promotional materials show?
 6. What makes "${topic}" visually distinctive and recognizable?
+7. If Steam game: what is the Steam App ID?
 
 PART B — YOUTUBE THUMBNAIL TRENDS:
 1. **TOP CREATORS**: Who makes "${topic}" content on YouTube? (2-3 channels)
@@ -3254,7 +3285,7 @@ Respond in ENGLISH for maximum compatibility with image generation models.` }
             if (dnaText && dnaText.length > 100) {
               extractedVisualDNA = dnaText;
               setVisualDNA(dnaText);
-              console.log(`[VisualDNA] ✅ Visual DNA extracted (${dnaText.length} chars)`);
+              console.log(`[VisualDNA] ✅ Visual DNA extracted from images (${dnaText.length} chars)`);
 
               // Also append to research for UI display
               if (finalResearch) {
@@ -3269,6 +3300,90 @@ Respond in ENGLISH for maximum compatibility with image generation models.` }
           }
         } catch (e) {
           console.warn('[VisualDNA] ⚠️ Visual DNA extraction failed:', e.message);
+        }
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // TEXT-BASED VISUAL DNA FALLBACK — when no reference images found
+      // Extracts visual style rules from research text instead of images
+      // ═══════════════════════════════════════════════════════════════
+      if (!extractedVisualDNA && finalResearch && apiKey) {
+        try {
+          console.log('[VisualDNA] 📝 No reference images — generating Visual DNA from research text...');
+
+          const textDnaResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{
+                    text: `You are a VISUAL DNA ANALYST. Based on the research text below, create DETAILED visual style rules for "${topic}".
+
+RESEARCH:
+${finalResearch}
+
+${topicDescription ? `USER CONTEXT: ${topicDescription}` : ''}
+
+Since we have NO reference images, you must INFER the visual identity from the research.
+Be VERY SPECIFIC — avoid generic descriptions. If this is a game, describe the EXACT art style, UI elements, character designs mentioned in the research.
+
+Generate a Visual DNA with these sections:
+
+1. **COLOR_PALETTE**: Infer 4-6 dominant colors from the research descriptions. Use hex codes.
+   Format: COLOR: #hex colorName — where/why
+
+2. **SILHOUETTE**: Based on research, what do characters/subjects look like?
+   Describe: body types, armor/clothing styles, weapon types, iconic poses.
+
+3. **MATERIALS**: What textures and materials are described or implied?
+   (medieval stone, futuristic metal, organic, wooden, crystalline, etc.)
+
+4. **LIGHTING**: What mood/atmosphere does the research suggest?
+   (dark and gritty, bright and colorful, ethereal, realistic, stylized, etc.)
+
+5. **SIGNATURES**: 3-5 visual elements that would make this INSTANTLY recognizable as "${topic}".
+   Based on research: what are the KEY visual differentiators?
+
+6. **STYLE_LOCK_RULES**: Write 6-8 rules for visual authenticity.
+   MUST: [what must be included based on research]
+   NEVER: [what would be wrong/inauthentic]
+
+7. **ART_DIRECTION**: Describe the overall visual style:
+   - Is it realistic, stylized, cartoon, anime, painterly?
+   - What games/movies/shows does it look similar to?
+   - Camera perspective typically used (isometric, third-person, first-person?)
+   - Key atmospheric elements (fog, particles, volumetric light, etc.)
+
+Respond in ENGLISH. Be specific to "${topic}", not generic.`
+                  }]
+                }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
+              }),
+              signal: AbortSignal.timeout(15000)
+            }
+          );
+
+          if (textDnaResponse.ok) {
+            const textDnaData = await textDnaResponse.json();
+            const textDna = textDnaData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+            if (textDna && textDna.length > 100) {
+              extractedVisualDNA = textDna;
+              setVisualDNA(textDna);
+              console.log(`[VisualDNA] ✅ Text-based Visual DNA generated (${textDna.length} chars)`);
+
+              if (finalResearch) {
+                finalResearch += `\n\n🧬 VISUAL DNA (TEXT-INFERRED):\n${textDna}`;
+                setTopicResearch(finalResearch);
+              }
+            } else {
+              console.log('[VisualDNA] ⚠️ Text-based DNA too short');
+            }
+          }
+        } catch (e) {
+          console.warn('[VisualDNA] ⚠️ Text-based DNA failed:', e.message);
         }
       }
 
