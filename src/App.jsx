@@ -2758,45 +2758,55 @@ If NONE of the images actually show "${subject}", reply with: NONE` }
                 const responseText = verifyData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
                 console.log(`[RefImage] 🤖 Gemini multi-select response:\n${responseText}`);
 
-                if (responseText !== 'NONE') {
-                  // Parse PICK lines: PICK:2|reason text
-                  const picks = [];
-                  const pickRegex = /PICK:\s*(\d+)\s*\|\s*(.+)/g;
-                  let match;
-                  while ((match = pickRegex.exec(responseText)) !== null) {
-                    const idx = parseInt(match[1]) - 1;
-                    const reason = match[2].trim();
-                    if (idx >= 0 && idx < downloadedCandidates.length && !picks.some(p => p.idx === idx)) {
-                      picks.push({ idx, reason });
-                    }
-                  }
+                if (responseText === 'NONE') {
+                  // Gemini explicitly rejected ALL candidates as wrong topic
+                  // CRITICAL: Do NOT fall through to fallback — these images would poison Visual DNA
+                  console.log(`[RefImage] 🚫 Gemini explicitly rejected all ${downloadedCandidates.length} images as WRONG TOPIC — proceeding without reference images`);
+                  collectedImages = [];
+                  setResearchImages([]);
+                  return; // Exit the image search completely — bad images = worse than no images
+                }
 
-                  if (picks.length > 0) {
-                    const selectedImages = picks.map(p => ({
-                      data: downloadedCandidates[p.idx].data,
-                      mimeType: downloadedCandidates[p.idx].mimeType,
-                      url: downloadedCandidates[p.idx].url,
-                      label: downloadedCandidates[p.idx].label || `Image ${p.idx + 1}`,
-                      score: downloadedCandidates[p.idx].score,
-                      reason: p.reason
-                    }));
-                    console.log(`[RefImage] ✅ Gemini selected ${selectedImages.length} diverse references:`);
-                    selectedImages.forEach((img, i) => console.log(`  ${i + 1}. ${img.label} — ${img.reason}`));
-                    collectedImages = selectedImages;
-                    setResearchImages(selectedImages);
-                    return;
+                // Parse PICK lines: PICK:2|reason text
+                const picks = [];
+                const pickRegex = /PICK:\s*(\d+)\s*\|\s*(.+)/g;
+                let match;
+                while ((match = pickRegex.exec(responseText)) !== null) {
+                  const idx = parseInt(match[1]) - 1;
+                  const reason = match[2].trim();
+                  if (idx >= 0 && idx < downloadedCandidates.length && !picks.some(p => p.idx === idx)) {
+                    picks.push({ idx, reason });
                   }
                 }
-                console.log('[RefImage] ⚠️ Gemini could not pick valid images — using top scored');
+
+                if (picks.length > 0) {
+                  const selectedImages = picks.map(p => ({
+                    data: downloadedCandidates[p.idx].data,
+                    mimeType: downloadedCandidates[p.idx].mimeType,
+                    url: downloadedCandidates[p.idx].url,
+                    label: downloadedCandidates[p.idx].label || `Image ${p.idx + 1}`,
+                    score: downloadedCandidates[p.idx].score,
+                    reason: p.reason
+                  }));
+                  console.log(`[RefImage] ✅ Gemini selected ${selectedImages.length} diverse references:`);
+                  selectedImages.forEach((img, i) => console.log(`  ${i + 1}. ${img.label} — ${img.reason}`));
+                  collectedImages = selectedImages;
+                  setResearchImages(selectedImages);
+                  return;
+                }
+                // Gemini returned valid response but couldn't parse picks — use scored fallback
+                console.log('[RefImage] ⚠️ Gemini response unparseable — using top scored fallback');
               } else {
                 console.log('[RefImage] ⚠️ Gemini verification failed:', verifyResponse.status);
               }
             } catch (e) {
-              console.log('[RefImage] ❌ Gemini verification error:', e.message);
+              console.log('[RefImage] ❌ Gemini verification error:', safeErrorMsg(e));
             }
           }
 
           // Fallback: use top scored downloaded candidates — but FILTER OUT garbage
+          // NOTE: Only reached when Gemini verification errored or returned unparseable output.
+          // When Gemini explicitly says NONE, we return early above (no fallback).
           // Skip PDFs, irrelevant images (score <= 0), and non-image files
           const validFallbacks = downloadedCandidates.filter(c => {
             // Filter out PDFs and documents
@@ -3426,8 +3436,22 @@ ${finalResearch}
 
 ${topicDescription ? `USER CONTEXT: ${topicDescription}` : ''}
 
-Since we have NO reference images, you must INFER the visual identity from the research.
-Be VERY SPECIFIC — avoid generic descriptions. If this is a game, describe the EXACT art style, UI elements, character designs mentioned in the research.
+⚠️ CRITICAL — NO REFERENCE IMAGES AVAILABLE:
+Since we have NO verified reference images, you must INFER the visual identity from the research.
+Be VERY SPECIFIC — avoid generic descriptions.
+
+🚫 NEVER SUGGEST THESE GENERIC GAMING VISUALS:
+- PC gaming setup (keyboard, mouse, monitor, RGB lights)
+- Esports tournament scene / competitive gaming arena
+- Generic "gamer holding controller" imagery
+- Orange/amber gaming desk lighting (unless explicitly described in research)
+- Generic sword-and-shield fantasy (unless the research specifically says so)
+
+✅ INSTEAD:
+- Describe the GAME'S OWN unique art style, world, characters, and atmosphere
+- If the game has distinctive characters, describe them from research details
+- If research mentions specific environments/worlds, use those
+- If research is limited, extrapolate from the game's GENRE and TONE only
 
 Generate a Visual DNA with these sections:
 
@@ -3620,8 +3644,8 @@ ${['religion'].includes(contentCategory.id) ? `
 ` : `Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture.`}
 Must look like a professional YouTube thumbnail, not generic AI art.
 ${effectiveVisualDNA ? `
-═══ VISUAL DNA — HARD STYLE CONSTRAINTS (EXTRACTED FROM REFERENCE IMAGES) ═══
-The following rules were extracted by analyzing the actual reference images of "${topic}".
+═══ VISUAL DNA — HARD STYLE CONSTRAINTS (${effectiveImages.length > 0 ? 'EXTRACTED FROM REFERENCE IMAGES' : 'INFERRED FROM RESEARCH — NO VERIFIED IMAGES AVAILABLE'}) ═══
+${effectiveImages.length === 0 ? `⚠️ WARNING: There are NO verified reference images for "${topic}". Do NOT default to generic gaming setups, esports PCs, keyboards, or controller imagery. Generate based PURELY on the game's own described visual style below.` : `The following rules were extracted by analyzing the actual reference images of "${topic}".`}
 These are NOT suggestions — they are MANDATORY constraints. Violating them = wrong output.
 
 ${effectiveVisualDNA}
@@ -3629,7 +3653,11 @@ ${effectiveVisualDNA}
 ⚠️ CRITICAL: Follow ALL "MUST:" rules above. Avoid ALL "NEVER:" and "NEGATIVE:" items above.
 These rules define the AUTHENTIC visual identity of "${topic}". Generic fantasy/sci-fi that ignores these rules is a FAILURE.
 ═══════════════════════════════════════════════════════════════════════════════
-` : ''}
+` : `
+⚠️ NO VISUAL DNA — NO REFERENCE IMAGES AVAILABLE FOR "${topic}".
+Do NOT generate generic gaming setups, esports/competitive scenes, PC keyboards, or controllers.
+Generate something SPECIFIC and UNIQUE to "${topic}" based on its name and context.
+`}
 ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
 
       // Build parts — REFERENCE IMAGES FIRST so model prioritizes them
