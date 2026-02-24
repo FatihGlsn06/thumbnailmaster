@@ -1511,14 +1511,36 @@ VIBE: Professional, clean, gaming channel style`
   };
 
   // Generate image using FAL AI — supports all FAL model families
+  // ── Edit model → text-to-image fallback map ──
+  // When an edit model is selected but no reference images are available,
+  // automatically fall back to a text-to-image equivalent so generation never crashes.
+  const EDIT_TO_T2I_FALLBACK = {
+    'fal-ai/flux-2-pro/edit':                   'fal-ai/flux-pro/v1.1',
+    'fal-ai/flux-2/edit':                        'fal-ai/flux-pro/v1.1',
+    'fal-ai/flux-2-flex/edit':                   'fal-ai/flux-pro/v1.1',
+    'fal-ai/bytedance/seedream/v4.5/edit':       'fal-ai/flux-pro/v1.1',
+    'fal-ai/flux-pro/kontext':                   'fal-ai/flux-pro/v1.1',
+  };
+
   const generateWithFal = async (prompt, modelId = 'fal-ai/flux-pro/v1.1', options = {}) => {
     if (!falApiKey) throw new Error('FAL AI API key is required');
 
     const { referenceImages = [], overlayText: falOverlayText = '' } = options;
-    console.log(`[FAL] 🚀 Generating with ${modelId}${referenceImages.length > 0 ? ` (+${referenceImages.length} refs)` : ''}...`);
+
+    // ── Smart fallback: edit model without refs → text-to-image ──
+    let effectiveModelId = modelId;
+    if (referenceImages.length === 0 && EDIT_TO_T2I_FALLBACK[modelId]) {
+      effectiveModelId = EDIT_TO_T2I_FALLBACK[modelId];
+      console.warn(`[FAL] 🔄 AUTO-FALLBACK: ${modelId} requires reference images but none found`);
+      console.warn(`[FAL] 🔄 Switching to text-to-image model: ${effectiveModelId}`);
+    }
+
+    console.log(`[FAL] 🚀 Generating with ${effectiveModelId}${referenceImages.length > 0 ? ` (+${referenceImages.length} refs)` : ''}${effectiveModelId !== modelId ? ` (fallback from ${modelId})` : ''}...`);
     const startTime = Date.now();
 
     let body = {};
+    // Use effectiveModelId for all model-specific branching below
+    modelId = effectiveModelId;
 
     // ── Model-specific body construction ──
     if (modelId.includes('ideogram')) {
@@ -1584,8 +1606,8 @@ VIBE: Professional, clean, gaming channel style`
           console.log(`[FAL] 📎 FLUX.2 Edit: 1 base image (no additional references)`);
         }
       } else {
-        // No reference images — cannot use Edit model without a base image
-        console.warn(`[FAL] ⚠️ FLUX.2 Edit requires a base image — none provided, generation may fail`);
+        // Safety net: should not reach here due to auto-fallback above
+        console.warn(`[FAL] ⚠️ FLUX.2 Edit reached without refs (auto-fallback should have triggered)`);
       }
 
     } else if (modelId.includes('grok-imagine')) {
@@ -3974,8 +3996,9 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
         }
 
         const supportsRefs = falModelInfo?.supportsRefs || 0;
+        const requiresRefs = !!EDIT_TO_T2I_FALLBACK[falModelId]; // edit models REQUIRE refs
         setAttemptInfo({ current: hybrid ? 2 : 1, max: hybrid ? 2 : 1, status: 'generating' });
-        console.log(`[Generate] 🎨 ${hybrid ? 'HYBRID' : 'FAL AI'} generation with ${falModelId}${supportsRefs > 0 ? ` (supports ${supportsRefs} refs, have ${effectiveImages.length} imgs)` : ''}`);
+        console.log(`[Generate] 🎨 ${hybrid ? 'HYBRID' : 'FAL AI'} generation with ${falModelId}${supportsRefs > 0 ? ` (supports ${supportsRefs} refs, have ${effectiveImages.length} imgs)` : ''}${requiresRefs ? ' [edit model — refs required]' : ''}`);
 
         // Compile research into a Flux-optimized prompt
         const falPrompt = compileFalPrompt(topic, effectiveResearch, effectiveVisualDNA, {
@@ -3994,6 +4017,11 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
           if (falRefImages.length > 0) {
             console.log(`[Generate] 📎 Passing ${falRefImages.length}/${effectiveImages.length} reference images to ${falModelId}`);
           }
+        }
+
+        // ── Warn user when edit model falls back to text-to-image ──
+        if (requiresRefs && falRefImages.length === 0) {
+          console.warn(`[Generate] 🔄 ${falModelId} needs references but none found — will auto-fallback to text-to-image`);
         }
 
         lastGeneratedBase64 = await generateWithFal(falPrompt, falModelId, {
