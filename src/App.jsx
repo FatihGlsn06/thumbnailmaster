@@ -4460,44 +4460,24 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
 
     try {
       const verifyParts = [
-        { text: `You are a THUMBNAIL QUALITY INSPECTOR. Your job is to verify that a generated YouTube thumbnail ACTUALLY represents the requested topic.
+        { text: `You are a THUMBNAIL QUALITY INSPECTOR. Verify that a YouTube thumbnail represents the requested topic.
 
-REQUESTED TOPIC: "${topicName}"
-${researchData ? `\nRESEARCH CONTEXT (what the topic actually is):\n${researchData.substring(0, 1500)}` : ''}
+TOPIC: "${topicName}"
+${researchData ? `\nRESEARCH:\n${researchData.substring(0, 1500)}` : ''}
+${base64Image ? `\n⚠️ IMPORTANT: The user UPLOADED A PERSON PHOTO to blend into this thumbnail. The presence of a real person in the image is INTENTIONAL and expected — do NOT penalize for it. Judge only whether the BACKGROUND, SETTING, and TOPIC ELEMENTS correctly represent "${topicName}".` : ''}
 
-TASK: Look at the GENERATED THUMBNAIL below and evaluate:
+EVALUATE:
+1. **ACCURACY** (0-10): Does the scene/setting/visual identity match "${topicName}"?${base64Image ? ' (Ignore the person — they were intentionally added by the user)' : ''}
+2. **SPECIFICITY** (0-10): Is this specific to "${topicName}" or generic?
 
-1. **TOPIC ACCURACY** (0-10): Does this image clearly represent "${topicName}"?
-   - 10: Instantly recognizable as ${topicName} (correct characters, setting, visual identity)
-   - 7-9: Clearly related, most visual elements are correct
-   - 4-6: Somewhat related but generic or missing key visual identifiers
-   - 1-3: Wrong topic, generic fantasy/sci-fi, or could be anything
-   - 0: Completely unrelated
-
-2. **SPECIFICITY** (0-10): Is this SPECIFIC to "${topicName}" or could it be any similar topic?
-   - 10: Unique to this exact topic (correct logos, characters, faction colors, specific scene)
-   - 5: Could be this topic OR several other similar ones
-   - 0: Completely generic (e.g., "generic dark fantasy warrior" instead of a specific game character)
-
-3. **ISSUES**: What specific visual elements are WRONG or MISSING?
-   - Wrong colors/design for the topic?
-   - Missing iconic elements that should be present?
-   - Characters that don't match the topic?
-   - Generic AI art that doesn't represent any specific franchise?
-
-RESPOND IN THIS EXACT FORMAT (single line each):
-ACCURACY:<score 0-10>
-SPECIFICITY:<score 0-10>
+RESPOND EXACTLY:
+ACCURACY:<0-10>
+SPECIFICITY:<0-10>
 VERDICT:<PASS|WARN|FAIL>
-REASON:<1 sentence explanation in Turkish>
-SUGGESTION:<1 sentence fix suggestion in Turkish, or "Yok" if PASS>
+REASON:<1 cümle Türkçe>
+SUGGESTION:<1 cümle Türkçe, veya "Yok">
 
-Rules:
-- VERDICT is PASS if both scores >= 7
-- VERDICT is WARN if average >= 5 but either score < 7
-- VERDICT is FAIL if average < 5 or either score <= 3
-- Be STRICT. A generic dark fantasy warrior is NOT a specific game character.
-- A beautiful image that doesn't match the topic is still a FAIL.
+Rules: PASS if both >= 7, WARN if avg >= 5, FAIL if avg < 5 or either <= 3.
 ${styleDNA ? `
 3. **STYLE CONSISTENCY** (0-10): Does this image follow the Visual DNA style rules?
    Check against these extracted style rules:
@@ -5533,83 +5513,32 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                   </div>
                 )}
 
-                {/* Verification Badge */}
-                {(isVerifying || verificationResult) && (
-                  <div className={`rounded-xl p-3 border mb-4 ${
-                    isVerifying ? 'bg-blue-500/10 border-blue-500/20' :
-                    verificationResult?.verdict === 'PASS' ? 'bg-green-500/10 border-green-500/20' :
-                    verificationResult?.verdict === 'WARN' ? 'bg-yellow-500/10 border-yellow-500/20' :
+                {/* Verification Badge — minimal, non-intrusive */}
+                {verificationResult && !isVerifying && (
+                  <div className={`flex items-center gap-2 mb-3 px-3 py-1.5 rounded-lg border w-fit ${
+                    verificationResult.verdict === 'PASS' ? 'bg-green-500/10 border-green-500/20' :
+                    verificationResult.verdict === 'WARN' ? 'bg-yellow-500/10 border-yellow-500/20' :
                     'bg-red-500/10 border-red-500/20'
                   }`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {isVerifying ? (
-                          <>
-                            <RefreshCcw className="w-4 h-4 text-blue-400 animate-spin" />
-                            <span className="text-xs font-bold text-blue-400">{t('verifyingTopic')}</span>
-                          </>
-                        ) : verificationResult?.verdict === 'PASS' ? (
-                          <>
-                            <CheckCircle className="w-4 h-4 text-green-400" />
-                            <span className="text-xs font-bold text-green-400">{t('topicVerified')}</span>
-                          </>
-                        ) : verificationResult?.verdict === 'WARN' ? (
-                          <>
-                            <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                            <span className="text-xs font-bold text-yellow-400">{t('partialMatch')}</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-4 h-4 text-red-400" />
-                            <span className="text-xs font-bold text-red-400">{t('topicMismatch')}</span>
-                          </>
-                        )}
-                      </div>
-                      {verificationResult?.score !== null && verificationResult?.score !== undefined && (
-                        <span className={`text-lg font-black ${
-                          verificationResult.verdict === 'PASS' ? 'text-green-400' :
-                          verificationResult.verdict === 'WARN' ? 'text-yellow-400' : 'text-red-400'
-                        }`}>{verificationResult.score}/10</span>
-                      )}
-                    </div>
-                    {verificationResult && !isVerifying && (
-                      <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
-                        {verificationResult.accuracy !== null && <span>Doğruluk: {verificationResult.accuracy}/10</span>}
-                        {verificationResult.specificity !== null && <span>Özgünlük: {verificationResult.specificity}/10</span>}
-                        {verificationResult.styleScore !== null && <span>Stil: {verificationResult.styleScore}/10</span>}
-                      </div>
+                    {verificationResult.verdict === 'PASS' ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                    ) : verificationResult.verdict === 'WARN' ? (
+                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-red-400" />
                     )}
-                    {verificationResult?.reason && (
-                      <p className="text-xs text-slate-300 mt-1">{verificationResult.reason}</p>
-                    )}
-                    {verificationResult?.verdict === 'FAIL' && (
-                      <div className="mt-2">
-                        {verificationResult.suggestion && (
-                          <p className="text-xs text-amber-300 mb-2">💡 {verificationResult.suggestion}</p>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-red-300/70 flex-1">3 {t('retryAfterAttempts')}</p>
-                          <button
-                            onClick={generateThumbnail}
-                            disabled={loading}
-                            className="text-xs bg-red-500/20 border border-red-500/30 text-red-300 px-3 py-1 rounded-lg hover:bg-red-500/30 transition-all whitespace-nowrap"
-                          >
-                            {t('retryButton')}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {verificationResult?.suggestion && verificationResult.verdict === 'WARN' && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <p className="text-xs text-amber-300 flex-1">💡 {verificationResult.suggestion}</p>
-                        <button
-                          onClick={generateThumbnail}
-                          disabled={loading}
-                          className="text-xs bg-amber-500/20 border border-amber-500/30 text-amber-300 px-3 py-1 rounded-lg hover:bg-amber-500/30 transition-all whitespace-nowrap"
-                        >
-                          {t('regenerateButton')}
-                        </button>
-                      </div>
+                    <span className={`text-xs font-bold ${
+                      verificationResult.verdict === 'PASS' ? 'text-green-400' :
+                      verificationResult.verdict === 'WARN' ? 'text-yellow-400' : 'text-red-400'
+                    }`}>{verificationResult.score}/10</span>
+                    {verificationResult.verdict === 'FAIL' && (
+                      <button
+                        onClick={generateThumbnail}
+                        disabled={loading}
+                        className="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded hover:bg-red-500/30 transition-all ml-1"
+                      >
+                        {t('retryButton')}
+                      </button>
                     )}
                   </div>
                 )}
