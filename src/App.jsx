@@ -1564,17 +1564,28 @@ VIBE: Professional, clean, gaming channel style`
       }
 
     } else if (modelId.includes('flux-2-pro/edit') || modelId.includes('flux-2/edit') || modelId.includes('flux-2-flex/edit')) {
-      // FLUX.2 Pro Edit — multi-reference composition (up to 8-9 refs)
+      // FLUX.2 Pro Edit — requires a base `image` + optional multi-reference `images`
       body = {
         prompt,
         image_size: { width: 1280, height: 720 },
         safety_tolerance: 5,
       };
       if (referenceImages.length > 0) {
-        body.images = referenceImages.slice(0, 8).map(img => ({
-          url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
-        }));
-        console.log(`[FAL] 📎 FLUX.2 Edit: ${body.images.length} reference images attached for composition`);
+        // First reference image → required `image` field (base image to edit)
+        const firstRef = referenceImages[0];
+        body.image = firstRef.url || `data:${firstRef.mimeType || 'image/jpeg'};base64,${firstRef.data}`;
+        // Remaining references → `images` array for composition
+        if (referenceImages.length > 1) {
+          body.images = referenceImages.slice(1, 8).map(img => ({
+            url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
+          }));
+          console.log(`[FAL] 📎 FLUX.2 Edit: 1 base image + ${body.images.length} additional references`);
+        } else {
+          console.log(`[FAL] 📎 FLUX.2 Edit: 1 base image (no additional references)`);
+        }
+      } else {
+        // No reference images — cannot use Edit model without a base image
+        console.warn(`[FAL] ⚠️ FLUX.2 Edit requires a base image — none provided, generation may fail`);
       }
 
     } else if (modelId.includes('grok-imagine')) {
