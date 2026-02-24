@@ -1921,9 +1921,9 @@ Search terms to try:
 Before writing your answer, VERIFY that what you found actually matches "${topic}".
 Search engines often return results for SIMILAR-SOUNDING but DIFFERENT topics.
 Examples of common confusion:
-- "Eldagarde" (indie game) ≠ "Edelgard von Hresvelg" (Fire Emblem character)
 - "Valorant" (game) ≠ "Valiant" (comics)
-- "Apex" (game) ≠ "Apex" (company)
+- "Apex Legends" (game) ≠ "Apex" (company)
+- Similar-sounding names are NOT the same topic — always verify EXACT match
 
 If search results are about a DIFFERENT topic than "${topic}":
 1. State clearly: "MISMATCH: Search returned results about [X] but user asked about [Y]"
@@ -2133,10 +2133,8 @@ ${topicDescription ? `USER CONTEXT: "${topicDescription}"` : ''}
 Search the internet for: "${subject}" ${hint}
 
 ⚠️ CRITICAL — TOPIC IDENTITY: You are searching for "${topic}" EXACTLY as typed.
-Do NOT search for similar-sounding topics. For example:
-- If topic is "Eldagarde", do NOT search for "Edelgard" or "Edelgard von Hresvelg"
-- If topic is "Apex", search for the SPECIFIC context given by the user
-Search with EXACT spelling: "${topic}"
+Do NOT search for similar-sounding or similar-spelled topics.
+Search with the EXACT spelling: "${topic}" — do not correct, modify, or substitute the name.
 
 I need you to find 5-8 SPECIFIC image URLs that show "${subject}" clearly.
 
@@ -2188,23 +2186,40 @@ IMPORTANT: Images MUST be about "${topic}" specifically, NOT about similar-named
                 while ((imgMatch = imgRegex.exec(imageSearchText)) !== null) {
                   const url = imgMatch[1].trim();
                   const desc = imgMatch[2]?.trim() || 'AI-found reference';
-                  // Validate URL looks like an image
-                  if (url.match(/\.(jpg|jpeg|png|webp)/i) || url.includes('/thumb/') || url.includes('/images/') || url.includes('upload.wikimedia')) {
+                  // Validate URL looks like an image (relaxed: accept CDN URLs without extensions)
+                  const looksLikeImage = url.match(/\.(jpg|jpeg|png|webp)/i) ||
+                    url.includes('/thumb/') || url.includes('/images/') ||
+                    url.includes('upload.wikimedia') || url.includes('steamstatic') ||
+                    url.includes('steam') || url.includes('cdn') ||
+                    url.includes('imgix') || url.includes('cloudinary') ||
+                    url.includes('imgur') || url.includes('wp-content/uploads');
+                  // Reject non-image URLs
+                  const looksLikePage = url.match(/\.(html|php|aspx|pdf|svg|gif)(\?|$)/i) ||
+                    url.includes('/wiki/') || url.includes('/article/') ||
+                    url.includes('youtube.com') || url.includes('twitter.com');
+                  if (looksLikeImage && !looksLikePage) {
                     allCandidates.push({
                       url,
-                      score: scoreImageName(url.split('/').pop() || desc) + 50, // High priority for AI-found images
+                      score: scoreImageName(url.split('/').pop() || desc) + 50,
                       source: 'ai-internet-search',
                       label: `AI Search: ${desc.substring(0, 50)}`
                     });
                     aiImageCount++;
                     console.log(`[RefImage] 🌐 AI found: ${desc.substring(0, 60)}`);
+                  } else {
+                    console.log(`[RefImage] 🌐 Skipped (not image URL): ${url.substring(0, 80)}`);
                   }
                 }
 
                 // Also extract image URLs from grounding chunks of this search
                 for (const chunk of imageGrounding) {
                   const uri = chunk.web?.uri;
-                  if (uri && uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i)) {
+                  if (!uri) continue;
+                  const isDirectImage = uri.match(/\.(jpg|jpeg|png|webp)(\?|$)/i);
+                  const isImageCdn = uri.includes('steamstatic') || uri.includes('imgur') ||
+                    uri.includes('wp-content/uploads') || uri.includes('cdn') ||
+                    uri.includes('upload.wikimedia');
+                  if (isDirectImage || isImageCdn) {
                     allCandidates.push({
                       url: uri,
                       score: scoreImageName(uri.split('/').pop() || '') + 40,
@@ -2212,6 +2227,20 @@ IMPORTANT: Images MUST be about "${topic}" specifically, NOT about similar-named
                       label: `AI Grounding: ${chunk.web?.title?.substring(0, 40) || uri.split('/').pop()?.substring(0, 40)}`
                     });
                     aiImageCount++;
+                  }
+                  // Also try to extract Steam store header image from Steam page URLs
+                  const steamAppMatch = uri.match(/store\.steampowered\.com\/app\/(\d+)/);
+                  if (steamAppMatch) {
+                    const steamAppId = steamAppMatch[1];
+                    const steamHeaderUrl = `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg`;
+                    allCandidates.push({
+                      url: steamHeaderUrl,
+                      score: 80, // High score — official game header
+                      source: 'steam-header-extract',
+                      label: `Steam Header: ${chunk.web?.title || topic}`
+                    });
+                    aiImageCount++;
+                    console.log(`[RefImage] 🎮 Extracted Steam header from store page: app/${steamAppId}`);
                   }
                 }
 
@@ -2407,8 +2436,7 @@ What are the best sources for images about this topic?
 You MUST find images for "${topic}" EXACTLY as written. Do NOT confuse it with similar-sounding topics.
 - "${topic}" is NOT necessarily a well-known character/franchise
 - If "${topic}" sounds similar to something famous but is DIFFERENT, search for the EXACT name
-- Example: "Eldegarde" (indie game) ≠ "Edelgard von Hresvelg" (Fire Emblem) — these are COMPLETELY DIFFERENT
-- Example: "Palworld" ≠ "Pokémon World"
+- Example: "Palworld" ≠ "Pokémon World" — similar names are NOT the same topic
 - If you cannot find a specific wiki for "${topic}", say NONE instead of guessing a similar topic's wiki
 
 Rules:
@@ -2437,9 +2465,9 @@ WPEDIA:Fall of Constantinople
 WPEDIA:Ottoman Empire
 SEARCH:Ottoman conquest Constantinople 1453
 
-Example for "Eldegarde" (new indie game):
-SEARCH:Eldegarde game screenshot
-SEARCH:Eldegarde steam
+Example for a NEW/OBSCURE game with no wiki:
+SEARCH:<game_name> game screenshot
+SEARCH:<game_name> steam
 
 Example for "Quran Recitation Ramadan":
 WPEDIA:Quran
@@ -2863,9 +2891,8 @@ If nothing found, reply: NONE`
             const verifyParts = [
               { text: `You are an expert image analyst. I need to find the BEST reference images of "${subject}"${contextPart ? ` (context: "${contextPart}")` : ''} for creating a YouTube thumbnail.
 
-⚠️ CRITICAL: Images must be about "${subject}" EXACTLY — not about similar-named topics.
-Example: If subject is "Eldegarde" (a game), do NOT pick images of "Edelgard von Hresvelg" (Fire Emblem character) — they are DIFFERENT things.
-Reject cosplay photos, fan art, or screenshots from a DIFFERENT game/topic.
+⚠️ CRITICAL: Images must be about "${subject}" EXACTLY — not about similar-named or similar-spelled topics.
+Reject images from a DIFFERENT game/topic/character even if the name sounds similar.
 
 I have ${downloadedCandidates.length} candidate images below. Your job:
 1. Select up to ${maxSelections} images that BEST depict "${subject}" from DIFFERENT ANGLES, POSES, or PERSPECTIVES
@@ -3103,7 +3130,7 @@ YouTube trend analizi varsa, başarılı kanalların thumbnail stratejilerini de
 
 ⚠️ KONU DOĞRULAMA: Araştırma sonuçları "${topic}" İLE BİREBİR eşleşiyor mu kontrol et!
 Eğer araştırma sonuçları FARKLI bir konu hakkındaysa (benzer isim ama farklı şey), bunu REDDET.
-Örnek: Kullanıcı "Eldagarde" yazdıysa ama araştırma "Edelgard von Hresvelg (Fire Emblem)" döndüyse → bu YANLIŞ KONU!
+Eğer araştırma sonuçları benzer isimli ama FARKLI bir konu hakkındaysa → YANLIŞ KONU!
 Bu durumda araştırma sonuçlarını görmezden gel ve sadece konu adından + kullanıcı bağlamından çıkarım yap.
 
 Lütfen Türkçe olarak çok detaylı yaz:
@@ -3340,7 +3367,7 @@ Use the trend analysis above to make INFORMED creative decisions:
 TOPIC: "${topic}"
 ${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
 
-⚠️ TOPIC GUARD: Your scene MUST be about "${topic}" EXACTLY. If the research above seems to be about a DIFFERENT topic with a similar name (e.g. research says "Edelgard von Hresvelg" but topic is "Eldagarde"), IGNORE the wrong research and create a scene based on what "${topic}" actually is (use user context and common sense).
+⚠️ TOPIC GUARD: Your scene MUST be about "${topic}" EXACTLY. If the research above seems to be about a DIFFERENT topic with a similar name, IGNORE the wrong research and create a scene based on what "${topic}" actually is (use user context and common sense).
 
 Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
 
