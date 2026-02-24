@@ -1568,7 +1568,7 @@ VIBE: Professional, clean, gaming channel style`
       body = {
         prompt,
         image_size: { width: 1280, height: 720 },
-        safety_tolerance: 6,
+        safety_tolerance: 5,
       };
       if (referenceImages.length > 0) {
         body.images = referenceImages.slice(0, 8).map(img => ({
