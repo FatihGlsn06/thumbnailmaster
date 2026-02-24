@@ -2596,9 +2596,9 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
 
           // ── PHASE 2: Filter, deduplicate and download top candidates ──
 
-          // ── Steam CDN Recovery ──
+          // ── Steam CDN Recovery (with Playwright Verification) ──
           // AI hallucinates Steam screenshot URLs (random hashes → all 404).
-          // Extract App IDs from hallucinated URLs AND from research text, then generate KNOWN-GOOD predictable URLs.
+          // Extract App IDs, VERIFY they match the topic via Playwright, then use real screenshots.
           const steamAppIds = new Set();
           for (const c of allCandidates) {
             const steamMatch = c.url?.match(/steam\/apps\/(\d+)/);
@@ -2613,44 +2613,105 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
           if (storeUrlMatch) steamAppIds.add(storeUrlMatch[1]);
           if (steamAppIds.size > 0) {
             console.log(`[RefImage] 🎮 Steam CDN Recovery: found ${steamAppIds.size} App IDs: ${[...steamAppIds].join(', ')}`);
+
             for (const appId of steamAppIds) {
-              // These URLs are predictable — no hash needed, always exist for real games
-              allCandidates.push({
-                url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`,
-                score: 200, source: 'steam-cdn', label: `Steam Header: ${appId}`
-              });
-              allCandidates.push({
-                url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_616x353.jpg`,
-                score: 150, source: 'steam-cdn', label: `Steam Capsule: ${appId}`
-              });
-              allCandidates.push({
-                url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`,
-                score: 100, source: 'steam-cdn', label: `Steam Library Art: ${appId}`
-              });
-            }
-            // Also try Steam Store API to get REAL screenshot URLs
-            for (const appId of steamAppIds) {
+              // ── Step 1: Playwright Verification ──
+              // Call our Vite server plugin to verify the App ID matches the topic
+              let steamVerified = false;
+              let verifiedScreenshots = [];
+              let steamPageScreenshot = null;
+
               try {
-                const storeRes = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(`https://store.steampowered.com/api/appdetails?appids=${appId}`)}&output=json`, { signal: AbortSignal.timeout(5000) });
-                if (storeRes.ok) {
-                  const storeText = await storeRes.text();
-                  // Extract screenshot URLs from the response
-                  const ssMatches = storeText.matchAll(/"path_full"\s*:\s*"(https?:[^"]+)"/g);
-                  let ssCount = 0;
-                  for (const m of ssMatches) {
-                    const ssUrl = m[1].replace(/\\\//g, '/');
-                    if (ssUrl.includes('/ss_') && ssCount < 4) {
-                      allCandidates.push({
-                        url: ssUrl, score: 180 - ssCount * 10,
-                        source: 'steam-api', label: `Steam Screenshot ${ssCount + 1}: ${appId}`
-                      });
-                      ssCount++;
+                const verifyRes = await fetch(`/api/steam/verify?appId=${encodeURIComponent(appId)}&topic=${encodeURIComponent(subject)}`, {
+                  signal: AbortSignal.timeout(25000)
+                });
+
+                if (verifyRes.ok) {
+                  const verifyData = await verifyRes.json();
+                  console.log(`[RefImage] 🎮 Playwright: App ${appId} = "${verifyData.gameName}" → ${verifyData.verified ? '✅ VERIFIED' : '🚫 REJECTED'} (score: ${verifyData.matchScore?.toFixed(2)})`);
+
+                  if (verifyData.verified) {
+                    steamVerified = true;
+                    verifiedScreenshots = verifyData.screenshots || [];
+                    steamPageScreenshot = verifyData.pageScreenshot || null;
+
+                    // Use REAL screenshots from Playwright (not hallucinated ones)
+                    if (verifiedScreenshots.length > 0) {
+                      console.log(`[RefImage] 🎮 Playwright: ${verifiedScreenshots.length} verified screenshots found for "${verifyData.gameName}"`);
+                      for (let i = 0; i < Math.min(verifiedScreenshots.length, 4); i++) {
+                        allCandidates.push({
+                          url: verifiedScreenshots[i],
+                          score: 250 - i * 15, // Higher than CDN fallback scores
+                          source: 'steam-playwright',
+                          label: `Steam Verified Screenshot ${i + 1}: ${verifyData.gameName}`
+                        });
+                      }
                     }
+
+                    // Also add header image
+                    if (verifyData.headerImage) {
+                      allCandidates.push({
+                        url: verifyData.headerImage,
+                        score: 220, source: 'steam-playwright',
+                        label: `Steam Verified Header: ${verifyData.gameName}`
+                      });
+                    }
+                  } else {
+                    console.log(`[RefImage] 🚫 Playwright: App ${appId} is "${verifyData.gameName}" — NOT "${subject}". Skipping ALL images from this App ID.`);
+                    // Remove any existing candidates from this wrong App ID
+                    const wrongAppPattern = new RegExp(`/apps/${appId}/`);
+                    for (let i = allCandidates.length - 1; i >= 0; i--) {
+                      if (wrongAppPattern.test(allCandidates[i].url)) {
+                        allCandidates.splice(i, 1);
+                      }
+                    }
+                    continue; // Skip CDN fallback for this wrong App ID
                   }
-                  if (ssCount > 0) console.log(`[RefImage] 🎮 Steam API: found ${ssCount} real screenshot URLs for App ${appId}`);
+                } else {
+                  console.log(`[RefImage] ⚠️ Playwright verification unavailable (${verifyRes.status}) — using CDN fallback`);
                 }
               } catch (e) {
-                console.log(`[RefImage] ⚠️ Steam API fetch failed for ${appId}:`, e.message);
+                console.log(`[RefImage] ⚠️ Playwright verification failed: ${e.message} — using CDN fallback`);
+              }
+
+              // ── Step 2: CDN Fallback (only if Playwright didn't verify) ──
+              if (!steamVerified) {
+                // Fallback to predictable CDN URLs (may be wrong game — will be caught by Gemini multi-select later)
+                allCandidates.push({
+                  url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`,
+                  score: 200, source: 'steam-cdn', label: `Steam Header: ${appId}`
+                });
+                allCandidates.push({
+                  url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_616x353.jpg`,
+                  score: 150, source: 'steam-cdn', label: `Steam Capsule: ${appId}`
+                });
+                allCandidates.push({
+                  url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`,
+                  score: 100, source: 'steam-cdn', label: `Steam Library Art: ${appId}`
+                });
+
+                // Also try Steam Store API via proxy to get REAL screenshot URLs
+                try {
+                  const storeRes = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(`https://store.steampowered.com/api/appdetails?appids=${appId}`)}&output=json`, { signal: AbortSignal.timeout(5000) });
+                  if (storeRes.ok) {
+                    const storeText = await storeRes.text();
+                    const ssMatches = storeText.matchAll(/"path_full"\s*:\s*"(https?:[^"]+)"/g);
+                    let ssCount = 0;
+                    for (const m of ssMatches) {
+                      const ssUrl = m[1].replace(/\\\//g, '/');
+                      if (ssUrl.includes('/ss_') && ssCount < 4) {
+                        allCandidates.push({
+                          url: ssUrl, score: 180 - ssCount * 10,
+                          source: 'steam-api', label: `Steam Screenshot ${ssCount + 1}: ${appId}`
+                        });
+                        ssCount++;
+                      }
+                    }
+                    if (ssCount > 0) console.log(`[RefImage] 🎮 Steam API: found ${ssCount} real screenshot URLs for App ${appId}`);
+                  }
+                } catch (e) {
+                  console.log(`[RefImage] ⚠️ Steam API fetch failed for ${appId}:`, e.message);
+                }
               }
             }
           }
@@ -3802,53 +3863,77 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
                 }
               }
 
-              // ── Steam CDN Recovery for Hybrid Pipeline ──
-              // AI hallucinates Steam screenshot URLs (/ss_ with random hashes → all 404).
-              // Extract App IDs and use KNOWN-GOOD predictable URLs instead.
+              // ── Steam CDN Recovery for Hybrid Pipeline (with Playwright Verification) ──
               const hybridSteamAppIds = new Set();
               for (const img of imgUrls) {
                 const steamMatch = img.url?.match(/steam\/apps\/(\d+)/);
                 if (steamMatch) hybridSteamAppIds.add(steamMatch[1]);
               }
-              // Also try to extract App ID from research text
               const researchAppIdMatch = (effectiveResearch || searchText || '').match(/(?:Steam\s*App\s*ID|app[_\s]?id|appid)[:\s]*(\d{4,})/i);
               if (researchAppIdMatch) hybridSteamAppIds.add(researchAppIdMatch[1]);
 
               if (hybridSteamAppIds.size > 0) {
                 console.log(`[Hybrid] 🎮 Steam CDN Recovery: App IDs: ${[...hybridSteamAppIds].join(', ')}`);
-                // Filter out hallucinated /ss_ URLs (random hash → always 404)
+                // Filter out hallucinated /ss_ URLs
                 const realImgUrls = imgUrls.filter(img => !img.url?.includes('/ss_'));
                 imgUrls.length = 0;
                 imgUrls.push(...realImgUrls);
 
-                // Add known-good predictable Steam CDN URLs
                 for (const appId of hybridSteamAppIds) {
-                  imgUrls.unshift(
-                    { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`, label: `Steam Header` },
-                    { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_616x353.jpg`, label: `Steam Capsule` },
-                    { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`, label: `Steam Library Art` },
-                  );
-                }
-
-                // Try Steam Store API for real screenshot URLs
-                for (const appId of hybridSteamAppIds) {
+                  // ── Playwright Verification ──
+                  let hybridSteamVerified = false;
                   try {
-                    const storeRes = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(`https://store.steampowered.com/api/appdetails?appids=${appId}`)}&output=json`, { signal: AbortSignal.timeout(5000) });
-                    if (storeRes.ok) {
-                      const storeText = await storeRes.text();
-                      const ssMatches = storeText.matchAll(/"path_full"\s*:\s*"(https?:[^"]+)"/g);
-                      let ssCount = 0;
-                      for (const m of ssMatches) {
-                        const ssUrl = m[1].replace(/\\\//g, '/');
-                        if (ssUrl.includes('/ss_') && ssCount < 4) {
-                          imgUrls.push({ url: ssUrl, label: `Steam Screenshot ${ssCount + 1}` });
-                          ssCount++;
+                    const vRes = await fetch(`/api/steam/verify?appId=${encodeURIComponent(appId)}&topic=${encodeURIComponent(topic)}`, { signal: AbortSignal.timeout(25000) });
+                    if (vRes.ok) {
+                      const vData = await vRes.json();
+                      console.log(`[Hybrid] 🎮 Playwright: App ${appId} = "${vData.gameName}" → ${vData.verified ? '✅ VERIFIED' : '🚫 REJECTED'}`);
+                      if (vData.verified) {
+                        hybridSteamVerified = true;
+                        // Use verified screenshots
+                        for (let i = 0; i < Math.min((vData.screenshots || []).length, 4); i++) {
+                          imgUrls.unshift({ url: vData.screenshots[i], label: `Steam Verified: ${vData.gameName} #${i + 1}` });
                         }
+                        if (vData.headerImage) imgUrls.unshift({ url: vData.headerImage, label: `Steam Verified Header: ${vData.gameName}` });
+                      } else {
+                        // Wrong game — remove all URLs for this App ID
+                        console.log(`[Hybrid] 🚫 App ${appId} is "${vData.gameName}" — NOT "${topic}". Removing.`);
+                        const wrongPat = new RegExp(`/apps/${appId}/`);
+                        for (let i = imgUrls.length - 1; i >= 0; i--) {
+                          if (wrongPat.test(imgUrls[i].url)) imgUrls.splice(i, 1);
+                        }
+                        continue;
                       }
-                      if (ssCount > 0) console.log(`[Hybrid] 🎮 Steam API: ${ssCount} real screenshots for App ${appId}`);
                     }
                   } catch (e) {
-                    console.log(`[Hybrid] ⚠️ Steam API failed for ${appId}:`, e.message);
+                    console.log(`[Hybrid] ⚠️ Playwright unavailable: ${e.message} — CDN fallback`);
+                  }
+
+                  // CDN fallback (only if Playwright didn't verify)
+                  if (!hybridSteamVerified) {
+                    imgUrls.unshift(
+                      { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/header.jpg`, label: `Steam Header` },
+                      { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/capsule_616x353.jpg`, label: `Steam Capsule` },
+                      { url: `https://cdn.akamai.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`, label: `Steam Library Art` },
+                    );
+                    // Steam Store API fallback
+                    try {
+                      const storeRes = await fetch(`https://wsrv.nl/?url=${encodeURIComponent(`https://store.steampowered.com/api/appdetails?appids=${appId}`)}&output=json`, { signal: AbortSignal.timeout(5000) });
+                      if (storeRes.ok) {
+                        const storeText = await storeRes.text();
+                        const ssMatches = storeText.matchAll(/"path_full"\s*:\s*"(https?:[^"]+)"/g);
+                        let ssCount = 0;
+                        for (const m of ssMatches) {
+                          const ssUrl = m[1].replace(/\\\//g, '/');
+                          if (ssUrl.includes('/ss_') && ssCount < 4) {
+                            imgUrls.push({ url: ssUrl, label: `Steam Screenshot ${ssCount + 1}` });
+                            ssCount++;
+                          }
+                        }
+                        if (ssCount > 0) console.log(`[Hybrid] 🎮 Steam API: ${ssCount} real screenshots for App ${appId}`);
+                      }
+                    } catch (e) {
+                      console.log(`[Hybrid] ⚠️ Steam API failed for ${appId}:`, e.message);
+                    }
                   }
                 }
               }
