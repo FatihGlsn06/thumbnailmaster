@@ -1572,9 +1572,9 @@ VIBE: Professional, clean, gaming channel style`
       // Attach style references if available (up to 3)
       if (referenceImages.length > 0) {
         body.style_references = referenceImages.slice(0, 3).map(img => ({
-          image_url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
+          image_url: img.data ? `data:${img.mimeType || 'image/jpeg'};base64,${img.data}` : img.url,
         }));
-        console.log(`[FAL] 📎 Ideogram: ${body.style_references.length} style references attached`);
+        console.log(`[FAL] 📎 Ideogram: ${body.style_references.length} style references attached (inline data)`);
       }
 
     } else if (modelId.includes('seedream') && modelId.includes('edit')) {
@@ -1585,10 +1585,10 @@ VIBE: Professional, clean, gaming channel style`
       };
       if (referenceImages.length > 0) {
         body.image_refs = referenceImages.slice(0, 10).map((img, i) => ({
-          image_url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
+          image_url: img.data ? `data:${img.mimeType || 'image/jpeg'};base64,${img.data}` : img.url,
           label: `img${i + 1}`,
         }));
-        console.log(`[FAL] 📎 Seedream Edit: ${body.image_refs.length} reference images attached`);
+        console.log(`[FAL] 📎 Seedream Edit: ${body.image_refs.length} reference images attached (inline data)`);
       }
 
     } else if (modelId.includes('kontext')) {
@@ -1598,8 +1598,10 @@ VIBE: Professional, clean, gaming channel style`
         aspect_ratio: '16:9',
       };
       if (referenceImages.length > 0) {
-        body.image_url = referenceImages[0].url || `data:${referenceImages[0].mimeType || 'image/jpeg'};base64,${referenceImages[0].data}`;
-        console.log(`[FAL] 📎 Kontext: reference image attached`);
+        body.image_url = referenceImages[0].data
+          ? `data:${referenceImages[0].mimeType || 'image/jpeg'};base64,${referenceImages[0].data}`
+          : referenceImages[0].url;
+        console.log(`[FAL] 📎 Kontext: reference image attached (inline data)`);
       }
 
     } else if (modelId.includes('flux-2-pro/edit') || modelId.includes('flux-2/edit') || modelId.includes('flux-2-flex/edit')) {
@@ -1612,15 +1614,17 @@ VIBE: Professional, clean, gaming channel style`
       if (referenceImages.length > 0) {
         // First reference image → required `image` field (base image to edit)
         const firstRef = referenceImages[0];
-        body.image = firstRef.url || `data:${firstRef.mimeType || 'image/jpeg'};base64,${firstRef.data}`;
+        body.image = firstRef.data
+          ? `data:${firstRef.mimeType || 'image/jpeg'};base64,${firstRef.data}`
+          : firstRef.url;
         // Remaining references → `images` array for composition
         if (referenceImages.length > 1) {
           body.images = referenceImages.slice(1, 8).map(img => ({
-            url: img.url || `data:${img.mimeType || 'image/jpeg'};base64,${img.data}`,
+            url: img.data ? `data:${img.mimeType || 'image/jpeg'};base64,${img.data}` : img.url,
           }));
-          console.log(`[FAL] 📎 FLUX.2 Edit: 1 base image + ${body.images.length} additional references`);
+          console.log(`[FAL] 📎 FLUX.2 Edit: 1 base image + ${body.images.length} additional references (inline data)`);
         } else {
-          console.log(`[FAL] 📎 FLUX.2 Edit: 1 base image (no additional references)`);
+          console.log(`[FAL] 📎 FLUX.2 Edit: 1 base image (inline data)`);
         }
       } else {
         // Safety net: should not reach here due to auto-fallback above
@@ -1656,11 +1660,16 @@ VIBE: Professional, clean, gaming channel style`
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      // FAL API returns detail as array of objects (FastAPI style): [{msg: "...", type: "..."}]
+      // FAL API returns detail in various formats
       const detail = errorData.detail;
-      const errorMsg = Array.isArray(detail)
-        ? detail.map(d => d.msg || d.message || JSON.stringify(d)).join('; ')
-        : (typeof detail === 'string' ? detail : null);
+      let errorMsg = null;
+      if (Array.isArray(detail)) {
+        errorMsg = detail.map(d => d.msg || d.message || (typeof d === 'string' ? d : JSON.stringify(d))).join('; ');
+      } else if (typeof detail === 'string') {
+        errorMsg = detail;
+      } else if (detail && typeof detail === 'object') {
+        errorMsg = detail.msg || detail.message || JSON.stringify(detail);
+      }
       throw new Error(errorMsg || errorData.message || `FAL API error: ${response.status}`);
     }
 
