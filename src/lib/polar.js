@@ -5,7 +5,7 @@
 // TEST MODE - Testerlar için tüm Pro özellikleri açık, ödeme UI gizli
 // Production'a geçerken false yapılacak
 // =============================================================================
-export const TEST_MODE = true;
+export const TEST_MODE = false;
 
 // =============================================================================
 // CONFIGURATION - Polar.sh Dashboard'dan alınacak değerler
