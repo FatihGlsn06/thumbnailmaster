@@ -304,22 +304,34 @@ export function getRemainingGenerations(plan) {
 // =============================================================================
 
 /**
- * Polar.sh checkout URL'i döndür
+ * Ödeme sonrası yönlendirme URL'ini oluştur
+ * Polar.sh email doğrulaması tamamlandığında bu URL'e yönlendirilir
+ */
+function buildSuccessUrl() {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${origin}/?checkout=success`;
+}
+
+/**
+ * Polar.sh checkout URL'i döndür (successUrl ile)
  */
 export function getCheckoutUrl() {
-  return POLAR_CONFIG.checkoutUrl;
+  const successUrl = encodeURIComponent(buildSuccessUrl());
+  return `${POLAR_CONFIG.checkoutUrl}?success_url=${successUrl}`;
 }
 
 /**
- * Aylık Pro checkout URL
+ * Aylık Pro checkout URL (successUrl ile)
  */
 export function getProMonthlyCheckoutUrl() {
-  return POLAR_CONFIG.checkoutUrl;
+  const successUrl = encodeURIComponent(buildSuccessUrl());
+  return `${POLAR_CONFIG.checkoutUrl}?success_url=${successUrl}`;
 }
 
 /**
- * Yıllık Pro checkout URL
+ * Yıllık Pro checkout URL (successUrl ile)
  */
 export function getProYearlyCheckoutUrl() {
-  return POLAR_CONFIG.checkoutUrl;
+  const successUrl = encodeURIComponent(buildSuccessUrl());
+  return `${POLAR_CONFIG.checkoutUrl}?success_url=${successUrl}`;
 }

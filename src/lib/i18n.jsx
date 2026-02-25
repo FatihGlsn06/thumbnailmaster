@@ -349,6 +349,23 @@ const translations = {
     connectionError: 'Bağlantı hatası. Lütfen tekrar deneyin.',
     activationFailed: 'Aktivasyon başarısız',
     connectionErrorShort: 'Bağlantı hatası',
+
+    // --- WELCOME MODAL ---
+    welcomeTitle: 'ThumbnailMAX Pro\'ya Hoşgeldiniz!',
+    welcomeSubtitle: 'Satın alma işleminiz tamamlandı. E-postanıza lisans anahtarınız gönderildi.',
+    welcomeCheckEmail: 'E-postanı Kontrol Et',
+    welcomeCheckEmailDesc: 'Polar.sh\'den gelen e-postada lisans anahtarın var.',
+    welcomeActivateKey: 'Anahtarı Aktive Et',
+    welcomeActivateKeyDesc: '"Lisans Anahtarı Aktive Et" butonuna tıkla ve anahtarı gir.',
+    welcomeStartUsing: 'Kullanmaya Başla',
+    welcomeStartUsingDesc: 'Tüm Pro özelliklerin sınırsız erişime açık!',
+    welcomeActivateNow: 'Lisans Anahtarımı Aktive Et',
+    welcomeGoToApp: 'Uygulamaya Git',
+    welcomeProFeatures: 'Pro özelliklerin açıldı:',
+    welcomeFeat1: 'Sınırsız thumbnail oluşturma',
+    welcomeFeat2: '4K kalite çıktı - filigransız',
+    welcomeFeat3: 'Tüm AI modelleri ve 18 arketip',
+    welcomeFeat4: 'Gelişmiş editör ve metin silme',
   },
 
   en: {
@@ -696,6 +713,23 @@ const translations = {
     connectionError: 'Connection error. Please try again.',
     activationFailed: 'Activation failed',
     connectionErrorShort: 'Connection error',
+
+    // --- WELCOME MODAL ---
+    welcomeTitle: 'Welcome to ThumbnailMAX Pro!',
+    welcomeSubtitle: 'Your purchase is complete. Your license key has been sent to your email.',
+    welcomeCheckEmail: 'Check Your Email',
+    welcomeCheckEmailDesc: 'Your license key is in the email from Polar.sh.',
+    welcomeActivateKey: 'Activate Your Key',
+    welcomeActivateKeyDesc: 'Click "Activate License Key" and enter your key.',
+    welcomeStartUsing: 'Start Creating',
+    welcomeStartUsingDesc: 'All Pro features are now available with unlimited access!',
+    welcomeActivateNow: 'Activate My License Key',
+    welcomeGoToApp: 'Go to App',
+    welcomeProFeatures: 'Your Pro features are unlocked:',
+    welcomeFeat1: 'Unlimited thumbnail generation',
+    welcomeFeat2: '4K quality output - no watermark',
+    welcomeFeat3: 'All AI models and 18 archetypes',
+    welcomeFeat4: 'Advanced editor and text removal',
   },
 };
 

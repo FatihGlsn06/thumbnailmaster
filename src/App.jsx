@@ -16,6 +16,7 @@ import { Logo, LogoIcon, LogoMinimal } from '@/components/ui/logo';
 import ThumbnailEditor from '@/components/ThumbnailEditor';
 import PricingSection from '@/components/PricingSection';
 import LicenseKeyModal from '@/components/LicenseKeyModal';
+import WelcomeModal from '@/components/WelcomeModal';
 import { ProBadge, ProLockOverlay, UsageBadge } from '@/components/ProBadge';
 import { useI18n } from '@/lib/i18n';
 import {
@@ -1059,7 +1060,20 @@ const App = () => {
   // Polar.sh - Plan & License states
   const [currentPlan, setCurrentPlan] = useState(() => getCurrentPlan());
   const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const isPro = currentPlan.id === 'pro';
+
+  // Polar.sh checkout sonrası URL parametrelerini algıla
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkoutSuccess = params.get('checkout') === 'success' || params.get('checkout_id');
+    if (checkoutSuccess) {
+      setShowWelcomeModal(true);
+      // URL'i temizle (history'yi kirletme)
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
 
   // Uygulama açılışında lisans durumunu kontrol et
   useEffect(() => {
@@ -6171,6 +6185,13 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
           </button>
         </div>
       </div>
+
+      {/* Welcome Modal - Polar.sh checkout sonrası gösterilir */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        onActivateLicense={() => setShowLicenseModal(true)}
+      />
     </>
   );
 };
