@@ -2160,6 +2160,25 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
             subject = separatorMatch[1].trim();
           } else {
             const words = rawClean.split(' ').filter(w => w.length > 2 && !/^\d+$/.test(w));
+
+            // ── Format/Type Words ──
+            // These words indicate the VIDEO FORMAT, not the actual subject.
+            // For "dubai vlog", "dubai" is the subject (location) and "vlog" is the format.
+            // For "paris gezi", "paris" is the subject and "gezi" is the format.
+            const formatWords = new Set([
+              // Vlog/content format words
+              'vlog', 'blog', 'daily', 'günlük', 'storytime', 'reaction', 'tepki',
+              'challenge', 'podcast', 'sohbet', 'chat', 'unboxing', 'haul',
+              'grwm', 'routine', 'rutin', 'tag', 'trend', 'video', 'shorts',
+              // Travel format words
+              'gezi', 'trip', 'tour', 'tur', 'seyahat', 'travel', 'gezisi',
+              'turu', 'rehber', 'guide', 'keşfet', 'explore',
+              // Food format words
+              'mukbang', 'tarif', 'recipe', 'yedim', 'denedim', 'tried',
+              // Review/tutorial format words
+              'review', 'inceleme', 'tutorial', 'rehberi',
+            ]);
+
             // Context words: game franchises + historical/religious/scientific context prefixes
             const franchiseWords = new Set([
               // Game franchises
@@ -2178,18 +2197,40 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
               // Science context
               'quantum', 'kuantum', 'theory', 'teori',
             ]);
-            let subjectStartIdx = 0;
+
+            // First, check if any words are format/type indicators (vlog, gezi, trip, etc.)
+            // If so, the NON-format words are the actual subject (e.g., "dubai" in "dubai vlog")
+            const formatIndices = [];
+            const contentIndices = [];
             for (let i = 0; i < words.length; i++) {
-              if (franchiseWords.has(words[i].toLowerCase()) || /^(i{1,3}|iv|v|vi{0,3})$/i.test(words[i])) {
-                subjectStartIdx = i + 1;
-              } else break;
+              if (formatWords.has(words[i].toLowerCase())) {
+                formatIndices.push(i);
+              } else {
+                contentIndices.push(i);
+              }
             }
-            if (subjectStartIdx > 0 && subjectStartIdx < words.length) {
-              subject = words.slice(subjectStartIdx).join(' ');
-              contextPart = words.slice(0, subjectStartIdx).join(' ');
+
+            if (formatIndices.length > 0 && contentIndices.length > 0) {
+              // Format words found — subject is the non-format words
+              // e.g., "dubai vlog" → subject="dubai", contextPart="vlog"
+              // e.g., "tokyo gezi vlog" → subject="tokyo", contextPart="gezi vlog"
+              subject = contentIndices.map(i => words[i]).join(' ');
+              contextPart = formatIndices.map(i => words[i]).join(' ');
             } else {
-              subject = words[words.length - 1] || rawClean;
-              contextPart = words.slice(0, -1).join(' ');
+              // No format words — use franchise/game logic
+              let subjectStartIdx = 0;
+              for (let i = 0; i < words.length; i++) {
+                if (franchiseWords.has(words[i].toLowerCase()) || /^(i{1,3}|iv|v|vi{0,3})$/i.test(words[i])) {
+                  subjectStartIdx = i + 1;
+                } else break;
+              }
+              if (subjectStartIdx > 0 && subjectStartIdx < words.length) {
+                subject = words.slice(subjectStartIdx).join(' ');
+                contextPart = words.slice(0, subjectStartIdx).join(' ');
+              } else {
+                subject = words[words.length - 1] || rawClean;
+                contextPart = words.slice(0, -1).join(' ');
+              }
             }
           }
 
@@ -2259,6 +2300,13 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
                 if (contextPart) webQueries.push(`${subject} ${contextPart} history`);
               } else if (catId === 'religion') {
                 webQueries.push(`${topic} high quality photo`);
+              } else if (catId === 'vlog' || catId === 'travel') {
+                // For vlog/travel: search for LOCATION landmarks, NOT concerts/events
+                webQueries.push(`${subject} landmark skyline famous place`);
+                webQueries.push(`${subject} tourist attraction scenic view`);
+              } else if (catId === 'food') {
+                webQueries.push(`${subject} food cuisine dish`);
+                webQueries.push(`${topic} recipe`);
               } else {
                 webQueries.push(`${topic}`);
                 if (subject !== topic) webQueries.push(`${subject}`);
@@ -2303,6 +2351,9 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
                 history: 'historical painting, artwork, illustration, battle scene, portrait, period photograph, museum artifact',
                 science: 'scientific visualization, photograph, microscope image, space photo, diagram, illustration, nature photography',
                 education: 'professional photograph, illustration, infographic, diagram',
+                vlog: 'landmark, skyline, famous place, tourist attraction, cityscape, street scene, scenic view, aerial view, NOT concert NOT music NOT singer NOT performance',
+                travel: 'landmark, skyline, famous place, tourist attraction, scenic view, aerial view, landscape, architecture, NOT concert NOT music NOT performance',
+                food: 'food dish, recipe, restaurant, cooking, cuisine, meal, appetizing plating, food photography',
               };
               const hint = imageSearchHints[catId] || 'high quality photograph illustration artwork';
 
@@ -2317,13 +2368,21 @@ Search the internet for: "${subject}" ${hint}
 ⚠️ CRITICAL — TOPIC IDENTITY: You are searching for "${topic}" EXACTLY as typed.
 Do NOT search for similar-sounding or similar-spelled topics.
 Search with the EXACT spelling: "${topic}" — do not correct, modify, or substitute the name.
-
+${['vlog', 'travel'].includes(catId) ? `
+⚠️ CONTENT TYPE CONTEXT: This is a ${catId.toUpperCase()} video about "${subject}".
+I need images showing the LOCATION/PLACE "${subject}" — landmarks, skylines, famous buildings, scenic views, street scenes.
+Do NOT search for concerts, music events, performers, singers, or stage performances in "${subject}".
+The person in the thumbnail will be a VLOGGER/TRAVELER, NOT a singer or performer.
+Focus on what makes "${subject}" visually iconic as a DESTINATION.
+` : ''}
 I need you to find 5-8 SPECIFIC image URLs that show "${subject}" clearly.
 
 Look for images from:
 - Wikipedia/Wikimedia Commons (direct file URLs ending in .jpg/.png)
-- Official game/product websites, Steam store pages
-- News/media sites with editorial photos
+${['vlog', 'travel'].includes(catId) ? `- Travel photography sites, tourism boards
+- City/country official tourism websites
+- Architecture and landmark photography` : `- Official game/product websites, Steam store pages
+- News/media sites with editorial photos`}
 - Official websites, press kits
 - Educational resources with quality visuals
 
@@ -3130,21 +3189,27 @@ If nothing found: NONE`
             console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for multi-selection (max ${maxSelections})...`);
 
             const verifyParts = [
-              { text: `You are an expert visual identity analyst. I need the BEST reference images of "${subject}"${contextPart ? ` (context: "${contextPart}")` : ''} to create an ACCURATE YouTube thumbnail.
-
+              { text: `You are an expert visual identity analyst. I need the BEST reference images of "${subject}"${contextPart ? ` (content type: "${contextPart}")` : ''} to create an ACCURATE YouTube thumbnail.
+${['vlog', 'travel'].includes(catId) ? `
+⚠️ CONTENT TYPE: This is a ${catId.toUpperCase()} video about "${subject}" as a DESTINATION/LOCATION.
+I need images showing LANDMARKS, SKYLINES, FAMOUS BUILDINGS, SCENIC VIEWS, or STREET SCENES of "${subject}".
+REJECT any images showing: concerts, music performances, singers on stage, DJ events, nightclub scenes, or people performing.
+The thumbnail will show a VLOGGER/TRAVELER exploring "${subject}" — so I need LOCATION reference images, NOT event/performance images.
+` : `
 ⚠️ CRITICAL: Your picks will be given to an image generation AI as "THIS IS WHAT ${subject} LOOKS LIKE — COPY THIS." So you MUST pick the images that BEST show the UNIQUE, DISTINCTIVE visual identity of "${subject}".
-
+`}
 I have ${downloadedCandidates.length} candidate images below. Your job:
 
 SELECTION CRITERIA (in order of priority):
 1. ✅ VISUAL ACCURACY — Does it show THE REAL "${subject}"? Not a similar-looking thing, not a generic version — the EXACT subject.
-2. ✅ DISTINCTIVE FEATURES — Does it show what makes "${subject}" UNIQUE? (specific armor, colors, body shape, face design, logo, etc.)
+${['vlog', 'travel'].includes(catId) ? `2. ✅ LOCATION RELEVANCE — Does it show recognizable landmarks, skylines, or iconic places of "${subject}"? Prefer tourist attractions, famous buildings, scenic views.` : `2. ✅ DISTINCTIVE FEATURES — Does it show what makes "${subject}" UNIQUE? (specific armor, colors, body shape, face design, logo, etc.)`}
 3. ✅ THUMBNAIL USEFULNESS — Would this help an artist draw "${subject}" correctly? Close-ups and clear shots > blurry/distant/crowded
 4. ✅ VARIETY — Pick images showing DIFFERENT angles/aspects if available
 
 REJECTION CRITERIA:
 - ❌ WRONG SUBJECT — A different character/game/topic with a similar name
-- ❌ TOO GENERIC — Could be "any fantasy warrior" or "any space scene" — doesn't show what's UNIQUE about "${subject}"
+${['vlog', 'travel'].includes(catId) ? `- ❌ CONCERTS/PERFORMANCES — Images of singers, musicians, concerts, stages, or music events in "${subject}" — these are NOT relevant to a vlog/travel video
+- ❌ PEOPLE PERFORMING — Any image where the main focus is a person singing, dancing on stage, or performing` : `- ❌ TOO GENERIC — Could be "any fantasy warrior" or "any space scene" — doesn't show what's UNIQUE about "${subject}"`}
 - ❌ LOW QUALITY — Maps, logos, UI screenshots, tiny icons, text-heavy images
 - ❌ REDUNDANT — Two images showing the exact same angle/pose (pick the better one)
 
@@ -3552,6 +3617,11 @@ Karar verirken:
    - En iyi kompozisyon önerisi (kişi nerede durmalı, arka plan nasıl olmalı)
    - Kullanılması gereken efektler (ışık, parçacık, sis, lens flare, bokeh, duman vb.)
    - Kostüm/kıyafet önerisi (kişi ne giymeli - İÇERİĞE UYGUN olmalı!)
+     ⚠️ ÖNEMLİ: Kıyafet önerisi VİDEO FORMATINA UYGUN olmalı:
+     - VLOG/GEZİ videosu → gündelik kıyafet (ceket, hoodie, tişört, güneş gözlüğü, şapka vb.)
+     - Kişiyi ASLA şarkıcı, performansçı veya sahne sanatçısı gibi giydirme!
+     - Kişi bir VLOGGER/GEZGİN ise → keşfetme, gösterme, tepki verme pozunda olmalı
+     - Lokasyon/mekan konulu vloglarda → arka plan lokasyonun ikonik yapıları/manzarası olmalı
    - Kaçınılması gereken hatalar
    - Örnek yazı önerileri (2-3 kelime, Türkçe ve İngilizce seçenekler)
 
@@ -3786,10 +3856,49 @@ NEVER use: "Turkish flag", "flag of Turkey", white crescent, 5-pointed star, bri
 
 Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
 
+        const isVlogTravel = ['vlog', 'travel'].includes(catId);
+        const scenePromptVlogTravel = `${scenePromptBase}
+
+⚠️ CRITICAL: This is a VLOG/TRAVEL video about "${topic}". The thumbnail must show a LOCATION/DESTINATION, NOT a concert, music event, or performance.
+
+RULES:
+- The background MUST show the ICONIC, RECOGNIZABLE features of the destination (landmarks, skylines, famous buildings, natural wonders)
+- The person is a VLOGGER/TRAVELER — NOT a singer, musician, or performer
+- Do NOT create concert stages, music performances, DJ booths, nightclub scenes, or stage lighting
+- The mood should be: adventure, excitement, discovery, wanderlust — NOT party, performance, or concert energy
+- Think of popular travel vlogger thumbnails (Casey Neistat, Kara and Nate, etc.) — person reacting to amazing locations
+
+FORMAT (write each section completely):
+
+**SCENE_DESCRIPTION**: Describe the iconic location/destination that makes "${topic}" visually stunning.
+Include: famous landmarks, architectural features, natural scenery, city skylines, or scenic viewpoints.
+Example: "The stunning Dubai skyline at golden hour, with Burj Khalifa towering in the background, Palm Jumeirah visible below, warm orange-pink sunset reflecting off glass skyscrapers" NOT "A concert stage in Dubai with neon lights"
+
+**COLOR_PALETTE**: Colors inspired by the LOCATION itself (e.g., "golden sunset orange, deep desert sand, turquoise Arabian Gulf waters, gleaming silver glass, warm amber sky")
+
+**PERSON_COSTUME**: Casual travel/vlogger attire ONLY:
+- Examples: casual jacket or hoodie, t-shirt, comfortable jeans, sunglasses, baseball cap, backpack strap visible
+- NEVER: concert outfits, stage costumes, performance clothing, formal wear, microphone, singing pose
+- The person should look like a REAL traveler/vlogger exploring the destination
+
+**CAMERA_ANGLE**: Dramatic wide-angle or medium shot showing both the person AND the destination. Options:
+- Person in foreground (30-40% of frame), iconic landmark large in background
+- Low angle looking up at person with landmark behind them
+- Selfie-style with landmark visible over shoulder
+- Person looking amazed/pointing at something spectacular off-frame
+
+**KEY_EFFECTS**: Natural cinematic effects for travel content:
+- Golden hour lighting, warm sunset glow
+- Lens flare from sun, atmospheric haze
+- Shallow depth of field with bokeh on background city lights
+- NO concert lighting, NO neon stage effects, NO smoke machines, NO sound wave visuals
+
+Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
+
         const scenePayload = {
           contents: [{
             parts: [{
-              text: isReligion ? scenePromptReligion : isHistorical ? scenePromptHistorical : isGaming ? scenePromptGaming : scenePromptGeneral
+              text: isVlogTravel ? scenePromptVlogTravel : isReligion ? scenePromptReligion : isHistorical ? scenePromptHistorical : isGaming ? scenePromptGaming : scenePromptGeneral
             }]
           }],
           generationConfig: {
@@ -4154,8 +4263,15 @@ ${selectedArchetype ? `COMPOSITION PATTERN: ${CTR_ARCHETYPES.find(a => a.id === 
 ${base64Image ? `PERSON PHOTO UPLOADED:
 - Blend the person seamlessly into the scene with matching lighting and dramatic rim glow.
 - Face must remain unchanged, fully visible, never cropped. Leave headroom above.
-- For non-game content: Face should be large (40-50% of frame height), centered.
-- For game content with non-human CHARACTER_TYPE: Person stays human, appears smaller in corner reacting to the game creature.
+${['vlog', 'travel'].includes(contentCategory.id) ? `- This is a VLOG/TRAVEL video — the person is a VLOGGER/TRAVELER, NOT a singer, performer, or musician.
+- Dress the person in CASUAL, everyday clothing suitable for travel/vlogging (casual jacket, hoodie, t-shirt, sunglasses, cap, etc.)
+- Do NOT dress them in concert outfits, stage costumes, or performance clothing.
+- Do NOT pose them as if singing, performing, or on stage.
+- The person should look like they are EXPLORING, REACTING to, or PRESENTING the location.
+- Pose suggestions: pointing at landmark, looking amazed, selfie-style, arms spread at scenic viewpoint.
+- Face should be large (40-50% of frame height), with the iconic location visible in the background.
+` : `- For non-game content: Face should be large (40-50% of frame height), centered.
+`}- For game content with non-human CHARACTER_TYPE: Person stays human, appears smaller in corner reacting to the game creature.
 - For game content with human CHARACTER_TYPE: Transform clothing to match the character's exact armor/outfit from research.
 ` : `No person photo provided. Create a compelling scene from scratch based on the topic.
 ${effectiveResearch ? 'Follow CHARACTER_VISUAL and THUMBNAIL_COMPOSITION from research for character appearance and layout.' : ''}
@@ -4173,6 +4289,16 @@ ${['religion'].includes(contentCategory.id) ? `
 - Natural photography lighting — soft window light, ambient mosque/church light
 - Think: professional documentary photography, National Geographic, editorial portrait
 - Real-world settings only: actual mosques, real prayer rooms, genuine worship spaces
+` : ['vlog', 'travel'].includes(contentCategory.id) ? `
+⚠️ VLOG/TRAVEL SCENE RULES — THIS IS NOT A CONCERT OR MUSIC VIDEO:
+- The scene must show the LOCATION/DESTINATION as the background — iconic landmarks, skylines, or scenic views
+- The person (if present) is a VLOGGER/TRAVELER, dressed casually, exploring the location
+- Do NOT create concert stages, music performances, DJ booths, or nightclub scenes
+- Do NOT pose the person as a singer, performer, or musician — they should be REACTING to or EXPLORING the place
+- Background should show RECOGNIZABLE features of the destination (famous buildings, natural landmarks, cityscapes)
+- Lighting: golden hour, natural daylight, sunset — NOT concert/stage lighting, NOT neon club lights
+- Atmosphere: adventurous, exciting, wanderlust — NOT party, NOT concert energy
+- Think: travel vlogger thumbnail, Casey Neistat style, exploration and discovery mood
 ` : `Cinematic quality: dramatic 3-point lighting, shallow depth of field, professional color grading, volumetric atmosphere, natural film texture.`}
 This must look like a TOP 1% YouTube thumbnail — the kind that gets 10M+ views. Ultra-polished, maximum visual impact, zero dead space.
 ${effectiveVisualDNA ? `
