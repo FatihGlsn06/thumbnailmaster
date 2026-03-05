@@ -5046,7 +5046,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
       };
 
       // FAL/Hybrid modeller text removal desteklemez — Gemini'ye fallback yap
-      const geminiModel = isFalModel(selectedModel) ? 'gemini-2.5-flash-preview-05-20' : selectedModel;
+      const geminiModel = isFalModel(selectedModel) ? 'gemini-2.5-flash' : selectedModel;
 
       const result = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
@@ -5126,7 +5126,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
       };
 
       // FAL/Hybrid modeller revision desteklemez — Gemini'ye fallback yap
-      const geminiModel = isFalModel(selectedModel) ? 'gemini-2.5-flash-preview-05-20' : selectedModel;
+      const geminiModel = isFalModel(selectedModel) ? 'gemini-2.5-flash' : selectedModel;
 
       const result = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
