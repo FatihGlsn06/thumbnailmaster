@@ -1098,8 +1098,8 @@ const App = () => {
   // Mobile UI states
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  // AI Model selection - Gemini 3 is the latest (2026)
-  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-image-preview');
+  // AI Model selection - Gemini 3.1 is the latest (March 2026)
+  const [selectedModel, setSelectedModel] = useState('gemini-3.1-flash-image-preview');
 
   // FAL AI API Key
   const [falApiKey, setFalApiKey] = useState(() => localStorage.getItem('fal_api_key') || '');
