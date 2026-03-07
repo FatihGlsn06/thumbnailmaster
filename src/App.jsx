@@ -1151,6 +1151,7 @@ const App = () => {
   const [conceptAnalysis, setConceptAnalysis] = useState(null);
   const [isAnalyzingConcept, setIsAnalyzingConcept] = useState(false);
   const conceptInputRef = useRef(null);
+  const researchCacheRef = useRef(new Map());
 
   // Photo analysis states
   const [photoAnalysis, setPhotoAnalysis] = useState(null);
@@ -2000,6 +2001,23 @@ Be concise. 1-2 sentences per point.`
   // Research topic/concept using AI (gaming/lore knowledge)
   const researchTopic = async () => {
     if (!topic || !apiKey) return null;
+
+    // ═══════════════════════════════════════════════════════════════
+    // RESEARCH CACHE — Skip expensive API calls for repeated topics
+    // Cache key: topic + description, TTL: 24 hours
+    // ═══════════════════════════════════════════════════════════════
+    const cacheKey = `${topic}|${topicDescription || ''}`;
+    const cached = researchCacheRef.current.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) {
+      console.log(`[Research] ⚡ Cache hit for "${topic}" — skipping API calls (saved ${cached.callsSaved} Gemini calls)`);
+      setIsResearchingTopic(true);
+      setTopicResearch(cached.data.research);
+      setResearchImages(cached.data.images || []);
+      setDetectedCategory(cached.data.category);
+      setVisualDNA(cached.data.visualDNA || null);
+      setIsResearchingTopic(false);
+      return cached.data;
+    }
 
     setIsResearchingTopic(true);
     setTopicResearch(null);
@@ -3429,7 +3447,7 @@ If you truly cannot find ANY image of "${topic}", reply with: NONE`
         }
       })();
 
-      // Step 2: Deep visual analysis combining search results + AI creativity
+      // Step 2: MERGED — Analysis + Scene Direction + Visual DNA (single Gemini call, saves 2 API calls)
       const analysisPayload = {
         contents: [{
           parts: [{
@@ -3633,12 +3651,73 @@ Karar verirken:
 Bir YouTube uzmanı ve thumbnail tasarımcısı gibi düşün. ÇOK DETAYLI ve TUTKULU yaz.
 Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel detaylar KRİTİK önemde.
 ⚠️ TARİHSEL İÇERİKLERDE: Modern bayrak/sembol kullanmak, yanlış dönem kıyafeti giydirmek veya anakronistik teknoloji göstermek EN BÜYÜK HATADIR!
-⚠️⚠️ BAYRAK ÖZELLİKLE KRİTİK: Osmanlı bayrağı/sancağı ≠ Modern Türkiye bayrağı! Osmanlı sancağı = koyu kırmızı/bordo + altın hilal + altın 8 köşeli yıldız. Modern Türkiye bayrağı (parlak kırmızı + beyaz hilal + beyaz 5 köşeli yıldız) 1844 SONRASI oluşmuştur!`
+⚠️⚠️ BAYRAK ÖZELLİKLE KRİTİK: Osmanlı bayrağı/sancağı ≠ Modern Türkiye bayrağı! Osmanlı sancağı = koyu kırmızı/bordo + altın hilal + altın 8 köşeli yıldız. Modern Türkiye bayrağı (parlak kırmızı + beyaz hilal + beyaz 5 köşeli yıldız) 1844 SONRASI oluşmuştur!
+
+===SCENE_DIRECTION===
+
+Now, based on your analysis above, write a CONCRETE, DETAILED scene description in ENGLISH for the YouTube thumbnail.
+${trendAnalysis ? `\nYOUTUBE THUMBNAIL TREND DATA (USE THIS!):\n${trendAnalysis}\nUse the trend analysis above to make INFORMED creative decisions about composition, colors, and angles.\n` : ''}
+⚠️ TOPIC GUARD: Your scene MUST be about "${topic}" EXACTLY. If the research above seems to be about a DIFFERENT topic with a similar name, IGNORE the wrong research and create a scene based on what "${topic}" actually is.
+
+Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.
+
+Based on your DETECTED_CATEGORY, follow THESE specific rules:
+
+**IF GAMING:**
+- Show a SPECIFIC, ICONIC, RECOGNIZABLE scene from this game — NOT a generic battle
+- Include **CHARACTER_VISUAL** section with EXTREMELY detailed description. FIRST state CHARACTER_TYPE: human / non-human / monster
+- ⚠️ For NON-HUMAN characters: DO NOT use simple animal names! AI draws REAL animals! WRONG: "Taurox is a brass bull" → RIGHT: "Taurox is a massive bipedal Minotaur creature standing upright on two legs, 3m tall, humanoid muscular torso, bull-shaped head with enormous curved horns, body covered in fused brass metal plates, glowing red eyes"
+- Include **THUMBNAIL_COMPOSITION**: If non-human, creature should be DOMINANT (50-70% frame), person smaller in foreground corner. If human, person can BE the character.
+- Include **FACTION_ELEMENTS** and **GAME_IDENTITY** sections
+- Use EXACT faction colors from the game
+
+**IF VLOG or TRAVEL:**
+- Show the LOCATION/DESTINATION, NOT a concert, music event, or performance
+- Background MUST show ICONIC, RECOGNIZABLE features (landmarks, skylines, famous buildings, natural wonders)
+- Person is a VLOGGER/TRAVELER — NOT singer, musician, or performer
+- NO concert stages, DJ booths, nightclub scenes, or stage lighting
+- PERSON_COSTUME: Casual travel attire (jacket, hoodie, t-shirt, sunglasses, cap) — NEVER concert/stage outfits
+
+**IF HISTORICAL:**
+- AI image models draw MODERN versions of cities when they hear city names. DO NOT use modern city/country names! Describe architecture directly.
+- WRONG: "Istanbul with Byzantine architecture" → RIGHT: "Ancient walled city, massive domed basilica with Christian crosses, Theodosian double walls, Byzantine eagle banners"
+- Include **ATTACKER_DESCRIPTION** and **DEFENDER_DESCRIPTION** if battle/siege
+- ⚠️ Ottoman banner = DARK CRIMSON/BURGUNDY + GOLDEN crescent + GOLDEN 8-POINTED star. NEVER "Turkish flag", white crescent, 5-pointed star, or bright red
+- Include **ABSOLUTELY_NOT** section listing anachronistic elements
+
+**IF RELIGION:**
+- PHOTOREALISTIC ONLY — like a real photograph. NO cartoon, NO anime, NO fantasy, NO magical effects
+- Describe REAL sacred spaces (real mosque/church/temple interiors)
+- Contemporary religious attire, NOT fantasy robes
+- ONLY natural photographic effects: soft window light, bokeh, dust particles in light beams
+- Think: Canon 5D Mark IV, 85mm f/1.4, natural light photography
+
+**ALL CATEGORIES — REQUIRED FORMAT:**
+**SCENE_DESCRIPTION**: [2-4 sentences, specific to "${topic}"]
+**COLOR_PALETTE**: [4-6 colors]
+**PERSON_COSTUME**: [what person wears — MATCH the content type!]
+**CAMERA_ANGLE**: [composition and framing]
+**KEY_EFFECTS**: [visual effects appropriate for the category]
+
+===VISUAL_DNA===
+
+Finally, generate a VISUAL DNA section in ENGLISH — style rules for image generation:
+
+1. **COLOR_PALETTE**: 4-6 dominant colors with hex codes. Format: COLOR: #hex colorName — where/why
+2. **SILHOUETTE**: Character/subject visual description (body types, armor/clothing, weapons, poses)
+3. **MATERIALS**: Textures and materials (stone, metal, fabric, etc.)
+4. **LIGHTING**: Mood and atmosphere
+5. **SIGNATURES**: 3-5 visual elements that make this INSTANTLY recognizable as "${topic}"
+6. **STYLE_LOCK_RULES**: 6-8 rules. MUST: [required] / NEVER: [forbidden]
+7. **ART_DIRECTION**: Overall visual style, similar games/movies, camera perspective, atmospheric elements
+
+🚫 For GAMING: NEVER suggest generic gaming setup visuals (PC, keyboard, RGB, esports arena, gamer with controller). Describe the GAME'S OWN art style.
+Be specific to "${topic}", not generic. Respond in ENGLISH.`
           }]
         }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4000
+          temperature: 0.5,
+          maxOutputTokens: 8192
         }
       };
 
@@ -3652,9 +3731,27 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
       );
 
       const analysisData = await analysisResponse.json();
-      const researchText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
+      const fullResponseText = analysisData.candidates?.[0]?.content?.parts?.[0]?.text;
+      const finishReason = analysisData.candidates?.[0]?.finishReason;
 
-      if (researchText) {
+      if (finishReason === 'MAX_TOKENS' && fullResponseText) {
+        console.warn('[Research] ⚠️ Merged response was truncated (MAX_TOKENS). Using partial result.');
+      }
+
+      if (fullResponseText) {
+        // ═══════════════════════════════════════════════════════════════
+        // PARSE MERGED RESPONSE — Split into Research, Scene, Visual DNA
+        // ═══════════════════════════════════════════════════════════════
+        const sceneSplit = fullResponseText.split(/===SCENE_DIRECTION===/i);
+        const researchText = sceneSplit[0].trim();
+        let sceneAndDna = sceneSplit[1] || '';
+
+        const dnaSplit = sceneAndDna.split(/===VISUAL_DNA===/i);
+        const sceneDescription = dnaSplit[0].trim();
+        const textVisualDNA = (dnaSplit[1] || '').trim();
+
+        console.log(`[Research] ✅ Merged response parsed — research: ${researchText.length} chars, scene: ${sceneDescription.length} chars, DNA: ${textVisualDNA.length} chars`);
+
         // Parse AI-determined category from research response
         const categoryMatch = researchText.match(/DETECTED_CATEGORY:\s*(gaming|education|vlog|food|travel|tech|music|fitness|historical|general)/i);
         const aiDetectedCategoryId = categoryMatch ? categoryMatch[1].toLowerCase() : null;
@@ -3670,261 +3767,6 @@ Bu bilgiler doğrudan AI görsel üretiminde kullanılacak, bu yüzden görsel d
           }
         }
 
-        // Determine content type from AI classification (primary) or keyword fallback
-        const effectiveCategoryId = aiDetectedCategoryId || category.id;
-        const isHistorical = effectiveCategoryId === 'historical';
-        const isGaming = effectiveCategoryId === 'gaming';
-
-        const scenePromptBase = `You are a SCENE DIRECTOR. Read the research below and write a CONCRETE, DETAILED scene description for a YouTube thumbnail.
-
-RESEARCH:
-${researchText}
-${trendAnalysis ? `
-YOUTUBE THUMBNAIL TREND DATA (USE THIS!):
-${trendAnalysis}
-
-Use the trend analysis above to make INFORMED creative decisions:
-- What compositions work best for "${topic}" on YouTube?
-- What do TOP creators do that gets millions of views?
-- What's an UNTAPPED visual angle that would STAND OUT from competitors?
-` : ''}
-TOPIC: "${topic}"
-${topicDescription ? `CONTEXT: ${topicDescription}` : ''}
-
-⚠️ TOPIC GUARD: Your scene MUST be about "${topic}" EXACTLY. If the research above seems to be about a DIFFERENT topic with a similar name, IGNORE the wrong research and create a scene based on what "${topic}" actually is (use user context and common sense).
-
-Write in ENGLISH. Be SPECIFIC and VISUAL. Complete ALL sections fully - do NOT stop mid-sentence.`;
-
-        const isReligion = effectiveCategoryId === 'religion';
-
-        const scenePromptGeneral = `${scenePromptBase}
-
-⚠️ ANTI-GENERIC RULE: Create a scene that is SPECIFIC to "${topic}" — not a generic background.
-If the research found what top YouTube creators do for this topic, use that insight.
-Pick a UNIQUE visual angle that would make a viewer say "that's definitely about ${topic}!"
-
-FORMAT (write each section completely):
-
-**SCENE_DESCRIPTION**: Describe a background SPECIFIC to "${topic}" — not a generic scene.
-Include: setting, lighting, colors, atmosphere, key objects, mood. Be very specific - e.g. "A dark, rain-soaked cyberpunk alley with neon signs reflecting off wet pavement, holographic advertisements flickering overhead, steam rising from grates" NOT just "a city street".
-
-**COLOR_PALETTE**: List 3-5 dominant colors for the scene (e.g., "deep crimson, electric blue, dark charcoal, golden amber")
-
-**PERSON_COSTUME**: What should the person in the thumbnail wear? Match the theme. (e.g., "futuristic tactical suit with glowing blue accents" or "casual gaming hoodie with headphones around neck")
-
-**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at subject, dramatic perspective, wide-angle lens feel")
-
-**KEY_EFFECTS**: Special visual effects to add (e.g., "volumetric fog, sparks flying, lens flare from explosion behind subject, particle effects")
-
-Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
-
-        const scenePromptReligion = `${scenePromptBase}
-
-⚠️ CRITICAL: This is RELIGIOUS/SPIRITUAL content. The scene MUST be PHOTOREALISTIC — like a real photograph.
-ABSOLUTELY NO cartoon, NO anime, NO fantasy illustration, NO magical/ethereal effects, NO Disney/Aladdin style.
-
-FORMAT (write each section completely):
-
-**SCENE_DESCRIPTION**: Describe a REAL, EXISTING type of sacred space. Use PHOTOGRAPHIC realism:
-- For Islamic content: A real modern mosque interior — actual marble floors with real prayer carpets in rows, genuine Ottoman/Seljuk tile work (Iznik tiles with blue, white, red floral patterns), real wooden minbar, actual Arabic calligraphy on walls, real brass/crystal chandeliers, natural daylight through real stained glass windows. Think: Sultan Ahmed Mosque, Suleymaniye Mosque, or a modern clean mosque.
-- For Christian content: A real cathedral interior — actual stone arches, real stained glass, wooden pews, genuine candlelight.
-- For Buddhist content: A real temple — actual wooden beams, real gold leaf on Buddha statues, genuine incense smoke, stone floors.
-NOT "a magical glowing temple" or "ethereal sacred space" — describe a REAL building you could visit.
-
-**COLOR_PALETTE**: Use NATURAL, WARM colors found in real sacred spaces (e.g., "warm ivory marble, deep turquoise Iznik tile, rich burgundy carpet, aged gold chandelier light, natural wood brown")
-
-**PERSON_COSTUME**: REAL, contemporary religious attire:
-- For Islamic: Clean white thobe/dishdasha, or modest everyday clothes with a prayer cap (takke/kufi), or a woman in hijab with modest elegant clothing
-- For Christian: Sunday church attire or modest formal clothing
-- For Buddhist: Simple monastic robes or casual meditation clothing
-MUST be realistic everyday clothes, NOT fantasy robes or costumes.
-
-**CAMERA_ANGLE**: Eye-level or slightly low angle. Portrait-style framing like an editorial photograph. Shallow depth of field with background softly blurred. Think: professional portrait photographer in a mosque/church.
-
-**KEY_EFFECTS**: ONLY natural photographic effects:
-- Soft natural window light with gentle warm tones
-- Subtle bokeh from shallow depth of field
-- Real dust particles visible in light beams (natural, not magical)
-- NO glow effects, NO magical particles, NO ethereal lighting, NO fantasy elements
-- Think: Canon 5D Mark IV, 85mm f/1.4 lens, natural light photography
-
-Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
-
-        const scenePromptGaming = `${scenePromptBase}
-
-IMPORTANT: This is a VIDEO GAME topic. The research above contains detailed character and faction information.
-You MUST use that information to create an AUTHENTIC game-accurate scene. DO NOT invent generic fantasy/sci-fi visuals.
-
-⚠️ ANTI-GENERIC RULE: Do NOT create a generic battle scene or generic fantasy landscape.
-Pick a SPECIFIC, ICONIC, RECOGNIZABLE moment or scene from "${topic}" that fans would instantly identify.
-If "${topic}" is a mod/DLC, show what makes THIS mod UNIQUE — not just generic game content.
-
-FORMAT (write each section completely):
-
-**SCENE_DESCRIPTION**: Describe a SPECIFIC, ICONIC scene from this game — NOT a generic battle.
-Include: a particular RECOGNIZABLE location, a SPECIFIC dramatic moment (not just "armies fighting"), the UNIQUE visual identity of this game/mod.
-e.g. for "Dawnless Days Total War": "The siege of Minas Tirith — the massive white-stone tiered city towering against a sky blackened by Mordor's volcanic ash, thousands of Orc siege towers pressing against the walls, the Witch-King on his Fell Beast circling the top tier, Gondorian trebuchets launching fire into the horde below, the banner of the White Tree visible on the topmost level"
-NOT: "an army of orcs fighting in a field" (too generic, could be any fantasy game)
-
-**COLOR_PALETTE**: Use the EXACT colors from the game/faction. List 4-6 colors with purpose.
-e.g. "Ultramarine blue (#0A2B6E) for armor, gold (#C5A028) for trim and aquila, dark red (#5C0A0A) for eye lenses and wax seals, black (#1A1A1A) for joints and undersuit, bone white (#E8DCC8) for skull decorations"
-
-**CHARACTER_VISUAL**: EXTREMELY detailed description of the game character that will appear in the thumbnail.
-This is the MOST IMPORTANT section.
-
-FIRST, state: CHARACTER_TYPE: human / non-human / monster
-This changes EVERYTHING about how the character is drawn!
-
-For NON-HUMAN characters (monsters, creatures, demons, minotaurs, dragons, aliens, robots):
-⚠️⚠️⚠️ DO NOT use simple animal names! AI image models will draw REAL animals!
-WRONG: "Taurox is a brass bull" → AI draws a literal bull (4 legs, animal)
-RIGHT: "Taurox is a massive bipedal Minotaur creature standing upright on two legs, 3 meters tall, humanoid muscular torso and arms, bull-shaped head with enormous curved horns, entire body surface covered in fused brass metal plates, glowing red eyes"
-
-Describe the EXACT anatomy:
-- How many legs? Stands upright like human or on all fours?
-- Body shape: humanoid? beast? hybrid? Size compared to a human?
-- Head: what shape? Horns? Tusks? Eyes (how many, color, glow)?
-- Special features: wings, tail, extra arms, tentacles?
-- Surface: skin, scales, metal, stone, fur? Color and texture?
-- What makes it DIFFERENT from the real-world animal it resembles?
-
-For HUMAN characters:
-- Face: skin tone, eye color/glow, facial hair, scars, markings, expression
-- Hair: color, length, style, special features
-- Armor/Clothing: EXACT type, color, material, every distinctive marking/symbol
-- Helmet (if any): on head or held? Exact design
-- Weapon(s): EXACT weapon name and visual description, how they hold it
-- Pose: what pose for the thumbnail?
-⚠️ This must be the SPECIFIC game character, not a generic warrior/soldier!
-
-**THUMBNAIL_COMPOSITION**: How should the thumbnail be composed?
-If CHARACTER_TYPE is non-human:
-- The GAME CHARACTER (creature/monster) should be the DOMINANT visual element (50-70% of frame)
-- If a person (YouTuber) photo is uploaded, place the person SMALLER in the foreground corner (20-30% of frame), looking up at or reacting to the creature
-- The creature should be BEHIND and ABOVE the person, towering over them
-- Example: "Taurox the massive brass Minotaur fills the background, roaring with axes raised. The person is in the bottom-left corner, smaller, looking back in awe/fear"
-
-If CHARACTER_TYPE is human:
-- The person can BE dressed as the character (face stays same, body gets character's armor/outfit)
-- OR the game character can appear alongside the person
-- Person takes up 40-50% of frame as the main focal point
-
-**FACTION_ELEMENTS**: Faction-specific visual details to include in the scene:
-- Faction symbol/logo: exact shape, color, where it appears (on shoulder pad, banner, etc.)
-- Faction-specific objects: banners, standards, vehicles, structures
-- Faction art style: clean vs battle-damaged, ornate vs utilitarian
-
-**GAME_IDENTITY**: Elements that make this INSTANTLY recognizable as THIS specific game:
-- Game's signature visual motifs (skulls for 40K, runes for Elden Ring, etc.)
-- Game's art style description (grimdark, high fantasy, cel-shaded, etc.)
-- Iconic HUD/UI elements that could subtly appear (optional)
-- Game logo style description (for text overlay inspiration)
-
-**CAMERA_ANGLE**: Camera position and framing (e.g., "Low angle looking up at the character, dramatic perspective, the character fills 60% of the frame with the game world behind")
-
-**KEY_EFFECTS**: Game-appropriate visual effects:
-- Particle effects from the game (magic particles, sparks, embers, energy, warp lightning)
-- Lighting effects (glowing weapons, eye glow, energy auras)
-- Atmospheric effects (fog, smoke, dust, rain) matching the game world
-
-Keep each section 3-5 sentences. Be SPECIFIC to THIS game. Be COMPLETE - finish every sentence.`;
-
-        const scenePromptHistorical = `${scenePromptBase}
-
-CRITICAL: AI image models draw MODERN versions of well-known cities when they hear city names.
-e.g., "Istanbul" → draws modern minarets. "Rome" → draws modern Italy.
-DO NOT use modern city/country names! Describe architecture and visuals directly instead.
-
-FORMAT (write each section completely, in English):
-
-**SCENE_DESCRIPTION**: Describe the scene using ONLY architectural and visual terms, NO modern city names.
-WRONG: "Istanbul with Byzantine architecture" (model draws modern Istanbul!)
-RIGHT: "Ancient walled city, massive domed basilica with Christian crosses, Theodosian double walls, Byzantine eagle banners"
-
-**ATTACKER_DESCRIPTION**: (If attackers present) Describe banners, armor, weapons in detail.
-⚠️ Ottoman banner = DARK CRIMSON/BURGUNDY + GOLDEN crescent + GOLDEN 8-POINTED star
-NEVER use: "Turkish flag", "flag of Turkey", white crescent, 5-pointed star, bright red
-
-**DEFENDER_DESCRIPTION**: (If defenders present) Describe their armor, shields, banners.
-
-**CAMERA_POSITION**: Where is the camera? What angle?
-
-**PERSON_COSTUME**: What should the thumbnail person wear? Match the era.
-
-**ABSOLUTELY_NOT**: Things that MUST NOT appear. For Ottoman scenes ALWAYS include:
-"NO modern Turkish flag (red+white crescent+5-pointed star), use historical Ottoman banner instead"
-
-Keep each section 2-3 sentences. Be COMPLETE - finish every sentence.`;
-
-        const isVlogTravel = ['vlog', 'travel'].includes(catId);
-        const scenePromptVlogTravel = `${scenePromptBase}
-
-⚠️ CRITICAL: This is a VLOG/TRAVEL video about "${topic}". The thumbnail must show a LOCATION/DESTINATION, NOT a concert, music event, or performance.
-
-RULES:
-- The background MUST show the ICONIC, RECOGNIZABLE features of the destination (landmarks, skylines, famous buildings, natural wonders)
-- The person is a VLOGGER/TRAVELER — NOT a singer, musician, or performer
-- Do NOT create concert stages, music performances, DJ booths, nightclub scenes, or stage lighting
-- The mood should be: adventure, excitement, discovery, wanderlust — NOT party, performance, or concert energy
-- Think of popular travel vlogger thumbnails (Casey Neistat, Kara and Nate, etc.) — person reacting to amazing locations
-
-FORMAT (write each section completely):
-
-**SCENE_DESCRIPTION**: Describe the iconic location/destination that makes "${topic}" visually stunning.
-Include: famous landmarks, architectural features, natural scenery, city skylines, or scenic viewpoints.
-Example: "The stunning Dubai skyline at golden hour, with Burj Khalifa towering in the background, Palm Jumeirah visible below, warm orange-pink sunset reflecting off glass skyscrapers" NOT "A concert stage in Dubai with neon lights"
-
-**COLOR_PALETTE**: Colors inspired by the LOCATION itself (e.g., "golden sunset orange, deep desert sand, turquoise Arabian Gulf waters, gleaming silver glass, warm amber sky")
-
-**PERSON_COSTUME**: Casual travel/vlogger attire ONLY:
-- Examples: casual jacket or hoodie, t-shirt, comfortable jeans, sunglasses, baseball cap, backpack strap visible
-- NEVER: concert outfits, stage costumes, performance clothing, formal wear, microphone, singing pose
-- The person should look like a REAL traveler/vlogger exploring the destination
-
-**CAMERA_ANGLE**: Dramatic wide-angle or medium shot showing both the person AND the destination. Options:
-- Person in foreground (30-40% of frame), iconic landmark large in background
-- Low angle looking up at person with landmark behind them
-- Selfie-style with landmark visible over shoulder
-- Person looking amazed/pointing at something spectacular off-frame
-
-**KEY_EFFECTS**: Natural cinematic effects for travel content:
-- Golden hour lighting, warm sunset glow
-- Lens flare from sun, atmospheric haze
-- Shallow depth of field with bokeh on background city lights
-- NO concert lighting, NO neon stage effects, NO smoke machines, NO sound wave visuals
-
-Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
-
-        const scenePayload = {
-          contents: [{
-            parts: [{
-              text: isVlogTravel ? scenePromptVlogTravel : isReligion ? scenePromptReligion : isHistorical ? scenePromptHistorical : isGaming ? scenePromptGaming : scenePromptGeneral
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 8192
-          }
-        };
-
-        const sceneResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(scenePayload)
-          }
-        );
-
-        const sceneData = await sceneResponse.json();
-        let sceneDescription = sceneData.candidates?.[0]?.content?.parts?.[0]?.text;
-        const finishReason = sceneData.candidates?.[0]?.finishReason;
-
-        // If output was truncated (MAX_TOKENS), log warning but still use what we got
-        if (finishReason === 'MAX_TOKENS' && sceneDescription) {
-          console.warn('Scene direction was truncated. Using partial result.');
-        }
-
         // Combine research + trend analysis + scene description
         let combinedResearch = researchText;
         if (trendAnalysis) {
@@ -3932,6 +3774,14 @@ Keep each section 2-4 sentences. Be COMPLETE - finish every sentence.`;
         }
         if (sceneDescription) {
           combinedResearch += `\n\n🎬 READY-TO-USE SCENE DIRECTION:\n${sceneDescription}`;
+        }
+
+        // Store text-based Visual DNA (will be overridden by image-based DNA if available)
+        if (textVisualDNA && textVisualDNA.length > 100) {
+          extractedVisualDNA = textVisualDNA;
+          setVisualDNA(textVisualDNA);
+          combinedResearch += `\n\n🧬 VISUAL DNA (TEXT-INFERRED):\n${textVisualDNA}`;
+          console.log(`[VisualDNA] ✅ Text-based Visual DNA from merged response (${textVisualDNA.length} chars)`);
         }
 
         finalResearch = combinedResearch;
@@ -4044,109 +3894,28 @@ Respond in ENGLISH for maximum compatibility with image generation models.` }
         }
       }
 
-      // ═══════════════════════════════════════════════════════════════
-      // TEXT-BASED VISUAL DNA FALLBACK — when no reference images found
-      // Extracts visual style rules from research text instead of images
-      // ═══════════════════════════════════════════════════════════════
-      if (!extractedVisualDNA && finalResearch && apiKey) {
-        try {
-          console.log('[VisualDNA] 📝 No reference images — generating Visual DNA from research text...');
-
-          const textDnaResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [{
-                    text: `You are a VISUAL DNA ANALYST. Based on the research text below, create DETAILED visual style rules for "${topic}".
-
-RESEARCH:
-${finalResearch}
-
-${topicDescription ? `USER CONTEXT: ${topicDescription}` : ''}
-
-⚠️ CRITICAL — NO REFERENCE IMAGES AVAILABLE:
-Since we have NO verified reference images, you must INFER the visual identity from the research.
-Be VERY SPECIFIC — avoid generic descriptions.
-
-🚫 NEVER SUGGEST THESE GENERIC GAMING VISUALS:
-- PC gaming setup (keyboard, mouse, monitor, RGB lights)
-- Esports tournament scene / competitive gaming arena
-- Generic "gamer holding controller" imagery
-- Orange/amber gaming desk lighting (unless explicitly described in research)
-- Generic sword-and-shield fantasy (unless the research specifically says so)
-
-✅ INSTEAD:
-- Describe the GAME'S OWN unique art style, world, characters, and atmosphere
-- If the game has distinctive characters, describe them from research details
-- If research mentions specific environments/worlds, use those
-- If research is limited, extrapolate from the game's GENRE and TONE only
-
-Generate a Visual DNA with these sections:
-
-1. **COLOR_PALETTE**: Infer 4-6 dominant colors from the research descriptions. Use hex codes.
-   Format: COLOR: #hex colorName — where/why
-
-2. **SILHOUETTE**: Based on research, what do characters/subjects look like?
-   Describe: body types, armor/clothing styles, weapon types, iconic poses.
-
-3. **MATERIALS**: What textures and materials are described or implied?
-   (medieval stone, futuristic metal, organic, wooden, crystalline, etc.)
-
-4. **LIGHTING**: What mood/atmosphere does the research suggest?
-   (dark and gritty, bright and colorful, ethereal, realistic, stylized, etc.)
-
-5. **SIGNATURES**: 3-5 visual elements that would make this INSTANTLY recognizable as "${topic}".
-   Based on research: what are the KEY visual differentiators?
-
-6. **STYLE_LOCK_RULES**: Write 6-8 rules for visual authenticity.
-   MUST: [what must be included based on research]
-   NEVER: [what would be wrong/inauthentic]
-
-7. **ART_DIRECTION**: Describe the overall visual style:
-   - Is it realistic, stylized, cartoon, anime, painterly?
-   - What games/movies/shows does it look similar to?
-   - Camera perspective typically used (isometric, third-person, first-person?)
-   - Key atmospheric elements (fog, particles, volumetric light, etc.)
-
-Respond in ENGLISH. Be specific to "${topic}", not generic.`
-                  }]
-                }],
-                generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
-              }),
-              signal: AbortSignal.timeout(15000)
-            }
-          );
-
-          if (textDnaResponse.ok) {
-            const textDnaData = await textDnaResponse.json();
-            const textDna = textDnaData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-
-            if (textDna && textDna.length > 100) {
-              extractedVisualDNA = textDna;
-              setVisualDNA(textDna);
-              console.log(`[VisualDNA] ✅ Text-based Visual DNA generated (${textDna.length} chars)`);
-
-              if (finalResearch) {
-                finalResearch += `\n\n🧬 VISUAL DNA (TEXT-INFERRED):\n${textDna}`;
-                setTopicResearch(finalResearch);
-              }
-            } else {
-              console.log('[VisualDNA] ⚠️ Text-based DNA too short');
-            }
-          }
-        } catch (e) {
-          console.warn('[VisualDNA] ⚠️ Text-based DNA failed:', e.message);
-        }
-      }
+      // TEXT-BASED VISUAL DNA is now included in the merged analysis call above.
+      // Only the image-based Visual DNA (above) runs as a separate call when reference images exist.
 
       setIsResearchingTopic(false);
     }
 
+    // Cache the research results for future use (saves API calls on repeated topics)
+    const resultData = { research: finalResearch, images: collectedImages, category: finalCategory, visualDNA: extractedVisualDNA };
+    researchCacheRef.current.set(cacheKey, {
+      data: resultData,
+      timestamp: Date.now(),
+      callsSaved: 2 // merged call saves 2 separate Gemini calls
+    });
+    // Keep cache size reasonable (max 20 entries)
+    if (researchCacheRef.current.size > 20) {
+      const oldestKey = researchCacheRef.current.keys().next().value;
+      researchCacheRef.current.delete(oldestKey);
+    }
+    console.log(`[Research] 💾 Cached research for "${topic}" (cache size: ${researchCacheRef.current.size})`);
+
     // Return collected data for direct use (bypasses React state timing)
-    return { research: finalResearch, images: collectedImages, category: finalCategory, visualDNA: extractedVisualDNA };
+    return resultData;
   };
 
   const generateThumbnail = async () => {
