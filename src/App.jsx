@@ -2253,8 +2253,11 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
                 subject = words.slice(subjectStartIdx).join(' ');
                 contextPart = words.slice(0, subjectStartIdx).join(' ');
               } else {
-                subject = words[words.length - 1] || rawClean;
-                contextPart = words.slice(0, -1).join(' ');
+                // IMPORTANT: Use the FULL topic as subject, not just the last word.
+                // Splitting "STALKER Gamma" into subject="gamma" causes wrong results like "Gamma AI".
+                // The full name is always more specific than a single word.
+                subject = rawClean;
+                contextPart = '';
               }
             }
           }
@@ -2305,6 +2308,8 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
             if (/icon|badge/i.test(filename) && !isNonGaming) score -= 50;
             if (/\.svg$/i.test(filename)) score -= 100;
             if (/\.gif$/i.test(filename)) score -= 30;
+            // Penalize logos, SaaS products, brand images (often irrelevant to gaming/content topics)
+            if (/logo|brand|saas|app[\s_]?icon|product[\s_]?shot|pricing|landing[\s_]?page|dashboard/i.test(filename)) score -= 80;
             return score;
           };
 
@@ -2318,8 +2323,8 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
               const webQueries = [];
               // Build smart queries based on category
               if (catId === 'gaming') {
-                webQueries.push(`${topic} game official art`);
-                webQueries.push(`${subject} game screenshot`);
+                webQueries.push(`"${topic}" game official art`);
+                webQueries.push(`"${topic}" game screenshot`);
               } else if (catId === 'history') {
                 webQueries.push(`${topic} historical painting artwork`);
                 if (contextPart) webQueries.push(`${subject} ${contextPart} history`);
@@ -2388,11 +2393,13 @@ NEVER confuse "${topic}" with a different topic that has a similar name.`
                     text: `TASK: Find high-quality reference images for creating a YouTube thumbnail about "${topic}".
 ${topicDescription ? `USER CONTEXT: "${topicDescription}"` : ''}
 
-Search the internet for: "${subject}" ${hint}
+Search the internet for: "${topic}" ${hint}
 
-⚠️ CRITICAL — TOPIC IDENTITY: You are searching for "${topic}" EXACTLY as typed.
-Do NOT search for similar-sounding or similar-spelled topics.
-Search with the EXACT spelling: "${topic}" — do not correct, modify, or substitute the name.
+⚠️ CRITICAL — TOPIC IDENTITY: You are searching for "${topic}" EXACTLY as typed — the FULL name together.
+Do NOT search for individual words from the name separately (e.g., do NOT search just "gamma" when the topic is "STALKER Gamma").
+Do NOT return images of different products/companies/brands that share a word with "${topic}".
+Search with the EXACT FULL name: "${topic}" — do not correct, modify, split, or substitute the name.
+Every image MUST be about "${topic}" specifically — NOT about unrelated products/brands/services that happen to share a keyword.
 ${['vlog', 'travel'].includes(catId) ? `
 ⚠️ CONTENT TYPE CONTEXT: This is a ${catId.toUpperCase()} video about "${subject}".
 I need images showing the LOCATION/PLACE "${subject}" — landmarks, skylines, famous buildings, scenic views, street scenes.
@@ -3044,6 +3051,9 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
           }
 
           // Filter out clearly invalid/garbage candidates before download
+          // Build a set of topic words for relevance checking
+          const topicWords = rawClean.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
           const filteredCandidates = allCandidates.filter(c => {
             const url = c.url?.toLowerCase() || '';
             const label = c.label?.toLowerCase() || '';
@@ -3056,6 +3066,18 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
             if (label.includes('sukkah') || label.includes('congregation')) return false;
             // Remove AI-hallucinated Steam screenshot URLs (keep steam-cdn and steam-api ones)
             if (url.includes('/ss_') && c.source !== 'steam-api') return false;
+
+            // ── TOPIC RELEVANCE CHECK ──
+            // If label contains NONE of the topic words, it's likely unrelated
+            // (e.g., "Gamma AI" when searching for "STALKER Gamma")
+            if (label && topicWords.length > 0) {
+              const labelHasTopicWord = topicWords.some(w => label.includes(w));
+              // Only filter by label relevance for AI-search results (not web search which has score-based relevance)
+              if (!labelHasTopicWord && (c.source === 'ai-internet-search' || c.source === 'ai-search-grounding')) {
+                console.log(`[RefImage] 🚫 Filtered irrelevant AI result: "${c.label}" (no topic words found)`);
+                return false;
+              }
+            }
             return true;
           });
           const uniqueCandidates = [];
@@ -3232,12 +3254,15 @@ ${['vlog', 'travel'].includes(catId) ? `2. ✅ LOCATION RELEVANCE — Does it sh
 3. ✅ THUMBNAIL USEFULNESS — Would this help an artist draw "${subject}" correctly? Close-ups and clear shots > blurry/distant/crowded
 4. ✅ VARIETY — Pick images showing DIFFERENT angles/aspects if available
 
-REJECTION CRITERIA:
-- ❌ WRONG SUBJECT — A different character/game/topic with a similar name
+REJECTION CRITERIA (REJECT if ANY of these apply):
+- ❌ WRONG SUBJECT — A different character/game/topic/product/company/service that shares a similar name or keyword with "${subject}". Example: searching for "STALKER Gamma" (a game mod) but getting "Gamma AI" (a presentation tool) — REJECT the unrelated one.
+- ❌ UNRELATED PRODUCT/BRAND — Company logos, SaaS products, apps, tools, or services that are NOT "${topic}". If the image shows a brand/product that is NOT what the user's video is about, REJECT it.
+- ❌ LOGO/BRANDING ONLY — Images that are just a company logo, app icon, or brand symbol with no visual content related to "${topic}"
 ${['vlog', 'travel'].includes(catId) ? `- ❌ CONCERTS/PERFORMANCES — Images of singers, musicians, concerts, stages, or music events in "${subject}" — these are NOT relevant to a vlog/travel video
 - ❌ PEOPLE PERFORMING — Any image where the main focus is a person singing, dancing on stage, or performing` : `- ❌ TOO GENERIC — Could be "any fantasy warrior" or "any space scene" — doesn't show what's UNIQUE about "${subject}"`}
-- ❌ LOW QUALITY — Maps, logos, UI screenshots, tiny icons, text-heavy images
+- ❌ LOW QUALITY — Maps, logos, UI screenshots, tiny icons, text-heavy images, marketing banners
 - ❌ REDUNDANT — Two images showing the exact same angle/pose (pick the better one)
+- ❌ AMBIGUOUS — If you're NOT SURE whether the image is about "${topic}" or about something else with a similar name, REJECT it. When in doubt, reject.
 
 Select up to ${maxSelections} images. Reply EXACTLY:
 PICK:<number>|<what unique visual features of "${subject}" this image shows>
