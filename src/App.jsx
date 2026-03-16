@@ -1745,8 +1745,8 @@ VIBE: Professional, clean, gaming channel style`
           continue;
         }
         const blob = await res.blob();
-        if (!blob.type.startsWith('image/')) {
-          console.log(`[RefImage] ⚠️ fetch ${target.label}: not image (${blob.type}) for`, url.substring(0, 80));
+        if (!blob.type.startsWith('image/') || blob.type === 'image/svg+xml') {
+          console.log(`[RefImage] ⚠️ fetch ${target.label}: unsupported type (${blob.type}) for`, url.substring(0, 80));
           continue;
         }
         if (blob.size > 10 * 1024 * 1024) { console.log(`[RefImage] ⚠️ fetch ${target.label}: too large ${blob.size}`); continue; }
@@ -3047,8 +3047,9 @@ IMPORTANT: NEVER suggest wikis or Wikipedia articles for a DIFFERENT topic than 
           const filteredCandidates = allCandidates.filter(c => {
             const url = c.url?.toLowerCase() || '';
             const label = c.label?.toLowerCase() || '';
-            // Remove PDFs, documents
+            // Remove PDFs, SVGs, documents
             if (url.endsWith('.pdf') || label.includes('.pdf')) return false;
+            if (url.endsWith('.svg') || url.includes('.svg?')) return false;
             // Remove obviously unrelated wikimedia results
             if (label.includes('cargo') && label.includes('train')) return false;
             if (label.includes('catalog of copyright')) return false;
@@ -3245,6 +3246,8 @@ If NONE actually show "${subject}", reply: NONE` }
             ];
 
             for (let i = 0; i < downloadedCandidates.length; i++) {
+              // Skip unsupported MIME types (SVG, GIF)
+              if (downloadedCandidates[i].mimeType === 'image/svg+xml' || downloadedCandidates[i].mimeType === 'image/gif') continue;
               verifyParts.push({ text: `\nImage ${i + 1}:` });
               verifyParts.push({ inlineData: { mimeType: downloadedCandidates[i].mimeType, data: downloadedCandidates[i].data } });
             }
@@ -3421,9 +3424,11 @@ If you truly cannot find ANY image of "${topic}", reply with: NONE`
           // When Gemini explicitly says NONE, we return early above (no fallback).
           // Skip PDFs, irrelevant images (score <= 0), and non-image files
           const validFallbacks = downloadedCandidates.filter(c => {
-            // Filter out PDFs and documents
+            // Filter out PDFs, SVGs, and documents
             if (c.url?.toLowerCase().includes('.pdf')) return false;
             if (c.mimeType?.includes('pdf')) return false;
+            if (c.url?.toLowerCase().includes('.svg')) return false;
+            if (c.mimeType === 'image/svg+xml') return false;
             // Filter out clearly irrelevant labels
             if (c.label?.toLowerCase().includes('catalog of copyright')) return false;
             if (c.label?.toLowerCase().includes('cargo') && c.label?.toLowerCase().includes('net')) return false;
@@ -3855,9 +3860,9 @@ Write concisely. Every rule must come from what you OBSERVE in these images.
 Respond in ENGLISH for maximum compatibility with image generation models.` }
           ];
 
-          // Add reference images
+          // Add reference images (skip unsupported MIME types)
           for (let i = 0; i < Math.min(collectedImages.length, 3); i++) {
-            if (collectedImages[i].data) {
+            if (collectedImages[i].data && collectedImages[i].mimeType !== 'image/svg+xml' && collectedImages[i].mimeType !== 'image/gif') {
               dnaParts.push({ text: `\nReference ${i + 1}: ${collectedImages[i].reason || collectedImages[i].label || 'Visual reference'}` });
               dnaParts.push({ inlineData: { mimeType: collectedImages[i].mimeType || 'image/png', data: collectedImages[i].data } });
             }
@@ -4146,7 +4151,14 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       const promptParts = [];
 
       // ── SHUFFLE & SUBSET reference images for variety on regeneration ──
-      let shuffledImages = [...effectiveImages];
+      // Filter out unsupported MIME types (SVG, GIF) before sending to Gemini
+      let shuffledImages = effectiveImages.filter(img => {
+        const mime = (img.mimeType || '').toLowerCase();
+        const url = (img.url || '').toLowerCase();
+        if (mime === 'image/svg+xml' || mime === 'image/gif') return false;
+        if (url.endsWith('.svg') || url.includes('.svg?')) return false;
+        return true;
+      });
       if (isRegeneration && shuffledImages.length > 1) {
         // Fisher-Yates shuffle for true randomness
         for (let i = shuffledImages.length - 1; i > 0; i--) {
@@ -4772,11 +4784,15 @@ ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
         optimizeParts.push({ inlineData: { mimeType: 'image/png', data: currentBase64 } });
       }
 
-      // 2. Reference images for accuracy (in order, no shuffle)
-      if (researchImages.length > 0) {
+      // 2. Reference images for accuracy (filter out SVG/GIF)
+      const safeResearchImages = researchImages.filter(img => {
+        const mime = (img.mimeType || '').toLowerCase();
+        return mime !== 'image/svg+xml' && mime !== 'image/gif';
+      });
+      if (safeResearchImages.length > 0) {
         optimizeParts.push({ text: `\n🔒 [REFERENCE IMAGES] — The REAL visual identity of "${topic}". Your optimized version MUST still look like the same subject:` });
-        for (let i = 0; i < researchImages.length; i++) {
-          const refImg = researchImages[i];
+        for (let i = 0; i < safeResearchImages.length; i++) {
+          const refImg = safeResearchImages[i];
           const refReason = refImg.reason ? ` (${refImg.reason})` : '';
           optimizeParts.push({ text: `[REF_${i + 1}]${refReason}:` });
           optimizeParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
@@ -4797,9 +4813,9 @@ ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
       }
 
       // 5. Repeat best reference at the end (recency effect)
-      if (researchImages.length > 0) {
+      if (safeResearchImages.length > 0) {
         optimizeParts.push({ text: `\n🔒 FINAL CHECK — Your optimized thumbnail must still match this visual identity of "${topic}":` });
-        optimizeParts.push({ inlineData: { mimeType: researchImages[0].mimeType || "image/png", data: researchImages[0].data } });
+        optimizeParts.push({ inlineData: { mimeType: safeResearchImages[0].mimeType || "image/png", data: safeResearchImages[0].data } });
       }
 
       const payload = {
