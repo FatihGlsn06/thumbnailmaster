@@ -1885,7 +1885,7 @@ VIBE: Professional, clean, gaming channel style`
 
   // Analyze concept/reference image with AI
   const analyzeConceptImage = async () => {
-    if (!conceptBase64 || !apiKey) return;
+    if (!conceptBase64 || (!apiKey && !TEST_MODE)) return;
 
     setIsAnalyzingConcept(true);
     try {
@@ -1942,7 +1942,7 @@ The AI image generator will use your analysis to replicate this exact style.`
 
   // Analyze uploaded photo with AI
   const analyzePhoto = async () => {
-    if (!base64Image || !apiKey) return;
+    if (!base64Image || (!apiKey && !TEST_MODE)) return;
 
     setIsAnalyzingPhoto(true);
     try {
@@ -2007,7 +2007,7 @@ Be concise. 1-2 sentences per point.`
 
   // Research topic/concept using AI (gaming/lore knowledge)
   const researchTopic = async () => {
-    if (!topic || !apiKey) return null;
+    if (!topic || (!apiKey && !TEST_MODE)) return null;
 
     // ═══════════════════════════════════════════════════════════════
     // RESEARCH CACHE — Skip expensive API calls for repeated topics
@@ -3956,7 +3956,7 @@ Respond in ENGLISH for maximum compatibility with image generation models.` }
   };
 
   const generateThumbnail = async () => {
-    if (!apiKey) {
+    if (!apiKey && !TEST_MODE) {
       setError(t('enterApiKey'));
       return;
     }
@@ -4580,7 +4580,7 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
   // ═══ Post-generation Verification ═══
   // Checks if generated thumbnail actually represents the requested topic
   const verifyThumbnail = async (generatedBase64, topicName, researchData, refImages, { silent = false, styleDNA = null } = {}) => {
-    if (!apiKey || !generatedBase64) return null;
+    if ((!apiKey && !TEST_MODE) || !generatedBase64) return null;
 
     if (!silent) {
       setIsVerifying(true);
@@ -4890,7 +4890,7 @@ ${extraRequest ? `ADDITIONAL: ${extraRequest}` : ''}
 
   // Yazısız yeniden oluştur - mevcut sahneyi koruyarak sadece yazıyı kaldır
   const regenerateWithoutText = async () => {
-    if (!apiKey || !resultImage) return;
+    if ((!apiKey && !TEST_MODE) || !resultImage) return;
 
     const savedText = overlayText;
     setOverlayText('');
@@ -4968,7 +4968,7 @@ Think of this as "inpainting" - remove text and fill with surrounding context.`;
 
   // Revise image - kullanıcının talimatıyla mevcut görseli revize et
   const reviseImage = async () => {
-    if (!apiKey || !resultImage || !revisionText.trim()) return;
+    if ((!apiKey && !TEST_MODE) || !resultImage || !revisionText.trim()) return;
 
     setIsRevising(true);
     setPreRevisionImage(resultImage);
@@ -5381,6 +5381,8 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     </div>
                   </div>
 
+                  {/* API Keys — Hidden in TEST_MODE */}
+                  {!TEST_MODE && (<>
                   {/* API Key */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-500 flex items-center gap-2">
@@ -5475,6 +5477,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                       Yukarıdaki Serper.dev kullanımı çok daha kolaydır. CSE kurulumu sorunluysa Serper'ı deneyin.
                     </p>}
                   </div>
+                  </>)}
 
                   {/* Channel Name */}
                   <div className="space-y-2">
@@ -5867,7 +5870,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     {!photoAnalysis && (
                       <button
                         onClick={(e) => { e.stopPropagation(); analyzePhoto(); }}
-                        disabled={isAnalyzingPhoto || !apiKey}
+                        disabled={isAnalyzingPhoto || (!apiKey && !TEST_MODE)}
                         className="bg-purple-500/20 border border-purple-500/30 text-purple-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 disabled:opacity-50"
                       >
                         {isAnalyzingPhoto ? <RefreshCcw className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
@@ -5905,7 +5908,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                   />
                   <button
                     onClick={researchTopic}
-                    disabled={!topic || !apiKey || isResearchingTopic}
+                    disabled={!topic || (!apiKey && !TEST_MODE) || isResearchingTopic}
                     className="bg-amber-500/20 border border-amber-500/30 text-amber-300 px-3 rounded-xl flex items-center gap-1 hover:bg-amber-500/30 transition-all disabled:opacity-30 text-xs font-bold"
                   >
                     {isResearchingTopic ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
@@ -6118,7 +6121,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                       {!conceptAnalysis && (
                         <button
                           onClick={(e) => { e.stopPropagation(); analyzeConceptImage(); }}
-                          disabled={isAnalyzingConcept || !apiKey}
+                          disabled={isAnalyzingConcept || (!apiKey && !TEST_MODE)}
                           className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 px-3 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
                         >
                           {isAnalyzingConcept ? <RefreshCcw className="w-3 h-3 animate-spin" /> : t('analyze')}
@@ -6157,7 +6160,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
             <div className="hidden lg:block">
               <button
                 onClick={generateThumbnail}
-                disabled={loading || !topic || !apiKey}
+                disabled={loading || !topic || (!apiKey && !TEST_MODE)}
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3"
               >
                 {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
@@ -6206,7 +6209,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
           )}
           <button
             onClick={generateThumbnail}
-            disabled={loading || !topic || !apiKey}
+            disabled={loading || !topic || (!apiKey && !TEST_MODE)}
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-black py-4 rounded-2xl transition-all disabled:opacity-30 flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20"
           >
             {loading ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
