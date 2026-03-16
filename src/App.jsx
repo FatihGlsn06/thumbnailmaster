@@ -1056,6 +1056,7 @@ const App = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isOptimized, setIsOptimized] = useState(false);
   const [previousImage, setPreviousImage] = useState(null);
+  const [generationCount, setGenerationCount] = useState(0); // Track how many times we've generated for same topic
 
   // Polar.sh - Plan & License states
   const [currentPlan, setCurrentPlan] = useState(() => getCurrentPlan());
@@ -1557,7 +1558,7 @@ VIBE: Professional, clean, gaming channel style`
   const generateWithFal = async (prompt, modelId = 'fal-ai/flux-pro/v1.1', options = {}) => {
     if (!falApiKey) throw new Error('FAL AI API key is required');
 
-    const { referenceImages = [], overlayText: falOverlayText = '' } = options;
+    const { referenceImages = [], overlayText: falOverlayText = '', seed: falSeed = null } = options;
 
     // ── Smart fallback: edit model without refs → text-to-image ──
     let effectiveModelId = modelId;
@@ -1662,6 +1663,12 @@ VIBE: Professional, clean, gaming channel style`
         num_images: 1,
         output_format: 'jpeg',
       };
+    }
+
+    // Inject seed for variety on regeneration (supported by most FAL models)
+    if (falSeed != null && !body.seed) {
+      body.seed = falSeed;
+      console.log(`[FAL] 🎲 Using seed: ${falSeed}`);
     }
 
     const response = await fetch(`https://fal.run/${modelId}`, {
@@ -3121,9 +3128,9 @@ If nothing found, reply: NONE`
             }
           }
 
-          // Download top candidates (max 5 for Gemini verification)
+          // Download top candidates (max 8 for Gemini verification)
           const downloadedCandidates = [];
-          for (const candidate of uniqueCandidates.slice(0, 16)) {
+          for (const candidate of uniqueCandidates.slice(0, 20)) {
             try {
               let imgResult = await fetchImageAsBase64(candidate.url);
               // If main URL failed and this is a web search result, try the thumbnail
@@ -3134,7 +3141,7 @@ If nothing found, reply: NONE`
               if (imgResult) {
                 downloadedCandidates.push({ ...candidate, data: imgResult.data, mimeType: imgResult.mimeType });
                 console.log(`[RefImage] ⬇️ Downloaded: ${candidate.label} (${Math.round(imgResult.data.length / 1024)}KB)`);
-                if (downloadedCandidates.length >= 5) break;
+                if (downloadedCandidates.length >= 8) break;
               }
             } catch { continue; }
           }
@@ -3202,7 +3209,7 @@ If nothing found: NONE`
           }
 
           // ── PHASE 3: Gemini Multi-Image Verification & Selection ──
-          const maxSelections = Math.min(3, downloadedCandidates.length);
+          const maxSelections = Math.min(5, downloadedCandidates.length);
           if (downloadedCandidates.length >= 2) {
             console.log(`[RefImage] 🤖 Sending ${downloadedCandidates.length} candidates to Gemini for multi-selection (max ${maxSelections})...`);
 
@@ -3935,6 +3942,11 @@ Respond in ENGLISH for maximum compatibility with image generation models.` }
       return;
     }
 
+    // Detect if this is a REGENERATION (user already has a result and wants a new one)
+    const isRegeneration = !!resultImage;
+    const currentGenCount = generationCount + 1;
+    setGenerationCount(currentGenCount);
+
     setLoading(true);
     setError(null);
     // Reset optimization and verification state for fresh generation
@@ -3944,13 +3956,24 @@ Respond in ENGLISH for maximum compatibility with image generation models.` }
     setVerificationResult(null);
     setIsVerifying(false);
 
-    // ── Determine research data: from existing state OR fresh auto-research ──
-    let effectiveResearch = topicResearch;
-    let effectiveImages = researchImages;
-    let effectiveCategory = detectedCategory;
-    let effectiveVisualDNA = visualDNA;
+    // ── REGENERATION: Bypass cache & force fresh research for variety ──
+    if (isRegeneration) {
+      console.log(`[Generate] 🔄 REGENERATION #${currentGenCount} — bypassing cache, forcing variety...`);
+      // Clear research cache for this topic so we get fresh results
+      const cacheKey = `${topic}|${topicDescription || ''}`;
+      researchCacheRef.current.delete(cacheKey);
+      // Clear existing research to force fresh search
+      setTopicResearch(null);
+      setResearchImages([]);
+    }
 
-    // AUTO-RESEARCH: If research hasn't been done, await it and use returned data directly
+    // ── Determine research data: from existing state OR fresh auto-research ──
+    let effectiveResearch = isRegeneration ? null : topicResearch;
+    let effectiveImages = isRegeneration ? [] : researchImages;
+    let effectiveCategory = detectedCategory;
+    let effectiveVisualDNA = isRegeneration ? null : visualDNA;
+
+    // AUTO-RESEARCH: If research hasn't been done (or was cleared for regeneration), await it
     if (!effectiveResearch && !isResearchingTopic) {
       console.log('[Generate] 🔄 Auto-triggering research before generation...');
       try {
@@ -3980,8 +4003,40 @@ Respond in ENGLISH for maximum compatibility with image generation models.` }
       // Smart content detection for parameter tuning
       const contentCategory = effectiveCategory || detectContentCategory(topic, topicDescription);
 
+      // ── REGENERATION VARIETY: Different composition strategies per attempt ──
+      const compositionVariations = [
+        '', // First generation: default
+        `\n🔄 VARIATION DIRECTIVE — ATTEMPT #${currentGenCount}:
+- Use a COMPLETELY DIFFERENT camera angle than before (if previous was close-up, try wide shot; if eye-level, try bird's eye or low angle)
+- Try a DIFFERENT color temperature (if previous was warm, go cool; if blue-toned, go amber/golden)
+- DIFFERENT composition layout (if previous was centered, try rule-of-thirds; if symmetric, try dynamic diagonal)
+- DIFFERENT moment/action — show a different iconic scene or pose of "${topic}"
+- The viewer must immediately see this is a FRESH, DIFFERENT take on the same subject`,
+        `\n🔄 VARIATION DIRECTIVE — ATTEMPT #${currentGenCount}:
+- DRAMATIC LOW ANGLE (worm's eye view) — looking UP at the subject for maximum power/scale
+- SPLIT LIGHTING — half the face/subject in shadow, half in dramatic colored light
+- ULTRA WIDE composition — show the full environment with the subject as a powerful silhouette or small but dominant figure
+- Use a CONTRASTING color palette from typical representations — surprise the viewer
+- Show an UNEXPECTED or RARE moment/aspect of "${topic}" that most thumbnails don't show`,
+        `\n🔄 VARIATION DIRECTIVE — ATTEMPT #${currentGenCount}:
+- EXTREME MACRO close-up — fill 80% of frame with the most iconic/recognizable detail of "${topic}"
+- DUTCH ANGLE (tilted camera) — create dynamic tension and energy
+- COMPLEMENTARY COLOR SCHEME — use opposite colors on the color wheel for maximum pop
+- MOTION BLUR on background, crystal sharp subject — convey speed and action
+- Show the most INTENSE, peak-action moment possible`,
+        `\n🔄 VARIATION DIRECTIVE — ATTEMPT #${currentGenCount}:
+- BIRD'S EYE VIEW or TOP-DOWN perspective — unique and eye-catching angle
+- NEON/VIBRANT color grading with deep blacks — maximum contrast
+- NEGATIVE SPACE usage — powerful empty areas that draw the eye to the subject
+- SILHOUETTE with dramatic backlight — mysterious and compelling
+- Focus on ATMOSPHERE and MOOD over literal representation`,
+      ];
+      const variationIndex = isRegeneration ? ((currentGenCount - 1) % (compositionVariations.length - 1)) + 1 : 0;
+      const variationDirective = compositionVariations[variationIndex];
+
       const prompt = `Create a HIGH-CTR cinematic YouTube thumbnail for "${topic}".
 ${topicDescription ? `Context: ${topicDescription}` : ''}
+${variationDirective}
 
 🎯 HIGH-CTR THUMBNAIL PRINCIPLES (APPLY ALL):
 - EXTREME close-up or dramatic angle — fill the frame, no dead space
@@ -4090,14 +4145,36 @@ ${extraRequest ? `Additional: ${extraRequest}` : ''}`;
       // Build parts — REFERENCE IMAGES FIRST AND LAST (primacy + recency effect)
       const promptParts = [];
 
+      // ── SHUFFLE & SUBSET reference images for variety on regeneration ──
+      let shuffledImages = [...effectiveImages];
+      if (isRegeneration && shuffledImages.length > 1) {
+        // Fisher-Yates shuffle for true randomness
+        for (let i = shuffledImages.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledImages[i], shuffledImages[j]] = [shuffledImages[j], shuffledImages[i]];
+        }
+        // On later regenerations, use a different subset (rotate which images are shown)
+        if (shuffledImages.length > 3 && currentGenCount > 2) {
+          const subsetSize = Math.max(2, Math.min(4, shuffledImages.length - 1));
+          const startIdx = (currentGenCount - 1) % shuffledImages.length;
+          const subset = [];
+          for (let i = 0; i < subsetSize; i++) {
+            subset.push(shuffledImages[(startIdx + i) % shuffledImages.length]);
+          }
+          shuffledImages = subset;
+          console.log(`[Generate] 🔀 Regeneration subset: ${subsetSize}/${effectiveImages.length} images (start: ${startIdx})`);
+        }
+        console.log(`[Generate] 🔀 Shuffled ${shuffledImages.length} reference images for variety`);
+      }
+
       // 1. REFERENCE IMAGES FIRST — Gemini pays most attention to early content
-      if (effectiveImages.length > 0) {
-        console.log(`[Generate] 🖼️ Including ${effectiveImages.length} reference images BEFORE text prompt`);
-        promptParts.push({ text: `🔒 VISUAL IDENTITY LOCK — STUDY THESE ${effectiveImages.length} REFERENCE IMAGES:
+      if (shuffledImages.length > 0) {
+        console.log(`[Generate] 🖼️ Including ${shuffledImages.length} reference images BEFORE text prompt`);
+        promptParts.push({ text: `🔒 VISUAL IDENTITY LOCK — STUDY THESE ${shuffledImages.length} REFERENCE IMAGES:
 These are VERIFIED images of the REAL "${topic}". Your thumbnail MUST look like it belongs to the SAME franchise/world as these images.
 COPY the exact: color palette, character design, body proportions, armor/clothing, distinctive features, art style.\n` });
-        for (let i = 0; i < effectiveImages.length; i++) {
-          const refImg = effectiveImages[i];
+        for (let i = 0; i < shuffledImages.length; i++) {
+          const refImg = shuffledImages[i];
           const refReason = refImg.reason ? ` (${refImg.reason})` : '';
           promptParts.push({ text: `[TOPIC_REF_${i + 1}]${refReason} — COPY this visual identity into your thumbnail:` });
           promptParts.push({ inlineData: { mimeType: refImg.mimeType || "image/png", data: refImg.data } });
@@ -4122,17 +4199,23 @@ COPY the exact: color palette, character design, body proportions, armor/clothin
         promptParts.push({ inlineData: { mimeType: "image/png", data: conceptBase64 } });
       }
 
-      // 5. REPEAT best reference image at the END (recency bias — model remembers last content best)
-      if (effectiveImages.length > 0) {
-        const bestRef = effectiveImages[0]; // First image = highest scored
+      // 5. REPEAT a random reference image at the END (recency bias — different one each time)
+      if (shuffledImages.length > 0) {
+        const recencyIdx = isRegeneration ? Math.floor(Math.random() * shuffledImages.length) : 0;
+        const bestRef = shuffledImages[recencyIdx];
         promptParts.push({ text: `\n🔒 FINAL REMINDER — Here is "${topic}" ONE MORE TIME. Your output MUST match this visual identity:` });
         promptParts.push({ inlineData: { mimeType: bestRef.mimeType || "image/png", data: bestRef.data } });
       }
 
       // Use content category temperature (e.g., religion=0.4, education=0.5, gaming=0.7, music=0.8)
       const categoryTemperature = contentCategory?.temperature ?? 0.6;
-      // Keep temperature moderate to ensure reference fidelity while allowing some creativity
-      const generationTemperature = Math.min(0.8, categoryTemperature + 0.1);
+      // On regeneration: boost temperature for more variety (0.85-1.0)
+      const generationTemperature = isRegeneration
+        ? Math.min(1.0, categoryTemperature + 0.25 + (currentGenCount > 3 ? 0.1 : 0))
+        : Math.min(0.8, categoryTemperature + 0.1);
+
+      // Generate a random seed for variety (used by FAL, helps Gemini via prompt injection)
+      const generationSeed = Math.floor(Math.random() * 999999);
 
       const payload = {
         contents: [{
@@ -4152,7 +4235,7 @@ COPY the exact: color palette, character design, body proportions, armor/clothin
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
         ]
       };
-      console.log(`[Generate] 🌡️ Temperature: ${generationTemperature} (category: ${contentCategory?.id}, base: ${categoryTemperature})`);
+      console.log(`[Generate] 🌡️ Temperature: ${generationTemperature} (category: ${contentCategory?.id}, base: ${categoryTemperature}${isRegeneration ? `, regen #${currentGenCount}` : ''}) | Seed: ${generationSeed}`);
 
       // ═══ GENERATION ENGINE ROUTING ═══
       const useFal = isFalModel(selectedModel);
@@ -4373,6 +4456,7 @@ IMPORTANT: Only give REAL URLs found via search. Do NOT make up URLs.`
         lastGeneratedBase64 = await generateWithFal(falPrompt, falModelId, {
           referenceImages: falRefImages,
           overlayText: overlayText || '',
+          seed: generationSeed,
         });
 
         // Single verification pass (informational, no retry)
@@ -5621,6 +5705,15 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                     {isOptimizing ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                     <span className="hidden sm:inline">{t('optimize')}</span>
                   </button>
+                  <button
+                    onClick={generateThumbnail}
+                    disabled={loading}
+                    className="flex-1 sm:flex-none bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 sm:px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-sm disabled:opacity-50"
+                    title={t('regenerateTooltip') || 'Tamamen farklı bir thumbnail oluştur'}
+                  >
+                    {loading ? <RefreshCcw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    <span className="hidden sm:inline">{t('regenerate') || 'Yeniden Oluştur'}</span>
+                  </button>
                 </div>
 
                 {/* Revision Input */}
@@ -5765,7 +5858,7 @@ Think of this as "editing" the existing thumbnail based on the user's feedback.`
                   <input
                     type="text"
                     value={topic}
-                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); setResearchImages([]); }}
+                    onChange={(e) => { setTopic(e.target.value); setTopicResearch(null); setResearchImages([]); setGenerationCount(0); }}
                     placeholder={t('topicPlaceholder')}
                     className="flex-1 bg-black/40 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/40"
                   />
